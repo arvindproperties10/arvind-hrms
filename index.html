@@ -1647,8 +1647,7 @@ body.dark .ck-selfie{box-shadow:0 0 0 4px rgba(255,255,255,.12),0 10px 26px -8px
 .lv-main small{font-size:12.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .lv-side{display:flex;align-items:center;gap:6px;flex:none}
 @media (max-width:760px){
-  /* the bottom bar replaces the page links in the slide-out menu */
-  body.emp-app #nav a,body.emp-app #nav .navsep{display:none!important}
+
   body.has-tabbar .lvrow{border-bottom-color:rgba(16,42,94,.07)}
   body.has-tabbar .ck-card{padding:18px 16px!important}
   body.has-tabbar .head{padding-top:8px!important}
@@ -1710,6 +1709,10 @@ body.dark .ck-selfie{box-shadow:0 0 0 4px rgba(255,255,255,.12),0 10px 26px -8px
   body.dark.has-tabbar .ck-state.live{background:rgba(52,199,89,.16);color:#34c759}
   body.dark.has-tabbar .ck-state.ok,body.dark.has-tabbar .ck-state.done{background:rgba(61,139,255,.18);color:#6aa8ff}
   body.dark.has-tabbar .teamsearch input{background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.12);color:var(--ink)}
+}
+@media (max-width:760px){
+  body.emp-app #nav .navsep{display:none!important}
+  body.navopen .rail{padding-bottom:calc(16px + env(safe-area-inset-bottom,0px))!important}
 }
 </style>
 </head>
