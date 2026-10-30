@@ -122,7 +122,9 @@ async function login(id, password) {
   const key = id.trim().toLowerCase();
   let email = loginEmail(key);
   if (!key.includes("@")) {
-    try { const s = await getDoc(doc(fs, "logins", key)); if (s.exists() && s.data().email) email = s.data().email; } catch (_) {}
+    for (const k of [key, key.replace(/-/g, "")]) {
+      try { const s = await getDoc(doc(fs, "logins", k)); if (s.exists() && s.data().email) { email = s.data().email; break; } } catch (_) {}
+    }
   }
   return signInWithEmailAndPassword(auth, email, password);
 }

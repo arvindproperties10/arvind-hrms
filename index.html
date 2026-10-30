@@ -1638,7 +1638,7 @@ function leaveSplit(id, from, to){
   const paid = Math.max(0, Math.min(days.length, Math.floor(avail)));
   return {days:days.length, paid, unpaid:days.length - paid, avail:Math.max(0,avail)};
 }
-function nextCode(){ let max=0; for(const e of Object.values(S.emps)){ const n=parseInt(String(e.code||"").replace(/\D/g,""),10); if(n>max) max=n; } return "AP-" + String(max+1).padStart(3,"0"); }
+function nextCode(){ let max=0; for(const e of Object.values(S.emps)){ const n=parseInt(String(e.code||"").replace(/\D/g,""),10); if(n>max) max=n; } return "AP" + String(max+1).padStart(3,"0"); }
 const repName = e => e.reportingTo==="ceo" ? "CEO" : (S.emps[e.reportingTo]?.name || "");
 const isAuthority = e => isTL(e) || /manager|head|director|\bceo\b|\bmd\b|\bgm\b|founder|proprietor|partner/i.test(e.designation||"");
 const isTL = e => e.dept==="Team Leader" || /team lead/i.test(e.designation||"");
@@ -1955,7 +1955,7 @@ function showGate(){
   else if(mode==="booterr") g.innerHTML = gateShell(`<h1>Can't connect</h1><p class="note" style="text-align:center">${esc(BOOTERR)}</p><button class="btn primary big" type="button" onclick="location.reload()">Try again</button>`);
   else if(mode==="login") g.innerHTML = `<form class="gatecard" id="gateForm" autocomplete="on">${gateShell("").replace(/^<div class="gatecard">|<\/div>$/g,"")}
     <h1>Sign in</h1><p class="note" style="margin:-6px 0 6px;text-align:center">People &amp; Payroll</p>
-    <div class="field"><label for="g_uid">Employee ID or email</label><input id="g_uid" type="text" autocomplete="username" autocapitalize="none" spellcheck="false" placeholder="e.g. AP-005" required></div>
+    <div class="field"><label for="g_uid">Employee ID or email</label><input id="g_uid" type="text" autocomplete="username" autocapitalize="none" spellcheck="false" placeholder="e.g. AP005" required></div>
     <div class="field"><label for="g_pw">Password</label><input id="g_pw" type="password" autocomplete="current-password" required></div>
     <p class="gateerr" id="gateErr" role="alert">${esc(gateErr)}</p>
     <button class="btn primary big" type="submit" id="g_go">Sign in</button>
@@ -2066,7 +2066,7 @@ function accessView(){
   </div>`;
   const empRow = u => { const e = S.emps[u.empId] || {}; return `<tr><td>${who({name:u.name}, e.designation||"")}</td><td class="code">${esc(u.loginId||"")}</td><td>${u.mustChange?`<span class="pill warn">Temporary password</span>`:`<span class="pill ok">Password set</span>`}</td><td>${u.consentAt?fmtD(u.consentAt.slice(0,10)):"—"}</td><td><div class="acts">${acts(u)}<button class="btn small" data-uact="staff" data-uid="${u.uid}" title="Give this person HR or management access">Make staff</button></div></td></tr>`; };
   return head("Users & access", `${staff.length} staff login${staff.length===1?"":"s"} · ${emps.length} employee login${emps.length===1?"":"s"}`, `<button class="btn" data-act="u-new" data-kind="staff">Add staff login</button><button class="btn primary" data-act="u-new" data-kind="employee">Add employee login</button>`) +
-    `<div class="banner info"><span>New logins get a temporary password and must choose their own the first time they sign in. Employees sign in with their Employee ID, for example <b>${esc((empList()[0]?.code)||"AP-001")}</b>.</span></div>` +
+    `<div class="banner info"><span>New logins get a temporary password and must choose their own the first time they sign in. Employees sign in with their Employee ID, for example <b>${esc((empList()[0]?.code)||"AP001")}</b>.</span></div>` +
     staff.map(staffCard).join("") +
     `<div class="panel"><div class="tt-head"><div><h2>Employee logins</h2><div class="sub">${missing.length ? `${missing.length} active employee${missing.length===1?"":"s"} without a login` : "Every active employee has a login"}</div></div><div class="acts">${emps.length?`<button class="btn" data-act="u-joinpw-open">Passwords from joining dates</button>`:""}${missing.length?`<button class="btn" data-act="u-bulk">Create logins for all ${missing.length}</button>`:""}</div></div>
       ${emps.length ? `<div class="scrollbox stickyhead"><table><thead><tr><th>Employee</th><th>Login</th><th>Password</th><th>Agreed to check-in notice</th><th></th></tr></thead><tbody>${emps.map(empRow).join("")}</tbody></table></div>` : `<p class="empty">No employee logins yet.</p>`}</div>` +
@@ -2984,7 +2984,7 @@ async function saveEmp(){
   const name=v("name"), code=v("code").toUpperCase();
   const msg = t => $("#empMsg").innerHTML = `<div class="confirm">${esc(t)}</div>`;
   if(!name) return msg("Enter the employee's full name.");
-  if(!/^[A-Z0-9-]{2,20}$/.test(code)) return msg("Employee ID can use letters, digits and hyphens, like AP-012.");
+  if(!/^[A-Z0-9-]{2,20}$/.test(code)) return msg("Employee ID can use letters and digits, like AP012.");
   let id = id0 || code.toLowerCase();
   if(Object.entries(S.emps).some(([k,o]) => k!==id0 && (o.code||"").toUpperCase()===code)) return msg(`${code} is already in use. Pick another employee ID.`);
   if(!id0 && S.emps[id]) id = "emp-" + Date.now().toString(36);
