@@ -1734,7 +1734,7 @@ body.dark .ck-selfie{box-shadow:0 0 0 4px rgba(255,255,255,.12),0 10px 26px -8px
       <a href="#myleave" data-v="myleave" hidden><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 16c0-6 4-11 12-12-1 8-6 12-12 12z"/><path d="M4 16l6-6"/></svg>My leave</a>
       <a href="#myslips" data-v="myslips" hidden><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M5 2.5h7l3 3v12H5z"/><path d="M8 9h4M8 12h4"/></svg>My payslips</a>
       <a href="#team" data-v="team" hidden><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="8" cy="7" r="3"/><path d="M2.5 17c.6-3 2.8-4.5 5.5-4.5s4.9 1.5 5.5 4.5"/><path d="M13 4.5a3 3 0 0 1 0 5M15 12.8c1.4.6 2.3 2 2.6 4.2"/></svg>Team directory</a>
-      <a href="#myinc" data-v="myinc" hidden><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 15l4.5-4.5 3 3L17 7"/><path d="M12.5 7H17v4.5"/></svg>My incentives</a>
+      <a href="#myinc" data-v="myinc" hidden style="display:none"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 15l4.5-4.5 3 3L17 7"/><path d="M12.5 7H17v4.5"/></svg>My incentives</a>
       <a href="#access" data-v="access" hidden><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="4" y="9" width="12" height="8" rx="2"/><path d="M7 9V6.5a3 3 0 0 1 6 0V9"/><circle cx="10" cy="13" r="1.2" fill="currentColor"/></svg>Users &amp; access</a>
     </nav>
     <div class="sessbox" id="sessbox" hidden></div>
@@ -1795,7 +1795,7 @@ const isStaffU = () => !!ME && ME.active!==false && (ME.role==="owner" || ME.rol
 const myEmp = () => (ME && ME.active!==false && ME.empId && S.emps[ME.empId]?.status!=="Exited") ? ME.empId : "";
 function perm(v){
   if(!ME || ME.active===false || ME.pending) return "none";
-  if(v==="myinc"){ const e = S.emps[myEmp()]; if(!myEmp() || (e && (NO_INCENTIVE.has(e.dept) || e.noIncentive))) return "none"; }
+  if(v==="myinc") return "none";   // incentives show on the Pay screen and payslip instead
   if(SELF_VIEWS.includes(v)) return myEmp() ? "edit" : "none";
   if(v==="selftest") return "edit";
   if(v==="team") return (myEmp() || isStaffU()) ? "edit" : "none";
@@ -2540,9 +2540,14 @@ myleave(){
     <h2 class="sect-h">My requests</h2><div class="panel daypanel">${mine.length ? mine.map(row).join("") : `<p class="empty">No leave requests yet.</p>`}</div>`;
 },
 myslips(){
-  const id = myEmp(); const list = Object.values(S.slips).filter(p => p.empId===id).sort((a,b) => (b.ym||"").localeCompare(a.ym||""));
-  const incHtml = canSee("myinc") ? `<h2 class="sect-h">Incentives</h2>` + MORE_VIEWS.myincBody() : "";
-  return head("Pay", "") + `<h2 class="sect-h">Payslips</h2>` + (list.length ? `<div class="cards">${list.map(p => `<div class="panel mcard"><div class="mc-top"><div><b>${monthName(p.ym)}</b><small>${p.paid} paid day${p.paid===1?"":"s"}${p.lateLop?` · ${p.lates} late marks`:""}</small></div><span class="mc-amt">${inr(p.net)}</span></div><button class="btn primary mc-btn" data-myslip="${p.ym}">Download payslip (PDF)</button></div>`).join("")}</div>` : `<div class="panel"><p class="empty">Payslips appear here once HR finalizes a month's payroll.</p></div>`) + incHtml;
+  const id = myEmp(); const months = new Set();
+  Object.values(S.slips).forEach(p => p.empId===id && months.add(p.ym)); Object.values(S.myinc).forEach(p => p.empId===id && months.add(p.ym));
+  const list = [...months].sort().reverse();
+  const card = ym => { const p = S.slips[`${id}_${ym}`], inc = S.myinc[`${id}_${ym}`];
+    return `<div class="panel mcard"><div class="mc-top"><div><b>${monthName(ym)}</b><small>${p ? `${p.paid} paid day${p.paid===1?"":"s"}${p.lateLop?` · ${p.lates} late marks`:""}` : "Salary not finalized yet"}</small></div>${p ? `<span class="mc-amt">${inr(p.net)}</span>` : ""}</div>
+      ${inc ? `<div class="mc-lines"><div><span>Incentive</span><b>${inr(inc.total)}</b></div><div><span>Incentive paid on</span><b>${fmtD(inc.payDate || incDue(ym))}</b></div></div>` : ""}
+      ${p ? `<button class="btn primary mc-btn" data-myslip="${ym}">Download payslip (PDF)</button>` : ""}</div>`; };
+  return head("Pay", "") + (list.length ? `<div class="cards">${list.map(card).join("")}</div>` : `<div class="panel"><p class="empty">Payslips appear here once HR finalizes a month's payroll.</p></div>`);
 },
 myinc(){
   const id = myEmp(); const list = Object.values(S.myinc).filter(p => p.empId===id).sort((a,b) => (b.ym||"").localeCompare(a.ym||""));
@@ -3484,6 +3489,9 @@ async function downloadSlip(id, btn, ymArg, rowArg){
   doc.setFontSize(8.5); doc.text("Rupees " + inWords(p.net) + " only", M+5, y+13.5);
   doc.setFont("helvetica","bold"); doc.setFontSize(16); doc.text(rs(p.net), W-M-5, y+11.5, {align:"right"});
   y += 28;
+  { const incT = rowArg ? (S.myinc[`${id}_${ym}`]?.total) : (S.inc[ym]?.status==="complete" ? S.inc[ym]?.final?.[id]?.total : null);
+    if(incT){ doc.setDrawColor(...line); doc.setFillColor(...soft); doc.roundedRect(M, y-6, W-2*M, 14, 3, 3, "F"); doc.setFont("helvetica","normal"); doc.setFontSize(10); doc.setTextColor(...ink);
+      doc.text("Incentive for " + monthName(ym) + " (paid separately on " + fmtD(incDue(ym)) + ")", M+5, y+2.5); doc.setFont("helvetica","bold"); doc.text(rs(incT), W-M-5, y+2.5, {align:"right"}); y += 16; } }
   if(p.unmarked){ doc.setFont("helvetica","normal"); doc.setFontSize(8.5); doc.setTextColor(...mute); doc.text(`${p.unmarked} day${p.unmarked>1?"s":""} without an attendance mark counted as paid.`, M, y); y += 6; }
   doc.setFont("helvetica","normal"); doc.setFontSize(8.5); doc.setTextColor(...mute);
   doc.text("This is a computer-generated payslip and does not require a signature.", W/2, 280, {align:"center"});
