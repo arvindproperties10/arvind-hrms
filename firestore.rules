@@ -1,0 +1,156 @@
+rules_version = '2';
+// Arvind Properties HRMS — Firestore security rules.
+// Paste this whole file into Firebase console → Firestore Database → Rules → Publish.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ---------- who is asking ----------
+    function signedIn() { return request.auth != null; }
+    function userPath() { return /databases/$(database)/documents/users/$(request.auth.uid); }
+    function hasMe() { return signedIn() && exists(userPath()); }
+    function me() { return get(userPath()).data; }
+    function active() { return hasMe() && me().get('active', false) == true; }
+    function isOwner() { return active() && me().role == 'owner'; }
+    function isStaff() { return active() && (me().role == 'owner' || me().role == 'staff'); }
+    function lvl(sec) { return isOwner() ? 'edit' : (isStaff() ? me().get('perms', {}).get(sec, 'none') : 'none'); }
+    function canRead(sec) { return lvl(sec) in ['view', 'edit']; }
+    function canEdit(sec) { return lvl(sec) == 'edit'; }
+    function canSeeCheckins() { return canRead('checkins') || canRead('attendance'); }
+    function myEmp() { return me().get('empId', ''); }
+    // an employee login that is switched on and whose employee record isn't marked Exited
+    function empOk() {
+      return active() && myEmp() != ''
+        && get(/databases/$(database)/documents/employees/$(myEmp())).data.get('status', 'Active') != 'Exited';
+    }
+    function mine(data) { return empOk() && data.empId == myEmp(); }
+
+    // today's date in India (server clock), as YYYY-MM-DD
+    function istDate() {
+      let t = request.time + duration.value(330, 'm');
+      return string(t.year()) + '-' + (t.month() < 10 ? '0' : '') + string(t.month()) + '-' + (t.day() < 10 ? '0' : '') + string(t.day());
+    }
+    // inside one of the three check-in places (a box slightly larger than the radius in the app)
+    function near(lat, lng, plat, plng, dlat, dlng) { return math.abs(lat - plat) <= dlat && math.abs(lng - plng) <= dlng; }
+    function inFence(p) {
+      return p.lat is number && p.lng is number && (
+        near(p.lat, p.lng, 12.97397, 77.51017, 0.0018, 0.0019)        // Head Office, 150 m
+        || near(p.lat, p.lng, 13.050315, 77.393156, 0.0032, 0.0033)   // Site Office, 300 m
+        || near(p.lat, p.lng, 12.979020, 77.504793, 0.0018, 0.0019)); // Home Office, 150 m
+    }
+    function validStamp(p) {
+      return p.keys().hasOnly(['t', 'lat', 'lng', 'acc', 'place', 'dist'])
+        && p.t == request.time && inFence(p) && p.place in ['ho', 'so', 'home'];
+    }
+
+    // ---------- set-up and logins ----------
+    match /meta/owner {
+      allow read: if signedIn();
+      allow create: if signedIn() && request.resource.data.uid == request.auth.uid
+        && existsAfter(userPath()) && getAfter(userPath()).data.role == 'owner';
+    }
+    match /users/{uid} {
+      allow read: if signedIn() && (request.auth.uid == uid || isOwner());
+      allow create: if isOwner()
+        || (signedIn() && request.auth.uid == uid && request.resource.data.role == 'owner'
+            && !exists(/databases/$(database)/documents/meta/owner)
+            && getAfter(/databases/$(database)/documents/meta/owner).data.uid == uid);
+      allow update: if isOwner()
+        || (active() && request.auth.uid == uid
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['consentAt', 'mustChange'])
+            && request.resource.data.get('mustChange', false) == false);
+      allow delete: if isOwner();
+    }
+    match /logins/{id} {
+      allow get: if true;          // needed before sign-in to find the login for an Employee ID
+      allow list, write: if isOwner();
+    }
+    match /config/app {
+      allow read: if signedIn() && (isStaff() || empOk());
+      allow write: if canEdit('attendance');
+    }
+
+    // ---------- HR records ----------
+    match /employees/{id} {
+      allow read: if isStaff() || (empOk() && id == myEmp());
+      allow write: if canEdit('employees');
+    }
+    match /attendance/{d} {
+      allow read: if isStaff();
+      allow write: if canEdit('attendance');
+    }
+    match /attfix/{id} {
+      allow read: if isStaff() || mine(resource.data);
+      allow write: if canEdit('attendance');
+    }
+    match /holidays/{id} {
+      allow read: if isStaff() || empOk();
+      allow write: if canEdit('leave');
+    }
+    match /leaves/{id} {
+      allow read: if isStaff() || mine(resource.data);
+      allow create: if canEdit('leave') || (mine(request.resource.data) && request.resource.data.status == 'pending');
+      allow update: if canEdit('leave')
+        || (isStaff() && me().get('approveLeave', false) == true
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'decidedOn', 'decidedBy']));
+      allow delete: if canEdit('leave') || (mine(resource.data) && resource.data.status == 'pending');
+    }
+    match /data/hr/salaries/{id} {
+      allow read: if canRead('payroll');
+      allow write: if canEdit('payroll');
+    }
+    match /data/hr/payruns/{id} {
+      allow read: if canRead('payroll');
+      allow write: if canEdit('payroll');
+    }
+    match /data/hr/incentives/{id} {
+      allow read: if canRead('incentives');
+      allow write: if canEdit('incentives');
+    }
+    match /data/hr/registrations/{id} {
+      allow read: if canRead('incentives');
+      allow write: if canEdit('incentives');
+    }
+    match /data/hr/config/{id} {
+      allow read: if isStaff();
+      allow write: if (id == 'incentive' && canEdit('incentives')) || (id == 'payroll' && canEdit('payroll'));
+    }
+    match /payslips/{id} {
+      allow read: if canRead('payroll') || mine(resource.data);
+      allow write: if canEdit('payroll');
+    }
+    match /myinc/{id} {
+      allow read: if canRead('incentives') || mine(resource.data);
+      allow write: if canEdit('incentives');
+    }
+
+    // ---------- GPS check-in ----------
+    match /checkins/{id} {
+      allow read: if isStaff() || mine(resource.data);
+      // check in: own record, today's date, server time, inside a check-in place
+      allow create: if canEdit('attendance')
+        || (mine(request.resource.data)
+            && id == istDate() + '_' + myEmp()
+            && request.resource.data.date == istDate()
+            && request.resource.data.by == request.auth.uid
+            && request.resource.data.keys().hasOnly(['empId', 'date', 'by', 'in'])
+            && validStamp(request.resource.data['in']));
+      // check out: once, the same day, only the 'out' part
+      allow update: if canEdit('attendance')
+        || (mine(resource.data)
+            && resource.data.date == istDate()
+            && !('out' in resource.data)
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['out'])
+            && validStamp(request.resource.data.out));
+      allow delete: if canEdit('attendance');
+    }
+    match /selfies/{id} {
+      allow read: if canSeeCheckins();
+      allow create: if mine(request.resource.data)
+        && id == istDate() + '_' + myEmp() + '_in'
+        && request.resource.data.date == istDate()
+        && request.resource.data.img is string
+        && request.resource.data.img.size() < 160000;
+      allow delete: if canEdit('attendance');
+    }
+  }
+}
