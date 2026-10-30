@@ -126,6 +126,12 @@ async function login(id, password) {
   }
   return signInWithEmailAndPassword(auth, email, password);
 }
+async function signUp(email, password) {
+  return createUserWithEmailAndPassword(auth, email.trim().toLowerCase(), password);
+}
+async function ownerExists() {
+  try { const s = await getDoc(doc(fs, "meta", "owner")); return s.exists(); } catch (_) { return true; }
+}
 async function changePassword(current, next) {
   const u = auth.currentUser; if (!u) throw new Error("Not signed in");
   await reauthenticateWithCredential(u, EmailAuthProvider.credential(u.email, current));
@@ -133,7 +139,7 @@ async function changePassword(current, next) {
 }
 
 window.FB = {
-  db, auth, loginEmail, createLogin, login, changePassword,
+  db, auth, loginEmail, createLogin, login, changePassword, signUp, ownerExists,
   logout: () => signOut(auth),
   onAuth: cb => onAuthStateChanged(auth, cb),
   config: firebaseConfig

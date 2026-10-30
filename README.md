@@ -26,13 +26,11 @@ The server (Firestore rules) enforces these limits, not just the screens.
 ## One-time setup
 
 1. **Firestore rules** – Firebase console → Firestore Database → Rules → replace everything with the contents of `firestore.rules` → Publish.
-2. **Administrator login** – Firebase console → Authentication → Users → Add user → your email + a strong password.
-3. **GitHub Pages** – this repository → Settings → Pages → Source: *Deploy from a branch* → Branch `main`, folder `/ (root)` → Save. The site appears at `https://arvindproperties10.github.io/arvind-hrms/` after a minute or two.
-4. **Allow the site to sign in** – Firebase console → Authentication → Settings → Authorized domains → Add domain → `arvindproperties10.github.io`.
-5. Open the site, sign in with the administrator email, enter your name → you become the administrator.
-6. Users & access → *Bring over data from the old HRMS* → choose `hrms-migration.json` (kept privately, never in this repository).
-7. Users & access → add staff logins, then *Create logins for all* employees. A CSV of temporary passwords downloads; hand them out privately. Everyone sets their own password at first sign-in.
-8. Run the security self-test: sign in as a test employee and open `…/arvind-hrms/#selftest`. Every line should say **Blocked** (the last three **Allowed**).
+2. **GitHub Pages** – this repository → Settings → Pages → Source: *Deploy from a branch* → Branch `main`, folder `/ (root)` → Save. The site appears at `https://arvindproperties10.github.io/arvind-hrms/` after a minute or two.
+3. Open the site → **First time? Set up the administrator account** → enter your name, email and a password. This option disappears once an administrator exists.
+4. Users & access → *Bring over data from the old HRMS* → choose `hrms-migration.json` (kept privately, never in this repository).
+5. Users & access → add staff logins, then *Create logins for all* employees. A CSV of temporary passwords downloads; hand them out privately. Everyone sets their own password at first sign-in.
+6. Run the security self-test: sign in as a test employee and open `…/arvind-hrms/#selftest`. Every line should say **Blocked** (the last three **Allowed**).
 
 ## Installing on a phone
 

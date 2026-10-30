@@ -44,7 +44,7 @@ service cloud.firestore {
 
     // ---------- set-up and logins ----------
     match /meta/owner {
-      allow read: if signedIn();
+      allow get: if true;           // lets the sign-in page offer first-time set-up only while no administrator exists
       allow create: if signedIn() && request.resource.data.uid == request.auth.uid
         && existsAfter(userPath()) && getAfter(userPath()).data.role == 'owner';
     }

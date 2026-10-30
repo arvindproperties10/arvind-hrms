@@ -1942,12 +1942,12 @@ function renderShell(){
   const n = ME.name || ME.email || "";
   box.innerHTML = `<span class="av sm">${esc(initials(n))}</span><span class="sb-name">${esc(n)}<small>${esc(roleLabel(ME))}</small><button type="button" data-act="pw-open" class="sb-pw">Password</button></span><button class="btn small" data-act="signout">Sign out</button>`;
 }
-let gateErr = "", gateMode = "", LAST_PW = "", BOOTERR = "";
+let gateErr = "", gateMode = "", LAST_PW = "", BOOTERR = "", NOOWNER = false;
 function gateShell(inner){ const logo = document.querySelector(document.body.classList.contains("dark") ? ".logo-dark" : ".logo-full:not(.logo-dark)");
   return `<div class="gatecard"><img src="${logo?logo.src:""}" alt="Arvind Properties" class="gatelogo">${inner}</div>`; }
 function showGate(){
   const g = $("#gate"); g.hidden = false;
-  let mode = !authReady ? "loading" : BOOTERR ? "booterr" : !ME ? "login" : ME.pending==="claim" ? "claim" : ME.pending ? "nolink" : ME.active===false ? "off" : ME.mustChange ? "newpw" : "";
+  let mode = !authReady ? "loading" : BOOTERR ? "booterr" : !ME ? (gateMode==="setup" && NOOWNER ? "setup" : "login") : ME.pending==="claim" ? "claim" : ME.pending ? "nolink" : ME.active===false ? "off" : ME.mustChange ? "newpw" : "";
   if(g.dataset.on===mode && mode!=="loading"){ const e = $("#gateErr"); if(e) e.textContent = gateErr; return; }
   g.dataset.on = mode;
   const out = `<button class="btn ghost" data-act="signout" type="button">Sign out</button>`;
@@ -1959,7 +1959,17 @@ function showGate(){
     <div class="field"><label for="g_pw">Password</label><input id="g_pw" type="password" autocomplete="current-password" required></div>
     <p class="gateerr" id="gateErr" role="alert">${esc(gateErr)}</p>
     <button class="btn primary big" type="submit" id="g_go">Sign in</button>
-    <p class="note" style="margin:0;text-align:center">Forgot your password? Ask HR or the administrator to reset it.</p></form>`;
+    <p class="note" style="margin:0;text-align:center">Forgot your password? Ask HR or the administrator to reset it.</p>
+    ${NOOWNER ? `<button type="button" class="btn" data-act="setup-open">First time? Set up the administrator account</button>` : ""}</form>`;
+  else if(mode==="setup") g.innerHTML = `<form class="gatecard" id="setupForm" autocomplete="on">${gateShell("").replace(/^<div class="gatecard">|<\/div>$/g,"")}
+    <h1>Set up the HRMS</h1><p class="note" style="margin:-6px 0 6px;text-align:center">Create the administrator account. The administrator manages every login and setting. This screen disappears once it's done.</p>
+    <div class="field"><label for="su_name">Your name</label><input id="su_name" type="text" autocomplete="name" required></div>
+    <div class="field"><label for="su_email">Email</label><input id="su_email" type="email" autocomplete="username" autocapitalize="none" spellcheck="false" required></div>
+    <div class="field"><label for="su_pw">Password</label><input id="su_pw" type="password" autocomplete="new-password" minlength="8" required><span class="note">At least 8 characters. Use one you don't use anywhere else.</span></div>
+    <div class="field"><label for="su_pw2">Confirm password</label><input id="su_pw2" type="password" autocomplete="new-password" required></div>
+    <p class="gateerr" id="gateErr" role="alert">${esc(gateErr)}</p>
+    <button class="btn primary big" type="submit" id="su_go">Create administrator</button>
+    <button type="button" class="btn ghost" data-act="setup-close">Back to sign in</button></form>`;
   else if(mode==="claim") g.innerHTML = gateShell(`<h1>Set up the HRMS</h1><p class="note" style="text-align:center">You're the first person to sign in, so this login (${esc(ME.email||"")}) becomes the <b>administrator</b>. The administrator manages every login and setting.</p>
     <div class="field"><label for="g_name">Your name</label><input id="g_name" type="text" placeholder="e.g. Sushanth"></div><p class="gateerr" id="gateErr" role="alert">${esc(gateErr)}</p>
     <button class="btn primary big" type="button" data-act="claim">Make me the administrator</button>${out}`);
@@ -1999,6 +2009,21 @@ async function claimOwner(btn){
       {op:"set", path:"meta/owner", data:{uid:ME.uid, email:ME.email||"", at:new Date().toISOString()}}]);
     location.reload();
   }catch(e){ btn.disabled = false; gateErr = "Couldn't set up. Check that the security rules are published, then try again."; $("#gateErr").textContent = gateErr; }
+}
+async function doSetup(){
+  const name = $("#su_name").value.trim(), email = $("#su_email").value.trim(), p1 = $("#su_pw").value, p2 = $("#su_pw2").value; const btn = $("#su_go");
+  const err = t => { gateErr = t; $("#gateErr").textContent = t; };
+  if(!name) return err("Enter your name."); if(p1.length < 8) return err("Use at least 8 characters."); if(p1 !== p2) return err("The two passwords don't match.");
+  btn.disabled = true; btn.textContent = "Setting up…";
+  try{
+    const cred = await window.FB.signUp(email, p1); const uid = cred.user.uid;
+    await window.FB.db.batch([
+      {op:"set", path:"users/"+uid, data:{uid, name, role:"owner", email:email.toLowerCase(), active:true, createdAt:new Date().toISOString()}},
+      {op:"set", path:"meta/owner", data:{uid, email:email.toLowerCase(), at:new Date().toISOString()}}]);
+    location.reload();
+  }catch(e){ btn.disabled = false; btn.textContent = "Create administrator";
+    const c = e && e.code || "";
+    err(c==="auth/email-already-in-use" ? "That email already has an account. Go back and sign in with it." : c==="auth/invalid-email" ? "That email doesn't look right." : c==="auth/weak-password" ? "Choose a stronger password." : c==="auth/operation-not-allowed" ? "Email sign-in is switched off in Firebase." : "Couldn't finish set-up. Check that the security rules are published, then try again."); }
 }
 function signOut(){ closeDrawer(); gateErr = ""; LAST_PW = ""; ckReset(); window.FB?.logout(); }
 function pwDrawer(){
@@ -3320,6 +3345,8 @@ document.addEventListener("click", async ev => {
   else if(a==="ci-today"||a==="ci-clear"){ UI.ciDate=today; render(); }
   else if(a==="golive-save") saveGoLive();
   else if(a==="golive-open") goLiveDrawer();
+  else if(a==="setup-open"){ gateMode="setup"; gateErr=""; render(); }
+  else if(a==="setup-close"){ gateMode=""; gateErr=""; render(); }
   else if(a==="my-mprev"||a==="my-mnext"){ const n = shiftYm(UI.myMonth||today.slice(0,7), a==="my-mprev"?-1:1); if(n<=today.slice(0,7)){ UI.myMonth=n; render(); } }
   else if(a==="ml-apply") myLeaveApply(t);
   else if(a==="selftest-run") runSelfTest();
@@ -3370,7 +3397,7 @@ document.addEventListener("change", ev => {
 setInterval(() => { const c=document.getElementById("clock"); if(c) c.textContent = tmIST(new Date()); }, 15000);
 // refresh day statuses around shift boundaries (late cut-off, end of day absences)
 setInterval(() => { if(ME && !$("#overlay").innerHTML && CK.step==="idle") render(); }, 300000);
-document.addEventListener("submit", ev => { if(ev.target.id==="gateForm"){ ev.preventDefault(); doLogin(); } else if(ev.target.id==="newPwForm"){ ev.preventDefault(); doNewPw(); } });
+document.addEventListener("submit", ev => { if(ev.target.id==="gateForm"){ ev.preventDefault(); doLogin(); } else if(ev.target.id==="newPwForm"){ ev.preventDefault(); doNewPw(); } else if(ev.target.id==="setupForm"){ ev.preventDefault(); doSetup(); } });
 document.addEventListener("keydown", async ev => {
   if(ev.key==="Enter" && ev.target.matches && ev.target.matches("#incModal input")){
     ev.preventDefault();
@@ -3425,6 +3452,7 @@ route();
     const blob = data instanceof Blob ? data : new Blob([data], {type}); const url = URL.createObjectURL(blob);
     const a = document.createElement("a"); a.href = url; a.download = filename; document.body.appendChild(a); a.click();
     setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 8000); return {status:"saved"}; } };
+  NOOWNER = !(await FBX.ownerExists());
   connected = true; render();
   let profUnsub = null;
   const applyProfile = (uid, p) => {
