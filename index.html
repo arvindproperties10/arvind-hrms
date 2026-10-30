@@ -3888,7 +3888,12 @@ route();
 })();
 </script>
 <script>
-if("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(() => {}));
+if("serviceWorker" in navigator){
+  // when a new version of the app is installed in the background, reload once so it shows straight away
+  let hadController = !!navigator.serviceWorker.controller, reloaded = false;
+  navigator.serviceWorker.addEventListener("controllerchange", () => { if(hadController && !reloaded){ reloaded = true; location.reload(); } hadController = true; });
+  window.addEventListener("load", () => navigator.serviceWorker.register("sw.js", {updateViaCache:"none"}).then(r => { r.update().catch(()=>{}); document.addEventListener("visibilitychange", () => { if(document.visibilityState==="visible") r.update().catch(()=>{}); }); }).catch(() => {}));
+}
 </script>
 </body>
 </html>
