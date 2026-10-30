@@ -2362,6 +2362,7 @@ function accessView(){
   const acts = u => u.uid===ME.uid ? `<span class="pill ok">You</span>` : `${u.active===false?`<span class="pill bad">Switched off</span>`:`<span class="pill ok">Active</span>`}
       <button class="btn small" data-uact="pw" data-uid="${u.uid}">Reset password</button>
       <button class="btn small" data-uact="toggle" data-uid="${u.uid}">${u.active===false?"Switch on":"Switch off"}</button>
+      ${u.role==="owner" ? `<button class="btn small" data-uact="unadmin" data-uid="${u.uid}">Remove administrator</button>` : u.role==="staff" ? `<button class="btn small" data-uact="admin" data-uid="${u.uid}">Make administrator</button>` : ""}
       <button class="btn small ghost danger" data-uact="del" data-uid="${u.uid}">Delete</button>`;
   const staffCard = u => `<div class="panel usercard">
     <div class="uc-head"><div class="who"><span class="av">${esc(initials(u.name))}</span><div><b>${esc(u.name)}</b><small>${esc(roleLabel(u))} · Login <span class="code">${esc(u.loginId||u.email||"")}</span></small></div></div><div class="acts">${acts(u)}</div></div>
@@ -2445,6 +2446,8 @@ let uDelArmed = "";
 async function userAction(btn){
   const uid = btn.dataset.uid, u = USERS[uid]; if(!u) return; const act = btn.dataset.uact;
   if(act==="pw") return resetPwDrawer(uid);
+  if(act==="admin" || act==="unadmin"){ if(uDelArmed!==uid+act){ uDelArmed = uid+act; btn.textContent = act==="admin" ? "Tap again: full access" : "Tap again to remove"; setTimeout(()=>{ uDelArmed=""; render(); }, 4000); return; }
+    uDelArmed = ""; try{ await db.doc("users/"+uid).update({role: act==="admin" ? "owner" : "staff", perms: u.perms || {dashboard:"view"}}); toast(act==="admin" ? `${u.name} is now an administrator` : `${u.name} is no longer an administrator`); }catch(e){ fail(e); } return; }
   if(act==="staff"){ try{ await db.doc("users/"+uid).update({role:"staff", title:S.emps[u.empId]?.designation||"", perms:{dashboard:"view"}}); toast(`${u.name} is now a staff login. Set their access above.`); }catch(e){ fail(e); } return; }
   if(act==="toggle"){ try{ await db.doc("users/"+uid).update({active: u.active===false}); toast(u.active===false ? "Login switched on" : "Login switched off"); }catch(e){ fail(e); } return; }
   if(act==="del"){ if(uDelArmed!==uid){ uDelArmed = uid; btn.textContent = "Click again to delete"; setTimeout(()=>{ uDelArmed=""; render(); }, 4000); return; }
