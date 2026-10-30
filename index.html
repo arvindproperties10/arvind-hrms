@@ -2064,11 +2064,11 @@ function accessView(){
     <label class="ceo-flag"><input type="checkbox" data-uceo="${u.uid}" ${u.approveLeave?"checked":""}> <span><b>CEO · approves leave</b><small>Can approve or reject leave requests</small></span></label>
     <div class="permgrid">${SECTIONS.map(([k,l])=>`<div class="field"><label for="pm_${u.uid}_${k}">${l}</label><select id="pm_${u.uid}_${k}" data-uperm="${u.uid}" data-sec="${k}">${LEVELS.map(([v,t])=>`<option value="${v}" ${((u.perms||{})[k] || (k==="checkins" ? (u.perms||{}).attendance : "") || "none")===v?"selected":""}>${t}</option>`).join("")}</select></div>`).join("")}</div>`}
   </div>`;
-  const empRow = u => { const e = S.emps[u.empId] || {}; return `<tr><td>${who({name:u.name}, e.designation||"")}</td><td class="code">${esc(u.loginId||"")}</td><td>${u.mustChange?`<span class="pill warn">Temporary password</span>`:`<span class="pill ok">Password set</span>`}</td><td>${u.consentAt?fmtD(u.consentAt.slice(0,10)):"—"}</td><td><div class="acts">${acts(u)}</div></td></tr>`; };
+  const empRow = u => { const e = S.emps[u.empId] || {}; return `<tr><td>${who({name:u.name}, e.designation||"")}</td><td class="code">${esc(u.loginId||"")}</td><td>${u.mustChange?`<span class="pill warn">Temporary password</span>`:`<span class="pill ok">Password set</span>`}</td><td>${u.consentAt?fmtD(u.consentAt.slice(0,10)):"—"}</td><td><div class="acts">${acts(u)}<button class="btn small" data-uact="staff" data-uid="${u.uid}" title="Give this person HR or management access">Make staff</button></div></td></tr>`; };
   return head("Users & access", `${staff.length} staff login${staff.length===1?"":"s"} · ${emps.length} employee login${emps.length===1?"":"s"}`, `<button class="btn" data-act="u-new" data-kind="staff">Add staff login</button><button class="btn primary" data-act="u-new" data-kind="employee">Add employee login</button>`) +
     `<div class="banner info"><span>New logins get a temporary password and must choose their own the first time they sign in. Employees sign in with their Employee ID, for example <b>${esc((empList()[0]?.code)||"AP-001")}</b>.</span></div>` +
     staff.map(staffCard).join("") +
-    `<div class="panel"><div class="tt-head"><div><h2>Employee logins</h2><div class="sub">${missing.length ? `${missing.length} active employee${missing.length===1?"":"s"} without a login` : "Every active employee has a login"}</div></div>${missing.length?`<button class="btn" data-act="u-bulk">Create logins for all ${missing.length}</button>`:""}</div>
+    `<div class="panel"><div class="tt-head"><div><h2>Employee logins</h2><div class="sub">${missing.length ? `${missing.length} active employee${missing.length===1?"":"s"} without a login` : "Every active employee has a login"}</div></div><div class="acts">${emps.length?`<button class="btn" data-act="u-joinpw-open">Passwords from joining dates</button>`:""}${missing.length?`<button class="btn" data-act="u-bulk">Create logins for all ${missing.length}</button>`:""}</div></div>
       ${emps.length ? `<div class="scrollbox stickyhead"><table><thead><tr><th>Employee</th><th>Login</th><th>Password</th><th>Agreed to check-in notice</th><th></th></tr></thead><tbody>${emps.map(empRow).join("")}</tbody></table></div>` : `<p class="empty">No employee logins yet.</p>`}</div>` +
     `<div class="panel"><h2>Bring over data from the old HRMS</h2><p class="note">Choose the migration file Claude gave you (hrms-migration.json). Records with the same ID are replaced. Do this once, before people start using the app.</p><div class="acts"><label class="btn">Choose file<input type="file" id="impJson" accept=".json,application/json" hidden></label><span class="note" id="impStatus"></span></div></div>` +
     `<div class="panel"><h2>Security self-test</h2><p class="note">Create a test employee login, sign in with it, and open <b>${esc(location.origin+location.pathname)}#selftest</b>. The test tries to read and change things an employee shouldn't, and every line should come back <b>Blocked</b>.</p></div>`;
@@ -2138,6 +2138,7 @@ let uDelArmed = "";
 async function userAction(btn){
   const uid = btn.dataset.uid, u = USERS[uid]; if(!u) return; const act = btn.dataset.uact;
   if(act==="pw") return resetPwDrawer(uid);
+  if(act==="staff"){ try{ await db.doc("users/"+uid).update({role:"staff", title:S.emps[u.empId]?.designation||"", perms:{dashboard:"view"}}); toast(`${u.name} is now a staff login. Set their access above.`); }catch(e){ fail(e); } return; }
   if(act==="toggle"){ try{ await db.doc("users/"+uid).update({active: u.active===false}); toast(u.active===false ? "Login switched on" : "Login switched off"); }catch(e){ fail(e); } return; }
   if(act==="del"){ if(uDelArmed!==uid){ uDelArmed = uid; btn.textContent = "Click again to delete"; setTimeout(()=>{ uDelArmed=""; render(); }, 4000); return; }
     uDelArmed = ""; try{ const ops = [{op:"delete", path:"users/"+uid}]; if(u.loginId) ops.push({op:"delete", path:"logins/"+u.loginId}); await db.batch(ops); toast("Login deleted"); }catch(e){ fail(e); } }
@@ -2149,17 +2150,40 @@ function resetPwDrawer(uid){
   <div class="field"><label for="ur_pw">Temporary password</label><input id="ur_pw" type="text" autocomplete="off" value="${tempPw()}"></div><div id="uMsg"></div></div>
   <footer><button class="btn" data-act="close">Cancel</button><button class="btn primary" data-act="u-reset">Reset password</button></footer>`);
 }
+// Firebase can't change another person's password from the browser, so a fresh account takes over the same login ID.
+async function resetLogin(u, pw){
+  const {uid:nu, email} = await window.FB.createLogin(`${u.loginId}.${Date.now().toString(36)}`, pw);
+  const prof = {...u, uid:nu, email, mustChange:true, resetAt:new Date().toISOString(), consentAt:u.consentAt||null};
+  await db.batch([{op:"set", path:"users/"+nu, data:prof}, {op:"set", path:"logins/"+u.loginId, data:{email, uid:nu}}, {op:"delete", path:"users/"+u.uid}]);
+}
 async function doResetPw(btn){
   const uid = $("#uReset").dataset.uid, u = USERS[uid]; const pw = $("#ur_pw").value.trim(); const msg = t => { $("#uMsg").innerHTML = `<div class="confirm">${esc(t)}</div>`; };
   if(pw.length < 8) return msg("Use at least 8 characters."); if(!u.loginId) return msg("This login has no login ID to keep.");
   btn.disabled = true;
-  try{
-    // Firebase can't change another person's password from the browser, so a fresh account takes over the same login ID.
-    const {uid:nu, email} = await window.FB.createLogin(`${u.loginId}.${Date.now().toString(36)}`, pw);
-    const prof = {...u, uid:nu, email, mustChange:true, resetAt:new Date().toISOString()}; delete prof.consentAt;
-    await db.batch([{op:"set", path:"users/"+nu, data:{...prof, consentAt:u.consentAt||null}}, {op:"set", path:"logins/"+u.loginId, data:{email, uid:nu}}, {op:"delete", path:"users/"+uid}]);
-    closeDrawer(); toast(`Password reset for ${u.name}`);
-  }catch(e){ btn.disabled = false; msg("Couldn't reset. Check your connection and try again."); }
+  try{ await resetLogin(u, pw); closeDrawer(); toast(`Password reset for ${u.name}`); }
+  catch(e){ btn.disabled = false; msg("Couldn't reset. Check your connection and try again."); }
+}
+// joining date as a temporary password, e.g. 30 Jun 2025 → 30062025 (DDMMYYYY) or 20250630 (YYYYMMDD)
+const joinPw = (e, fmt) => { const [y,m,d] = String(e.joined||"").split("-"); if(!y||!m||!d) return ""; return fmt==="ymd" ? `${y}${m}${d}` : `${d}${m}${y}`; };
+function joinPwDrawer(){
+  const list = Object.values(USERS).filter(u => u.empId && u.uid!==ME.uid);
+  const ex = list.map(u => S.emps[u.empId]).find(e => e && e.joined) || {joined:"2025-06-30", name:"Example"};
+  const skip = list.filter(u => !S.emps[u.empId]?.joined).map(u => u.name);
+  openDrawer(`<header><h3>Passwords from joining dates</h3><button class="btn ghost" data-act="close" aria-label="Close">✕</button></header>
+  <div class="body"><p class="note" style="margin:0">Every login linked to an employee record (${list.length}) gets their joining date as a new temporary password, written without hyphens. They keep their login ID and must choose their own password at the next sign-in.</p>
+    <div class="field"><label for="jp_fmt">Format</label><select id="jp_fmt"><option value="dmy">Day Month Year: ${esc(ex.name)} → ${joinPw(ex,"dmy")}</option><option value="ymd">Year Month Day: ${esc(ex.name)} → ${joinPw(ex,"ymd")}</option></select></div>
+    ${skip.length ? `<p class="note" style="margin:0">Skipped, no joining date: ${esc(skip.join(", "))}.</p>` : ""}
+    <p class="note" style="margin:0">Anyone who knows a colleague's joining date could sign in as them until they change it, so ask everyone to sign in and set their own password soon.</p>
+    <div id="uMsg"></div></div>
+  <footer><button class="btn" data-act="close">Cancel</button><button class="btn primary" data-act="u-joinpw">Reset ${list.length - skip.length} passwords</button></footer>`);
+}
+async function doJoinPw(btn){
+  const fmt = $("#jp_fmt").value; const list = Object.values(USERS).filter(u => u.empId && u.uid!==ME.uid && S.emps[u.empId]?.joined && u.loginId);
+  btn.disabled = true; let ok = 0; const bad = [];
+  for(const u of list){ btn.textContent = `Resetting ${ok+bad.length+1} of ${list.length}…`;
+    try{ await resetLogin(u, joinPw(S.emps[u.empId], fmt)); ok++; }catch(e){ bad.push(u.name); }
+    await new Promise(r => setTimeout(r, 350)); }
+  closeDrawer(); toast(bad.length ? `${ok} reset · failed: ${bad.join(", ")}` : `${ok} passwords reset to joining dates`);
 }
 async function setUserField(uid, patch, note){ if(!USERS[uid]) return; USERS[uid] = deepMerge(USERS[uid], patch); try{ await db.doc("users/"+uid).update(patch); if(note) toast(note); }catch(e){ fail(e); } }
 async function importJson(file){
@@ -3333,6 +3357,8 @@ document.addEventListener("click", async ev => {
   else if(a==="u-save") saveNewUser(t);
   else if(a==="u-bulk") bulkLogins(t);
   else if(a==="u-reset") doResetPw(t);
+  else if(a==="u-joinpw-open") joinPwDrawer();
+  else if(a==="u-joinpw") doJoinPw(t);
   else if(a==="pw-open") pwDrawer();
   else if(a==="pw-save") savePw(t);
   else if(a==="claim") claimOwner(t);
