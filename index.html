@@ -1497,7 +1497,7 @@ body.dark .dr-date{background:rgba(61,139,255,.14)}
   body.dark .tabbar a[aria-current="page"]{background:rgba(61,139,255,.16)}
   body.has-tabbar main{padding-bottom:calc(96px + env(safe-area-inset-bottom,0px))!important}
   /* bigger, friendlier check-in on phones */
-  body.emp-app .head h1{font-size:24px}
+  body.has-tabbar .head h1{font-size:24px}
   .ck-card{padding:22px 18px!important}
   .btn.ck-go,.ck-file{width:100%;min-height:58px;font-size:18px}
   .ck-acts{flex-direction:column;align-items:stretch;width:100%}
@@ -1531,27 +1531,27 @@ body.dark .tag.ok{color:#34c759}body.dark .tag.warn{color:#ff9f0a}body.dark .tag
 
 /* ---- liquid glass, employee app on phones ---- */
 @media (max-width:760px){
-  body.emp-app .head{background:none!important;box-shadow:none!important;border:0!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important;padding:6px 6px 0!important;min-height:0!important;gap:10px!important;flex-direction:column;align-items:stretch!important}
-  body.emp-app .head::before,body.emp-app .head::after{display:none!important}
-  body.emp-app .head h1{font-size:28px!important;letter-spacing:-.03em}
-  body.emp-app .head p{font-size:13.5px}
-  body.emp-app .head .tools{width:100%}
-  body.emp-app .head .monthbar{width:100%;justify-content:space-between}
-  body.emp-app .panel,body.emp-app .sumstrip{
+  body.has-tabbar .head{background:none!important;box-shadow:none!important;border:0!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important;padding:6px 6px 0!important;min-height:0!important;gap:10px!important;flex-direction:column;align-items:stretch!important}
+  body.has-tabbar .head::before,body.has-tabbar .head::after{display:none!important}
+  body.has-tabbar .head h1{font-size:28px!important;letter-spacing:-.03em}
+  body.has-tabbar .head p{font-size:13.5px}
+  body.has-tabbar .head .tools{width:100%}
+  body.has-tabbar .head .monthbar{width:100%;justify-content:space-between}
+  body.has-tabbar .panel,body.has-tabbar .sumstrip{
     background:linear-gradient(180deg,rgba(255,255,255,.74),rgba(255,255,255,.52))!important;
     -webkit-backdrop-filter:blur(26px) saturate(185%)!important;backdrop-filter:blur(26px) saturate(185%)!important;
     border:1px solid rgba(255,255,255,.75)!important;border-radius:26px!important;
     box-shadow:0 14px 34px -22px rgba(16,42,94,.45),0 2px 6px -2px rgba(16,42,94,.08),inset 0 1px 0 rgba(255,255,255,.95)!important}
-  body.emp-app .panel::before,body.emp-app .panel::after,body.emp-app .sumstrip::before,body.emp-app .sumstrip::after{display:none!important}
-  body.emp-app .sumstrip > div + div{border-left-color:rgba(16,42,94,.08)}
-  body.emp-app .dayrow{border-bottom-color:rgba(16,42,94,.07)}
-  body.emp-app .dr-date{background:rgba(0,113,227,.09);border-radius:15px}
-  body.emp-app .panel h2{font-size:16px}
+  body.has-tabbar .panel::before,body.has-tabbar .panel::after,body.has-tabbar .sumstrip::before,body.has-tabbar .sumstrip::after{display:none!important}
+  body.has-tabbar .sumstrip > div + div{border-left-color:rgba(16,42,94,.08)}
+  body.has-tabbar .dayrow{border-bottom-color:rgba(16,42,94,.07)}
+  body.has-tabbar .dr-date{background:rgba(0,113,227,.09);border-radius:15px}
+  body.has-tabbar .panel h2{font-size:16px}
   body.dark.emp-app .panel,body.dark.emp-app .sumstrip{
     background:linear-gradient(180deg,rgba(44,47,58,.72),rgba(24,26,33,.58))!important;border-color:rgba(255,255,255,.10)!important;
     box-shadow:0 14px 34px -22px rgba(0,0,0,.7),inset 0 1px 0 rgba(255,255,255,.08)!important}
   body.dark.emp-app .sumstrip > div + div,body.dark.emp-app .dayrow{border-color:rgba(255,255,255,.07)}
-  body.emp-app main{gap:14px!important}
+  body.has-tabbar main{gap:14px!important}
 }
 /* ---- phones: use more of the screen width ---- */
 @media (max-width:760px){
@@ -1559,9 +1559,9 @@ body.dark .tag.ok{color:#34c759}body.dark .tag.warn{color:#ff9f0a}body.dark .tag
   .mtop{margin-left:6px!important;margin-right:6px!important;left:0!important;right:0!important}
   body.has-tabbar .tabbar{left:6px;right:6px}
   .panel,.tablewrap,.sumstrip{margin-left:0!important;margin-right:0!important}
-  body.emp-app .panel{padding-left:16px!important;padding-right:16px!important}
-  body.emp-app .daypanel{padding-left:12px!important;padding-right:12px!important}
-  body.emp-app .head{padding-left:10px!important;padding-right:10px!important}
+  body.has-tabbar .panel{padding-left:16px!important;padding-right:16px!important}
+  body.has-tabbar .daypanel{padding-left:12px!important;padding-right:12px!important}
+  body.has-tabbar .head{padding-left:10px!important;padding-right:10px!important}
 }
 /* ---- team directory ---- */
 .teamsearch input{width:100%;min-height:46px;border-radius:16px;padding:0 16px;font-size:15px}
@@ -1577,7 +1577,7 @@ body.dark .tag.ok{color:#34c759}body.dark .tag.warn{color:#ff9f0a}body.dark .tag
 .ps-meta{font-size:11.5px!important;opacity:.85}
 .ps-call{display:grid;place-items:center;width:40px;height:40px;border-radius:50%;background:rgba(31,157,85,.12);color:#1f9d55}
 .ps-call svg{width:19px;height:19px}
-body.emp-app .person{border-bottom-color:rgba(16,42,94,.07)}
+body.has-tabbar .person{border-bottom-color:rgba(16,42,94,.07)}
 /* ================= employee app v3: tidy check-in and sections ================= */
 .hello{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:6px 8px 0}
 .hello p{margin:0;font-size:14px;color:var(--muted);font-weight:500}
@@ -1649,20 +1649,20 @@ body.dark .ck-selfie{box-shadow:0 0 0 4px rgba(255,255,255,.12),0 10px 26px -8px
 @media (max-width:760px){
   /* the bottom bar replaces the page links in the slide-out menu */
   body.emp-app #nav a,body.emp-app #nav .navsep{display:none!important}
-  body.emp-app .lvrow{border-bottom-color:rgba(16,42,94,.07)}
-  body.emp-app .ck-card{padding:18px 16px!important}
-  body.emp-app .head{padding-top:8px!important}
-  body.emp-app .head h1{font-size:30px!important}
+  body.has-tabbar .lvrow{border-bottom-color:rgba(16,42,94,.07)}
+  body.has-tabbar .ck-card{padding:18px 16px!important}
+  body.has-tabbar .head{padding-top:8px!important}
+  body.has-tabbar .head h1{font-size:30px!important}
   .lv-dates input{min-height:46px}
-  body.emp-app .teamsearch input{background:rgba(255,255,255,.7);border:1px solid rgba(255,255,255,.8);box-shadow:inset 0 1px 2px rgba(16,42,94,.06)}
-  body.emp-app .mcard .mc-btn{border-radius:16px}
+  body.has-tabbar .teamsearch input{background:rgba(255,255,255,.7);border:1px solid rgba(255,255,255,.8);box-shadow:inset 0 1px 2px rgba(16,42,94,.06)}
+  body.has-tabbar .mcard .mc-btn{border-radius:16px}
 }
 .ck-split b{white-space:nowrap}
 .ck-split.three > div{padding:12px 10px}
 .ck-split.three b{font-size:16px}
 @media (max-width:760px){
   .lv-dates{grid-template-columns:minmax(0,1fr)}
-  body.emp-app .panel .empty{margin:0;padding:4px 0;font-size:14px}
+  body.has-tabbar .panel .empty{margin:0;padding:4px 0;font-size:14px}
 }
 /* ---- HR boards as cards on phones ---- */
 .ci-cards,.att-cards{display:none}
@@ -1687,6 +1687,21 @@ body.dark .ck-selfie{box-shadow:0 0 0 4px rgba(255,255,255,.12),0 10px 26px -8px
 .tabbar button{all:unset;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;min-height:52px;border-radius:20px;color:var(--muted);font-size:10.5px;font-weight:600;cursor:pointer;-webkit-tap-highlight-color:transparent}
 .tabbar button svg{width:23px;height:23px}
 @media (max-width:760px){ body.navopen .tabbar{display:none!important} }
+
+/* staff screens on phones: summary strip instead of pills, compact head */
+.ci-sum{display:none}
+@media (max-width:760px){
+  body.has-tabbar .attsum{display:none}
+  body.has-tabbar .ci-sum{display:grid}
+  body.has-tabbar .head .tools{display:flex;flex-wrap:wrap;gap:8px}
+  body.has-tabbar .head .tools .datebar{flex:1 1 100%}
+  body.has-tabbar .head .tools > .btn{flex:1 1 0;min-height:42px;border-radius:14px}
+  body.has-tabbar .kpis{gap:8px!important}
+  body.has-tabbar .kpi{border-radius:20px!important;background:linear-gradient(180deg,rgba(255,255,255,.74),rgba(255,255,255,.52))!important;-webkit-backdrop-filter:blur(26px) saturate(185%)!important;backdrop-filter:blur(26px) saturate(185%)!important;border:1px solid rgba(255,255,255,.75)!important;box-shadow:0 14px 34px -22px rgba(16,42,94,.45),inset 0 1px 0 rgba(255,255,255,.95)!important}
+  body.dark.has-tabbar .kpi{background:linear-gradient(180deg,rgba(44,47,58,.72),rgba(24,26,33,.58))!important;border-color:rgba(255,255,255,.10)!important}
+  body.has-tabbar .cicard{border-bottom-color:rgba(16,42,94,.07)}
+}
+.sumstrip b small{font-size:13px;color:var(--muted);font-weight:600}
 </style>
 </head>
 <body>
@@ -2536,7 +2551,8 @@ checkins(){
     return `<tr><td>${who(e, e.dept)}</td><td>${c?`<b>${tmIST(c.in.t)}</b><div class="note">${esc(placeName(c.in.place))} · ${c.in.dist} m · ±${c.in.acc} m</div>`:`<span class="note">—</span>`}</td><td>${c?.out?`<b>${tmIST(c.out.t)}</b><div class="note">${esc(placeName(c.out.place))}</div>`:`<span class="note">${c?"Not yet":"—"}</span>`}</td><td>${statusPill(st)}${S.att[d]?.marks?.[e.id]?`<div class="note">Set by HR</div>`:""}</td><td>${ciFlags(c, v, d)}</td><td><div class="acts">${c?`<button class="btn small" data-selfie="${d}_${e.id}" data-name="${esc(e.name)}">Selfie</button>${map}`:""}</div></td></tr>`; }).join("");
   const gl = goLive();
   return head("Check-ins", fmtDay(d) + (gl ? "" : ` · <span class="pill mute">Absent marking off</span>`), dateBar("ciDate", d, "ci") + `<button class="btn" data-act="golive-open">Settings</button>`) +
-    `<div class="attsum"><span class="pill ok">${c0.in} of ${list.length} checked in</span><span class="pill warn">${c0.late} late</span><span class="pill warn">${c0.hd} half day</span><span class="pill mute">${c0.none} not checked in</span><span class="pill mute">${c0.out} checked out</span></div>
+    `<div class="sumstrip ci-sum"><div><b>${c0.in}<small>/${list.length}</small></b><span>Checked in</span></div><div><b>${c0.late}</b><span>Late</span></div><div><b>${c0.hd}</b><span>Half day</span></div><div><b>${c0.none}</b><span>Not in</span></div></div>
+    <div class="attsum"><span class="pill ok">${c0.in} of ${list.length} checked in</span><span class="pill warn">${c0.late} late</span><span class="pill warn">${c0.hd} half day</span><span class="pill mute">${c0.none} not checked in</span><span class="pill mute">${c0.out} checked out</span></div>
     <div class="panel daypanel ci-cards">${[...list].sort((a,b) => { const ca = ciFor(a.id,d), cb = ciFor(b.id,d); return (!!cb - !!ca) || (ca && cb ? String(ca.in.t).localeCompare(String(cb.in.t)) : 0); }).map(e => ciCard(e, d)).join("") || `<p class="empty">No active employees on this date.</p>`}</div>
     <div class="tablewrap fill stickyhead ci-table"><table><thead><tr><th>Employee</th><th>Check-in</th><th>Check-out</th><th>Status</th><th>Flags</th><th></th></tr></thead><tbody>${rows || `<tr><td colspan="6" class="empty">No active employees on this date.</td></tr>`}</tbody></table></div>
 `;
@@ -2955,7 +2971,7 @@ attendance(){
   const rows = list.map(e => { const s = S.att[d]?.marks?.[e.id] || (leaveOn(e.id,d)?"L":null); const lv=leaveOn(e.id,d); const c = ciFor(e.id,d), cv = ciEval(c); const shown = statusOn(e.id,d);
     return `<tr><td>${who(e, e.dept)}</td><td>${c?`${tmIST(c.in.t)}${c.out?` – ${tmIST(c.out.t)}`:""}<div class="note">${esc(placeName(c.in.place))}</div>`:`<span class="note">—</span>`}</td><td><div class="seg" role="group" aria-label="Attendance for ${esc(e.name)}">${MARKS.map(([v,t])=>`<button data-att="${e.id}" data-v="${v}" aria-pressed="${s===v}" title="${t}" ${!canWrite||future?"disabled":""}>${v}</button>`).join("")}</div></td><td>${statusPill(shown)}${!s && shown ? `<div class="note" style="margin-top:3px">${c?"From check-in":"No check-in"}</div>`:""}${ciFlags(c, cv, d)}${lv?`<div class="note" style="margin-top:3px">Leave approved${ledger(e.id).unpaid.has(d)?" · unpaid, no balance left":""}</div>`:""}</td></tr>`; }).join("");
   return head("Attendance", parse(d).toLocaleDateString("en-IN",{weekday:"long",day:"numeric",month:"long",year:"numeric"}) + (isOff(d)?` · <span class="pill sample">${offLabel(d)}</span>`:""), tools) +
-   `<div class="attsum"><span class="pill ok">${c.P} present</span><span class="pill warn">${c.HD} half day</span><span class="pill bad">${c.A} absent</span><span class="pill leave">${c.L} on leave</span><span class="pill mute">${c.U} not marked</span></div>
+   `<div class="sumstrip ci-sum"><div><b>${c.P}</b><span>Present</span></div><div><b>${c.HD}</b><span>Half day</span></div><div><b>${c.A}</b><span>Absent</span></div><div><b>${c.U}</b><span>Not marked</span></div></div><div class="attsum"><span class="pill ok">${c.P} present</span><span class="pill warn">${c.HD} half day</span><span class="pill bad">${c.A} absent</span><span class="pill leave">${c.L} on leave</span><span class="pill mute">${c.U} not marked</span></div>
    <div class="panel daypanel att-cards">${list.map(e => attCard(e, d, canWrite && !future)).join("") || `<p class="empty">No active employees on this date.</p>`}</div><div class="tablewrap fill stickyhead att-table"><table class="t-att"><thead><tr><th>Employee</th><th>Check-in</th><th>Mark</th><th>Status</th></tr></thead><tbody>${rows || `<tr><td colspan="4" class="empty">No active employees on this date.</td></tr>`}</tbody></table></div>
    <p class="note">P present · HD half day (half a day's pay is deducted) · A absent (loss of pay) · L leave. A mark set here overrides the check-in, including any late mark. Tap a selected mark again to clear it. Approved leave fills in on its own.</p>`;
 },
