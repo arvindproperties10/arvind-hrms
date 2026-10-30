@@ -1714,6 +1714,64 @@ body.dark .ck-selfie{box-shadow:0 0 0 4px rgba(255,255,255,.12),0 10px 26px -8px
   body.emp-app #nav .navsep{display:none!important}
   body.navopen .rail{padding-bottom:calc(16px + env(safe-area-inset-bottom,0px))!important}
 }
+/* ---- users & access ---- */
+.ucard{gap:10px!important}
+.uc-row{display:grid;grid-template-columns:42px minmax(0,1fr) auto;gap:12px;align-items:center}
+.uc-row .av{width:42px;height:42px}
+.uc-main{display:flex;flex-direction:column;min-width:0}
+.uc-main b{font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.uc-main small{font-size:12.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.uc-meta{display:flex;gap:14px;flex-wrap:wrap;padding-left:54px}
+.uc-sum{margin:0;padding-left:54px;font-size:13px;color:var(--muted);line-height:1.45}
+.uc-toggle{align-self:flex-start;margin-left:46px;color:var(--accent)!important;font-weight:600}
+.uc-edit{display:flex;flex-direction:column;gap:12px;padding-top:4px}
+.uc-edit .uc-toggle{margin-left:0;align-self:center}
+.perm-list{display:flex;flex-direction:column;border-radius:16px;overflow:hidden;border:1px solid var(--line)}
+.perm-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 10px;border-bottom:1px solid var(--line)}
+.perm-row:last-child{border-bottom:0}
+.perm-row > span{font-size:14px;font-weight:600}
+.perm-seg{flex:none}
+.perm-seg button{min-width:52px;font-size:12.5px;padding:6px 8px}
+.erows{display:flex;flex-direction:column}
+.erow{all:unset;box-sizing:border-box;display:grid;grid-template-columns:38px minmax(0,1fr) auto;gap:12px;align-items:center;padding:11px 2px;border-bottom:1px solid var(--line);cursor:pointer;width:100%}
+.erow:last-child{border-bottom:0}
+.erow .av{width:38px;height:38px;font-size:13px}
+.er-main{display:flex;flex-direction:column;min-width:0}
+.er-main b{font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.er-main small{font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.er-side{display:flex;align-items:center;gap:6px;color:var(--muted)}
+.er-side svg{width:16px;height:16px}
+.erows + .uc-toggle{margin:6px 0 4px}
+.daypanel .teamsearch{padding:10px 0 6px}
+.tools-panel{gap:0!important;padding-top:6px!important;padding-bottom:6px!important}
+.tp-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 0;border-bottom:1px solid var(--line)}
+.tp-row:last-child{border-bottom:0}
+.tp-row.col{flex-direction:column;align-items:stretch}
+.tp-row b{display:block;font-size:14.5px}
+.tp-row small{display:block;font-size:12.5px;color:var(--muted);line-height:1.4;margin-top:2px}
+.tp-row .btn{flex:none}
+.tp-inline{display:flex;gap:8px;align-items:center}
+.tp-inline input{flex:1;min-height:40px}
+#clrOut .confirm{margin:6px 0}
+#clrOut .acts{display:flex;gap:8px;align-items:center;padding-bottom:10px}
+.mg-list{display:flex;flex-direction:column;border-radius:16px;border:1px solid var(--line);overflow:hidden}
+.mg-row{display:flex;justify-content:space-between;gap:12px;padding:10px 14px;border-bottom:1px solid var(--line);font-size:14px}
+.mg-row:last-child{border-bottom:0}
+.mg-row span{color:var(--muted)}
+.mg-acts{display:flex;flex-direction:column;gap:8px}
+.mg-acts .btn{min-height:46px;justify-content:center}
+@media (max-width:760px){
+  body.has-tabbar .uc-meta,body.has-tabbar .uc-sum{padding-left:0}
+  body.has-tabbar .uc-toggle{margin-left:-8px}
+  body.has-tabbar .perm-list,body.has-tabbar .mg-list{border-color:rgba(16,42,94,.1)}
+  body.has-tabbar .perm-row,body.has-tabbar .erow,body.has-tabbar .tp-row,body.has-tabbar .mg-row{border-bottom-color:rgba(16,42,94,.07)}
+  body.dark.has-tabbar .perm-list,body.dark.has-tabbar .mg-list{border-color:rgba(255,255,255,.1)}
+  body.dark.has-tabbar .perm-row,body.dark.has-tabbar .erow,body.dark.has-tabbar .tp-row,body.dark.has-tabbar .mg-row{border-bottom-color:rgba(255,255,255,.07)}
+}
+#overlay{position:relative;z-index:120}
+#overlay .scrim{z-index:120}#overlay .drawer,#overlay .modal{z-index:121}
+.uc-edit input[type=text],.uc-edit input:not([type]),.uc-edit select{min-height:44px;border-radius:14px!important;padding:0 14px;border:1px solid var(--line)!important;background:var(--surface);font-size:15px;width:100%;box-sizing:border-box}
+body.dark .uc-edit input:not([type]),body.dark .uc-edit select{background:rgba(255,255,255,.06);color:var(--ink)}
 </style>
 </head>
 <body>
@@ -2358,33 +2416,65 @@ function accessView(){
   const staff = list.filter(u => u.role!=="employee"), emps = list.filter(u => u.role==="employee");
   const withLogin = new Set(list.map(u => u.empId).filter(Boolean));
   const missing = activeEmps().filter(e => !withLogin.has(e.id));
-  const empOpts = (sel, self) => `<option value="">Not an employee</option>` + empList().filter(e => e.status!=="Exited").map(e => `<option value="${e.id}" ${sel===e.id?"selected":""} ${withLogin.has(e.id) && e.id!==sel ? "disabled" : ""}>${esc(e.name)} · ${esc(e.code||"")}</option>`).join("");
-  const acts = u => u.uid===ME.uid ? `<span class="pill ok">You</span>` : `${u.active===false?`<span class="pill bad">Switched off</span>`:`<span class="pill ok">Active</span>`}
-      <button class="btn small" data-uact="pw" data-uid="${u.uid}">Reset password</button>
-      <button class="btn small" data-uact="toggle" data-uid="${u.uid}">${u.active===false?"Switch on":"Switch off"}</button>
-      ${u.role==="owner" ? `<button class="btn small" data-uact="unadmin" data-uid="${u.uid}">Remove administrator</button>` : u.role==="staff" ? `<button class="btn small" data-uact="admin" data-uid="${u.uid}">Make administrator</button>` : ""}
-      <button class="btn small ghost danger" data-uact="del" data-uid="${u.uid}">Delete</button>`;
-  const staffCard = u => `<div class="panel usercard">
-    <div class="uc-head"><div class="who"><span class="av">${esc(initials(u.name))}</span><div><b>${esc(u.name)}</b><small>${esc(roleLabel(u))} · Login <span class="code">${esc(u.loginId||u.email||"")}</span></small></div></div><div class="acts">${acts(u)}</div></div>
-    ${u.role==="owner" ? `<p class="note" style="margin:0">The administrator can see and change everything, including logins.</p>` : `
-    <div class="formgrid"><div class="field"><label for="ut_${u.uid}">Job title</label><input id="ut_${u.uid}" data-utitle="${u.uid}" value="${esc(u.title||"")}" placeholder="e.g. HR Executive"></div>
-    <div class="field"><label for="ue_${u.uid}">Their employee record (for check-in)</label><select id="ue_${u.uid}" data-ulink="${u.uid}">${empOpts(u.empId)}</select></div></div>
-    <label class="ceo-flag"><input type="checkbox" data-uceo="${u.uid}" ${u.approveLeave?"checked":""}> <span><b>CEO · approves leave</b><small>Can approve or reject leave requests</small></span></label>
-    <div class="permgrid">${SECTIONS.map(([k,l])=>`<div class="field"><label for="pm_${u.uid}_${k}">${l}</label><select id="pm_${u.uid}_${k}" data-uperm="${u.uid}" data-sec="${k}">${LEVELS.map(([v,t])=>`<option value="${v}" ${((u.perms||{})[k] || (k==="checkins" ? (u.perms||{}).attendance : "") || "none")===v?"selected":""}>${t}</option>`).join("")}</select></div>`).join("")}</div>`}
-  </div>`;
-  const empRow = u => { const e = S.emps[u.empId] || {}; return `<tr><td>${who({name:u.name}, e.designation||"")}</td><td class="code">${esc(u.loginId||"")}</td><td>${u.mustChange?`<span class="pill warn">Temporary password</span>`:`<span class="pill ok">Password set</span>`}</td><td>${u.consentAt?fmtD(u.consentAt.slice(0,10)):"—"}</td><td><div class="acts">${acts(u)}<button class="btn small" data-uact="staff" data-uid="${u.uid}" title="Give this person HR or management access">Make staff</button></div></td></tr>`; };
-  return head("Users & access", `${staff.length} staff login${staff.length===1?"":"s"} · ${emps.length} employee login${emps.length===1?"":"s"}`, `<button class="btn" data-act="u-new" data-kind="staff">Add staff login</button><button class="btn primary" data-act="u-new" data-kind="employee">Add employee login</button>`) +
-    `<div class="banner info"><span>New logins get a temporary password and must choose their own the first time they sign in. Employees sign in with their Employee ID, for example <b>${esc((empList()[0]?.code)||"AP001")}</b>.</span></div>` +
-    staff.map(staffCard).join("") +
-    `<div class="panel"><div class="tt-head"><div><h2>Employee logins</h2><div class="sub">${missing.length ? `${missing.length} active employee${missing.length===1?"":"s"} without a login` : "Every active employee has a login"}</div></div><div class="acts">${emps.length?`<button class="btn" data-act="u-joinpw-open">Passwords from joining dates</button>`:""}${missing.length?`<button class="btn" data-act="u-bulk">Create logins for all ${missing.length}</button>`:""}</div></div>
-      ${emps.length ? `<div class="scrollbox stickyhead"><table><thead><tr><th>Employee</th><th>Login</th><th>Password</th><th>Agreed to check-in notice</th><th></th></tr></thead><tbody>${emps.map(empRow).join("")}</tbody></table></div>` : `<p class="empty">No employee logins yet.</p>`}</div>` +
-    `<div class="panel"><h2>Bring over data from the old HRMS</h2><p class="note">Choose the migration file Claude gave you (hrms-migration.json). Records with the same ID are replaced. Do this once, before people start using the app.</p><div class="acts"><label class="btn">Choose file<input type="file" id="impJson" accept=".json,application/json" hidden></label><span class="note" id="impStatus"></span></div></div>` +
-    `<div class="panel" id="clearPanel"><h2>Back up or clear old records</h2>
-      <p class="note" style="margin:0"><b>Download backup</b> saves every record as a file you can re-import above. <b>Clear</b> deletes attendance, check-ins and selfies, leave requests, payroll runs, payslips and incentive sheets dated on or before the chosen day. Employees, monthly pay, logins, holidays and settings are kept. A backup downloads automatically before anything is cleared.</p>
-      <div class="acts"><button class="btn" data-act="bk-download">Download backup</button></div>
-      <div class="acts"><label class="note" for="clr_cut">Clear everything up to and including</label><input type="date" id="clr_cut" value="2026-10-31" max="${today}"><button class="btn" data-act="clr-preview">Preview</button></div>
-      <div id="clrOut"></div></div>` +
-    `<div class="panel"><h2>Security self-test</h2><p class="note">Create a test employee login, sign in with it, and open <b>${esc(location.origin+location.pathname)}#selftest</b>. The test tries to read and change things an employee shouldn't, and every line should come back <b>Blocked</b>.</p></div>`;
+  const empOpts = sel => `<option value="">Not an employee</option>` + empList().filter(e => e.status!=="Exited").map(e => `<option value="${e.id}" ${sel===e.id?"selected":""} ${withLogin.has(e.id) && e.id!==sel ? "disabled" : ""}>${esc(e.name)} · ${esc(e.code||"")}</option>`).join("");
+  const state = u => u.active===false ? `<span class="tag bad">Switched off</span>` : u.mustChange ? `<span class="tag warn">Temporary password</span>` : `<span class="tag ok">Active</span>`;
+  const loginTxt = u => esc(u.role==="employee" ? String(u.loginId||"").toUpperCase() : (u.loginId || u.email || ""));
+  const lvlName = v => v==="edit" ? "Edit" : v==="view" ? "View" : "—";
+  const staffCard = u => {
+    const isMe = u.uid===ME.uid, open = UI.uOpen===u.uid;
+    const summary = u.role==="owner" ? "Full access to everything" : SECTIONS.filter(([k]) => ((u.perms||{})[k]||"none")!=="none").map(([k,l]) => `${l} ${lvlName((u.perms||{})[k]).toLowerCase()}`).join(" · ") || "No sections yet";
+    return `<div class="panel ucard${open?" open":""}">
+      <div class="uc-row"><span class="av">${esc(initials(u.name))}</span><div class="uc-main"><b>${esc(u.name)}${isMe?` <span class="pill mute">You</span>`:""}</b><small>${esc(roleLabel(u))} · <span class="code">${loginTxt(u)}</span></small></div>${isMe ? "" : `<button class="btn small" data-umanage="${u.uid}">Manage</button>`}</div>
+      <div class="uc-meta">${state(u)}${u.approveLeave?`<span class="tag leave">Approves leave</span>`:""}</div>
+      ${u.role==="owner" ? `<p class="uc-sum">${summary}</p>` : open ? `
+      <div class="uc-edit">
+        <div class="field"><label for="ut_${u.uid}">Job title</label><input id="ut_${u.uid}" data-utitle="${u.uid}" value="${esc(u.title||"")}" placeholder="e.g. HR Executive"></div>
+        <div class="field"><label for="ue_${u.uid}">Employee record (for check-in)</label><select id="ue_${u.uid}" data-ulink="${u.uid}">${empOpts(u.empId)}</select></div>
+        <label class="ceo-flag"><input type="checkbox" data-uceo="${u.uid}" ${u.approveLeave?"checked":""}> <span><b>Approves leave</b><small>Can approve or reject leave requests</small></span></label>
+        <div class="perm-list">${SECTIONS.map(([k,l]) => { const cur = (u.perms||{})[k] || (k==="checkins" ? (u.perms||{}).attendance : "") || "none";
+          return `<div class="perm-row"><span>${l}</span><div class="seg perm-seg" role="group" aria-label="${l}">${LEVELS.map(([lv,t]) => `<button type="button" data-upermset="${u.uid}" data-sec="${k}" data-v="${lv}" aria-pressed="${cur===lv}">${lv==="none"?"None":lv==="view"?"View":"Edit"}</button>`).join("")}</div></div>`; }).join("")}</div>
+        <button class="btn ghost uc-toggle" data-uopen="">Done</button>
+      </div>` : `<p class="uc-sum">${esc(summary)}</p><button class="btn ghost uc-toggle" data-uopen="${u.uid}">Edit access</button>`}
+    </div>`; };
+  const q = (UI.uQ||"").trim().toLowerCase();
+  const shown = emps.filter(u => !q || [u.name, u.loginId, S.emps[u.empId]?.designation].join(" ").toLowerCase().includes(q));
+  const empRow = u => { const e = S.emps[u.empId] || {}; return `<button class="erow" data-umanage="${u.uid}"><span class="av">${esc(initials(u.name))}</span><span class="er-main"><b>${esc(u.name)}</b><small><span class="code">${loginTxt(u)}</span>${e.designation?` · ${esc(e.designation)}`:""}</small></span><span class="er-side">${state(u)}<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M8 5l5 5-5 5"/></svg></span></button>`; };
+  const pending = emps.filter(u => u.mustChange).length;
+  return head("Users & access", `${staff.length} staff · ${emps.length} employees`, `<button class="btn" data-act="u-new" data-kind="staff">Add staff login</button><button class="btn primary" data-act="u-new" data-kind="employee">Add employee login</button>`) +
+    `<div class="sumstrip three"><div><b>${staff.length}</b><span>Staff</span></div><div><b>${emps.length}</b><span>Employees</span></div><div><b>${pending}</b><span>Not signed in yet</span></div></div>` +
+    `<h2 class="sect-h">Staff and administrators</h2>` + staff.map(staffCard).join("") +
+    `<div class="sect-row"><h2 class="sect-h">Employee logins</h2>${missing.length?`<button class="btn small" data-act="u-bulk">Create ${missing.length} missing</button>`:""}</div>
+    <div class="panel daypanel">
+      <div class="teamsearch"><input type="search" id="uQ" placeholder="Search name or Employee ID" value="${esc(UI.uQ||"")}" autocomplete="off"></div>
+      <div class="erows">${shown.map(empRow).join("") || `<p class="empty">No one matches.</p>`}</div>
+      ${emps.length ? `<button class="btn ghost uc-toggle" data-act="u-joinpw-open">Reset passwords to joining dates</button>` : ""}
+    </div>
+    <p class="hint">New logins get a temporary password and choose their own at first sign-in. Employees sign in with their Employee ID, e.g. ${esc((empList()[0]?.code)||"AP001")}.</p>` +
+    `<h2 class="sect-h">Data</h2>
+    <div class="panel tools-panel" id="clearPanel">
+      <div class="tp-row"><div><b>Download backup</b><small>Every record in one file. Do this monthly.</small></div><button class="btn small" data-act="bk-download">Download</button></div>
+      <div class="tp-row"><div><b>Restore or import</b><small>Load a backup or the old HRMS file.</small></div><label class="btn small">Choose file<input type="file" id="impJson" accept=".json,application/json" hidden></label></div>
+      <span class="note" id="impStatus"></span>
+      <div class="tp-row col"><div><b>Clear old records</b><small>Deletes attendance, check-ins, leave, payroll and incentive records up to the date below. Employees, pay, logins and settings stay. A backup downloads first.</small></div>
+        <div class="tp-inline"><input type="date" id="clr_cut" value="2026-10-31" max="${today}"><button class="btn small" data-act="clr-preview">Preview</button></div></div>
+      <div id="clrOut"></div>
+      <div class="tp-row"><div><b>Security self-test</b><small>Sign in as a test employee and open …/arvind-hrms/#selftest. Every line should say Blocked except the last three.</small></div></div>
+    </div>`;
+}
+function manageDrawer(uid){
+  const u = USERS[uid]; if(!u) return; const e = S.emps[u.empId] || {};
+  const row = (k, val) => `<div class="mg-row"><span>${k}</span><b>${val}</b></div>`;
+  openDrawer(`<header><h3>${esc(u.name)}</h3><button class="btn ghost" data-act="close" aria-label="Close">✕</button></header>
+  <div class="body">
+    <div class="mg-list">${row("Login", `<span class="code">${esc(u.role==="employee" ? String(u.loginId||"").toUpperCase() : (u.loginId||u.email||""))}</span>`)}${row("Type", u.role==="owner" ? "Administrator" : u.role==="staff" ? "Staff" : "Employee")}${e.designation ? row("Designation", esc(e.designation)) : ""}
+      ${row("Password", u.mustChange ? "Temporary, not changed yet" : "Set by them")}${row("Check-in notice", u.consentAt ? "Agreed " + fmtD(u.consentAt.slice(0,10)) : "Not yet")}${row("Status", u.active===false ? "Switched off" : "Active")}</div>
+    <div class="mg-acts">
+      <button class="btn" data-uact="pw" data-uid="${uid}">Reset password</button>
+      <button class="btn" data-uact="toggle" data-uid="${uid}">${u.active===false ? "Switch on" : "Switch off"}</button>
+      ${u.role==="employee" ? `<button class="btn" data-uact="staff" data-uid="${uid}">Give HR / staff access</button>` : u.role==="staff" ? `<button class="btn" data-uact="admin" data-uid="${uid}">Make administrator</button>` : `<button class="btn" data-uact="unadmin" data-uid="${uid}">Remove administrator</button>`}
+      <button class="btn danger" data-uact="del" data-uid="${uid}">Delete login</button>
+    </div>
+  </div>`);
 }
 function userNewDrawer(kind){
   const withLogin = new Set(Object.values(USERS).map(u => u.empId).filter(Boolean));
@@ -2452,11 +2542,11 @@ async function userAction(btn){
   const uid = btn.dataset.uid, u = USERS[uid]; if(!u) return; const act = btn.dataset.uact;
   if(act==="pw") return resetPwDrawer(uid);
   if(act==="admin" || act==="unadmin"){ if(uDelArmed!==uid+act){ uDelArmed = uid+act; btn.textContent = act==="admin" ? "Tap again: full access" : "Tap again to remove"; setTimeout(()=>{ uDelArmed=""; render(); }, 4000); return; }
-    uDelArmed = ""; try{ await db.doc("users/"+uid).update({role: act==="admin" ? "owner" : "staff", perms: u.perms || {dashboard:"view"}}); toast(act==="admin" ? `${u.name} is now an administrator` : `${u.name} is no longer an administrator`); }catch(e){ fail(e); } return; }
-  if(act==="staff"){ try{ await db.doc("users/"+uid).update({role:"staff", title:S.emps[u.empId]?.designation||"", perms:{dashboard:"view"}}); toast(`${u.name} is now a staff login. Set their access above.`); }catch(e){ fail(e); } return; }
-  if(act==="toggle"){ try{ await db.doc("users/"+uid).update({active: u.active===false}); toast(u.active===false ? "Login switched on" : "Login switched off"); }catch(e){ fail(e); } return; }
+    uDelArmed = ""; try{ await db.doc("users/"+uid).update({role: act==="admin" ? "owner" : "staff", perms: u.perms || {dashboard:"view"}}); toast(act==="admin" ? `${u.name} is now an administrator` : `${u.name} is no longer an administrator`); closeDrawer(); }catch(e){ fail(e); } return; }
+  if(act==="staff"){ try{ await db.doc("users/"+uid).update({role:"staff", title:S.emps[u.empId]?.designation||"", perms:{dashboard:"view"}}); toast(`${u.name} is now a staff login. Set their access above.`);  closeDrawer(); }catch(e){ fail(e); } return; }
+  if(act==="toggle"){ try{ await db.doc("users/"+uid).update({active: u.active===false}); toast(u.active===false ? "Login switched on" : "Login switched off"); closeDrawer(); }catch(e){ fail(e); } return; }
   if(act==="del"){ if(uDelArmed!==uid){ uDelArmed = uid; btn.textContent = "Click again to delete"; setTimeout(()=>{ uDelArmed=""; render(); }, 4000); return; }
-    uDelArmed = ""; try{ const ops = [{op:"delete", path:"users/"+uid}]; if(u.loginId) ops.push({op:"delete", path:"logins/"+u.loginId}); await db.batch(ops); toast("Login deleted"); }catch(e){ fail(e); } }
+    uDelArmed = ""; try{ const ops = [{op:"delete", path:"users/"+uid}]; if(u.loginId) ops.push({op:"delete", path:"logins/"+u.loginId}); await db.batch(ops); toast("Login deleted"); closeDrawer(); }catch(e){ fail(e); } }
 }
 function resetPwDrawer(uid){
   const u = USERS[uid];
@@ -3768,7 +3858,10 @@ async function clearSample(btn){
 document.addEventListener("click", async ev => {
   const rs = ev.target.closest("[data-reset]");
   if(rs){ const el = document.getElementById(rs.dataset.reset); if(el && !el.disabled){ el.value = rs.dataset.val; el.dispatchEvent(new Event("input",{bubbles:true})); el.dispatchEvent(new Event("change",{bubbles:true})); } return; }
-  const t = ev.target.closest("[data-act],[data-att],[data-leave],[data-emp],[data-slip],[data-lf],[data-go],[data-regdel],[data-incslide],[data-incopen],[data-uact],[data-holdel],[data-selfie],[data-myslip],[data-mlcancel]"); if(!t) return;
+  const t = ev.target.closest("[data-act],[data-att],[data-leave],[data-emp],[data-slip],[data-lf],[data-go],[data-regdel],[data-incslide],[data-incopen],[data-uact],[data-holdel],[data-selfie],[data-myslip],[data-mlcancel],[data-umanage],[data-uopen],[data-upermset]"); if(!t) return;
+  if(t.dataset.umanage!==undefined && t.dataset.umanage){ manageDrawer(t.dataset.umanage); return; }
+  if(t.dataset.uopen!==undefined){ UI.uOpen = t.dataset.uopen; render(); return; }
+  if(t.dataset.upermset){ const uid = t.dataset.upermset; setUserField(uid, {perms:{[t.dataset.sec]:t.dataset.v}}, "Access updated"); render(); return; }
   if(t.dataset.selfie){ showSelfie(t.dataset.selfie, t.dataset.name||""); return; }
   if(t.dataset.myslip){ const ym = t.dataset.myslip, id = myEmp(); downloadSlip(id, t, ym, S.slips[`${id}_${ym}`]); return; }
   if(t.dataset.mlcancel){ myLeaveCancel(t.dataset.mlcancel); return; }
@@ -3848,6 +3941,7 @@ document.addEventListener("input", ev => {
   const id = ev.target.id;
   if(id==="empQ"){ UI.empQ=ev.target.value; render(); }
   if(id==="teamQ"){ UI.teamQ=ev.target.value; render(); }
+  if(id==="uQ"){ UI.uQ=ev.target.value; render(); }
   if(id==="p_site") UI.punchPlace = ev.target.value;
   if(/^inc[vsan]_/.test(id)) UI.incDraft[id] = ev.target.value;
   if(id==="impText") importPreview();
