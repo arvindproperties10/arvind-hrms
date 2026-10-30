@@ -2379,6 +2379,11 @@ function accessView(){
     `<div class="panel"><div class="tt-head"><div><h2>Employee logins</h2><div class="sub">${missing.length ? `${missing.length} active employee${missing.length===1?"":"s"} without a login` : "Every active employee has a login"}</div></div><div class="acts">${emps.length?`<button class="btn" data-act="u-joinpw-open">Passwords from joining dates</button>`:""}${missing.length?`<button class="btn" data-act="u-bulk">Create logins for all ${missing.length}</button>`:""}</div></div>
       ${emps.length ? `<div class="scrollbox stickyhead"><table><thead><tr><th>Employee</th><th>Login</th><th>Password</th><th>Agreed to check-in notice</th><th></th></tr></thead><tbody>${emps.map(empRow).join("")}</tbody></table></div>` : `<p class="empty">No employee logins yet.</p>`}</div>` +
     `<div class="panel"><h2>Bring over data from the old HRMS</h2><p class="note">Choose the migration file Claude gave you (hrms-migration.json). Records with the same ID are replaced. Do this once, before people start using the app.</p><div class="acts"><label class="btn">Choose file<input type="file" id="impJson" accept=".json,application/json" hidden></label><span class="note" id="impStatus"></span></div></div>` +
+    `<div class="panel" id="clearPanel"><h2>Back up or clear old records</h2>
+      <p class="note" style="margin:0"><b>Download backup</b> saves every record as a file you can re-import above. <b>Clear</b> deletes attendance, check-ins and selfies, leave requests, payroll runs, payslips and incentive sheets dated on or before the chosen day. Employees, monthly pay, logins, holidays and settings are kept. A backup downloads automatically before anything is cleared.</p>
+      <div class="acts"><button class="btn" data-act="bk-download">Download backup</button></div>
+      <div class="acts"><label class="note" for="clr_cut">Clear everything up to and including</label><input type="date" id="clr_cut" value="2026-10-31" max="${today}"><button class="btn" data-act="clr-preview">Preview</button></div>
+      <div id="clrOut"></div></div>` +
     `<div class="panel"><h2>Security self-test</h2><p class="note">Create a test employee login, sign in with it, and open <b>${esc(location.origin+location.pathname)}#selftest</b>. The test tries to read and change things an employee shouldn't, and every line should come back <b>Blocked</b>.</p></div>`;
 }
 function userNewDrawer(kind){
@@ -2628,6 +2633,58 @@ function attCard(e, d, canMark){
   return `<div class="cicard"><div class="cc-head"><span class="av">${esc(initials(e.name))}</span><div class="cc-name"><b>${esc(e.name)}</b><small>${c ? `In ${tmIST(c.in.t)}${c.out ? ` · Out ${tmIST(c.out.t)}` : ""} · ${esc(placeName(c.in.place))}` : esc(e.designation || e.dept || "")}</small></div>${statusPill(shown)}</div>
     <div class="seg cc-seg" role="group" aria-label="Attendance for ${esc(e.name)}">${MARKS.map(([v,t]) => `<button data-att="${e.id}" data-v="${v}" aria-pressed="${s===v}" title="${t}" ${canMark ? "" : "disabled"}>${t}</button>`).join("")}</div>
     ${!s && shown ? `<div class="cc-sub">${c ? "Status from check-in" : "No check-in"}${cv && cv.late ? " · late" : ""}</div>` : ""}</div>`;
+}
+
+// ---- backup and clearing old records (administrator) ----
+const BK_COLS = ["employees","attendance","attfix","leaves","holidays","checkins","selfies","payslips","myinc","directory","data/hr/salaries","data/hr/payruns","data/hr/incentives","data/hr/registrations","data/hr/config"];
+async function backupAll(){
+  const out = {_format:"arvind-hrms-migration-1", exportedAt:new Date().toISOString(), collections:{}};
+  for(const col of BK_COLS){ const s = await window.FB.db.collection(col).get(); out.collections[col] = {}; s.docs.forEach(d => out.collections[col][d.id] = d.data()); }
+  try{ const a = await window.FB.db.doc("config/app").get(); if(a.exists) out.collections["config"] = {app:a.data()}; }catch(_){}
+  await downloads.save({filename:`arvind-hrms-backup-${today}.json`, data:JSON.stringify(out)});
+  return out;
+}
+// which records fall on or before the cut-off date
+function oldRecords(all, cut){
+  const ym = cut.slice(0,7), ops = [];
+  const by = (col, test) => { for(const [id,d] of Object.entries(all.collections[col]||{})) if(test(id, d)) ops.push({op:"delete", path:`${col}/${id}`}); };
+  by("attendance", id => id <= cut);
+  by("attfix", (id,d) => (d.date||id.slice(0,10)) <= cut);
+  by("checkins", (id,d) => (d.date||id.slice(0,10)) <= cut);
+  by("selfies", (id,d) => (d.date||id.slice(0,10)) <= cut);
+  by("leaves", (id,d) => (d.to||d.from||"9999") <= cut);
+  by("payslips", (id,d) => (d.ym||id.slice(-7)) <= ym);
+  by("myinc", (id,d) => (d.ym||id.slice(-7)) <= ym);
+  by("data/hr/payruns", id => id <= ym);
+  by("data/hr/incentives", id => id <= ym);
+  by("data/hr/registrations", (id,d) => (d.date || d.month || "9999") <= (d.date ? cut : ym));
+  return ops;
+}
+let CLR = null;
+async function clearPreview(btn){
+  const cut = $("#clr_cut").value; if(!cut) return toast("Choose a date.");
+  btn.disabled = true; btn.textContent = "Checking…";
+  try{
+    const all = {collections:{}}; for(const col of BK_COLS){ const s = await window.FB.db.collection(col).get(); all.collections[col] = {}; s.docs.forEach(d => all.collections[col][d.id] = d.data()); }
+    const ops = oldRecords(all, cut); CLR = {cut, ops};
+    const count = {}; ops.forEach(o => { const c = o.path.split("/").slice(0,-1).join("/"); count[c] = (count[c]||0) + 1; });
+    const label = {"attendance":"attendance days","attfix":"attendance marks","checkins":"check-ins","selfies":"selfies","leaves":"leave requests","payslips":"payslips","myinc":"incentive amounts","data/hr/payruns":"payroll runs","data/hr/incentives":"incentive sheets","data/hr/registrations":"registrations"};
+    $("#clrOut").innerHTML = ops.length ? `<div class="confirm"><b>${ops.length} records</b> dated on or before ${fmtD(cut)} will be deleted: ${Object.entries(count).map(([c,n]) => `${n} ${label[c]||c}`).join(", ")}.<br>Type <b>CLEAR</b> to confirm.</div>
+      <div class="acts"><input id="clr_word" autocomplete="off" placeholder="CLEAR" style="max-width:140px"><button class="btn danger" data-act="clr-run">Download backup and clear</button></div>` : `<p class="note">Nothing dated on or before ${fmtD(cut)}.</p>`;
+  }catch(e){ console.error(e); toast("Couldn't read the records. Try again."); }
+  btn.disabled = false; btn.textContent = "Preview";
+}
+async function clearRun(btn){
+  if(!CLR || ($("#clr_word").value||"").trim().toUpperCase() !== "CLEAR") return toast("Type CLEAR to confirm.");
+  btn.disabled = true; btn.textContent = "Backing up…";
+  try{
+    await backupAll();
+    btn.textContent = "Clearing…";
+    await window.FB.db.batch(CLR.ops);
+    const next = iso(new Date(parse(CLR.cut).getTime() + 86400000));
+    if(!APP.goLive || APP.goLive <= CLR.cut) await db.doc("config/app").set({...APP, goLive: next, updatedAt:new Date().toISOString(), by:actorName()});
+    toast(`${CLR.ops.length} old records cleared`); $("#clrOut").innerHTML = `<p class="note">Done. ${CLR.ops.length} records cleared; the backup file was downloaded. Absent marking starts ${fmtD(next)}.</p>`; CLR = null;
+  }catch(e){ console.error(e); btn.disabled = false; btn.textContent = "Download backup and clear"; toast("Clearing stopped partway. Run Preview again to finish."); }
 }
 
 function banners(){
@@ -3752,6 +3809,9 @@ document.addEventListener("click", async ev => {
   else if(a==="u-reset") doResetPw(t);
   else if(a==="u-joinpw-open") joinPwDrawer();
   else if(a==="tab-more") setNav(true);
+  else if(a==="bk-download"){ t.disabled = true; backupAll().then(() => toast("Backup downloaded"), e => { console.error(e); toast("Backup failed. Try again."); }).finally(() => { t.disabled = false; }); }
+  else if(a==="clr-preview") clearPreview(t);
+  else if(a==="clr-run") clearRun(t);
   else if(a==="u-joinpw") doJoinPw(t);
   else if(a==="pw-open") pwDrawer();
   else if(a==="pw-save") savePw(t);
