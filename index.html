@@ -1547,10 +1547,10 @@ body.dark .tag.ok{color:#34c759}body.dark .tag.warn{color:#ff9f0a}body.dark .tag
   body.has-tabbar .dayrow{border-bottom-color:rgba(16,42,94,.07)}
   body.has-tabbar .dr-date{background:rgba(0,113,227,.09);border-radius:15px}
   body.has-tabbar .panel h2{font-size:16px}
-  body.dark.emp-app .panel,body.dark.emp-app .sumstrip{
+  body.dark.has-tabbar .panel,body.dark.has-tabbar .sumstrip{
     background:linear-gradient(180deg,rgba(44,47,58,.72),rgba(24,26,33,.58))!important;border-color:rgba(255,255,255,.10)!important;
     box-shadow:0 14px 34px -22px rgba(0,0,0,.7),inset 0 1px 0 rgba(255,255,255,.08)!important}
-  body.dark.emp-app .sumstrip > div + div,body.dark.emp-app .dayrow{border-color:rgba(255,255,255,.07)}
+  body.dark.has-tabbar .sumstrip > div + div,body.dark.has-tabbar .dayrow{border-color:rgba(255,255,255,.07)}
   body.has-tabbar main{gap:14px!important}
 }
 /* ---- phones: use more of the screen width ---- */
@@ -1702,6 +1702,15 @@ body.dark .ck-selfie{box-shadow:0 0 0 4px rgba(255,255,255,.12),0 10px 26px -8px
   body.has-tabbar .cicard{border-bottom-color:rgba(16,42,94,.07)}
 }
 .sumstrip b small{font-size:13px;color:var(--muted);font-weight:600}
+@media (max-width:760px){
+  body.dark.has-tabbar .head{background:none!important;box-shadow:none!important;border:0!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important}
+  body.dark.has-tabbar .panel,body.dark.has-tabbar .sumstrip,body.dark.has-tabbar .kpi{color:var(--ink)}
+  body.dark.has-tabbar .ck-split > div{background:rgba(255,255,255,.06)}
+  body.dark.has-tabbar .ck-state{background:rgba(255,255,255,.08)}
+  body.dark.has-tabbar .ck-state.live{background:rgba(52,199,89,.16);color:#34c759}
+  body.dark.has-tabbar .ck-state.ok,body.dark.has-tabbar .ck-state.done{background:rgba(61,139,255,.18);color:#6aa8ff}
+  body.dark.has-tabbar .teamsearch input{background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.12);color:var(--ink)}
+}
 </style>
 </head>
 <body>
