@@ -1514,6 +1514,45 @@ body.dark .dr-date{background:rgba(61,139,255,.14)}
   [data-act="ml-apply"]{width:100%;min-height:50px;font-size:16px}
 }
 @media (max-width:760px){ body.emp-app .toast{bottom:calc(92px + env(safe-area-inset-bottom,0px))!important} }
+/* ---- compact tags, summary strip, hints ---- */
+.tag{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;white-space:nowrap;color:var(--muted)}
+.tag::before{content:"";width:7px;height:7px;border-radius:50%;background:currentColor}
+.tag.ok{color:#1f9d55}.tag.warn{color:#c77700}.tag.bad{color:#d70015}.tag.leave{color:#6e5bd6}
+body.dark .tag.ok{color:#34c759}body.dark .tag.warn{color:#ff9f0a}body.dark .tag.bad{color:#ff453a}body.dark .tag.leave{color:#a99bff}
+.sumstrip{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));border-radius:22px;padding:12px 4px;background:var(--surface);border:1px solid var(--line)}
+.sumstrip > div{display:flex;flex-direction:column;align-items:center;gap:2px;min-width:0}
+.sumstrip > div + div{border-left:1px solid var(--line)}
+.sumstrip b{font-size:22px;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.sumstrip span{font-size:11.5px;color:var(--muted);font-weight:500;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.hint{margin:-6px 4px 0;font-size:12.5px;color:var(--muted);text-align:center}
+.daypanel{padding:4px 14px!important}
+.dayrow{padding:12px 2px}
+.dr-sub{font-size:12px}
+
+/* ---- liquid glass, employee app on phones ---- */
+@media (max-width:760px){
+  body.emp-app .head{background:none!important;box-shadow:none!important;border:0!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important;padding:6px 6px 0!important;min-height:0!important;gap:10px!important;flex-direction:column;align-items:stretch!important}
+  body.emp-app .head::before,body.emp-app .head::after{display:none!important}
+  body.emp-app .head h1{font-size:28px!important;letter-spacing:-.03em}
+  body.emp-app .head p{font-size:13.5px}
+  body.emp-app .head .tools{width:100%}
+  body.emp-app .head .monthbar{width:100%;justify-content:space-between}
+  body.emp-app .panel,body.emp-app .sumstrip{
+    background:linear-gradient(180deg,rgba(255,255,255,.74),rgba(255,255,255,.52))!important;
+    -webkit-backdrop-filter:blur(26px) saturate(185%)!important;backdrop-filter:blur(26px) saturate(185%)!important;
+    border:1px solid rgba(255,255,255,.75)!important;border-radius:26px!important;
+    box-shadow:0 14px 34px -22px rgba(16,42,94,.45),0 2px 6px -2px rgba(16,42,94,.08),inset 0 1px 0 rgba(255,255,255,.95)!important}
+  body.emp-app .panel::before,body.emp-app .panel::after,body.emp-app .sumstrip::before,body.emp-app .sumstrip::after{display:none!important}
+  body.emp-app .sumstrip > div + div{border-left-color:rgba(16,42,94,.08)}
+  body.emp-app .dayrow{border-bottom-color:rgba(16,42,94,.07)}
+  body.emp-app .dr-date{background:rgba(0,113,227,.09);border-radius:15px}
+  body.emp-app .panel h2{font-size:16px}
+  body.dark.emp-app .panel,body.dark.emp-app .sumstrip{
+    background:linear-gradient(180deg,rgba(44,47,58,.72),rgba(24,26,33,.58))!important;border-color:rgba(255,255,255,.10)!important;
+    box-shadow:0 14px 34px -22px rgba(0,0,0,.7),inset 0 1px 0 rgba(255,255,255,.08)!important}
+  body.dark.emp-app .sumstrip > div + div,body.dark.emp-app .dayrow{border-color:rgba(255,255,255,.07)}
+  body.emp-app main{gap:14px!important}
+}
 </style>
 </head>
 <body>
@@ -2275,20 +2314,20 @@ const MORE_VIEWS = {
 checkin(){
   const id = myEmp(); const e = S.emps[id] || {}; const ym = today.slice(0,7); const s = monthStats(id, ym); const L = ledger(id);
   return head(`Hello${e.name?", "+esc(e.name.split(" ")[0]):""}`, fmtDay(today)) + checkinCard() +
-    `<div class="kpis emp-kpis"><div class="kpi"><span class="k">Present this month</span><span class="v">${s.P}</span><span class="s">${s.HD} half day${s.HD===1?"":"s"}</span></div>
-     <div class="kpi"><span class="k">Late marks</span><span class="v">${s.late}</span><span class="s">Every 3 = half day's pay${s.lateLop?` · ${s.lateLop} day deducted`:""}</span></div>
-     <div class="kpi"><span class="k">Absent</span><span class="v">${s.A}</span><span class="s">This month</span></div>
-     <div class="kpi"><span class="k">Paid leave balance</span><span class="v">${L.balance}</span><span class="s">1 earned every month</span></div></div>
-    <div class="panel"><div class="tt-head"><h2>Last 7 working days</h2><a class="btn small ghost" href="#myatt">See all</a></div><div class="days">${myRecent(id)}</div></div>`;
+    `<div class="sumstrip"><div><b>${s.P}</b><span>Present</span></div><div><b>${s.late}</b><span>Late${s.lateLop?` · ${s.lateLop}d cut`:""}</span></div><div><b>${s.A}</b><span>Absent</span></div><div><b>${L.balance}</b><span>Leave left</span></div></div>
+    <div class="panel"><div class="tt-head"><h2>Recent days</h2><a class="btn small ghost" href="#myatt">See all</a></div><div class="days">${myRecent(id)}</div></div>`;
 },
 myatt(){
   const id = myEmp(); const ym = UI.myMonth || today.slice(0,7); const [y,m] = ym.split("-").map(Number); const dim = new Date(y,m,0).getDate(); const e = S.emps[id] || {};
   const s = monthStats(id, ym); const rows = [];
-  for(let i=dim;i>=1;i--){ const d = `${ym}-${pad(i)}`; if(d > today) continue; if(e.joined && d < e.joined) continue; rows.push(dayRow(id, d)); }
-  return head("My attendance", monthName(ym), monthBar(ym, "my")) +
-    `<div class="kpis emp-kpis"><div class="kpi"><span class="k">Present</span><span class="v">${s.P}</span></div><div class="kpi"><span class="k">Half day</span><span class="v">${s.HD}</span></div><div class="kpi"><span class="k">Absent</span><span class="v">${s.A}</span></div><div class="kpi"><span class="k">Late</span><span class="v">${s.late}</span><span class="s">${s.lateLop?`${s.lateLop} day pay cut`:"3 = half day's pay"}</span></div></div>
-    <div class="panel"><div class="days">${rows.join("") || `<p class="empty">Nothing for this month yet.</p>`}</div></div>
-    <p class="note">Shift 10:00 AM – 6:00 PM. In after 10:15 AM is late; 3 lates in a month cost half a day's pay. In after 1:00 PM or out before 2:00 PM is a half day.</p>`;
+  for(let i=dim;i>=1;i--){ const d = `${ym}-${pad(i)}`; if(d > today) continue; if(e.joined && d < e.joined) continue;
+    if(isOff(d) && !ciFor(id, d) && !S.att[d]?.marks?.[id]) continue;   // skip quiet weekly offs and holidays
+    rows.push(dayRow(id, d)); }
+  return head("My attendance", "", monthBar(ym, "my")) +
+    `<div class="sumstrip"><div><b>${s.P}</b><span>Present</span></div><div><b>${s.HD}</b><span>Half day</span></div><div><b>${s.A}</b><span>Absent</span></div><div><b>${s.late}</b><span>Late</span></div></div>
+    ${s.late ? `<p class="hint">${s.late} late mark${s.late===1?"":"s"} this month${s.lateLop ? ` · ${s.lateLop} day's pay deducted` : ` · ${3 - s.late % 3} more = half day's pay cut`}</p>` : ""}
+    <div class="panel daypanel"><div class="days">${rows.join("") || `<p class="empty">Nothing for this month yet.</p>`}</div></div>
+    <p class="hint">Shift 10:00 AM – 6:00 PM · late after 10:15 AM · half day if in after 1 PM or out before 2 PM</p>`;
 },
 myleave(){
   const id = myEmp(); const L = ledger(id);
@@ -2535,13 +2574,17 @@ function checkinCard(){
   return `<div class="panel ck-card">${err}${note}${body}</div>`;
 }
 // one day as a compact card row: date chip · in/out times · status
-function dayRow(id, d, opts={}){
+function dayRow(id, d){
   const c = ciFor(id, d), v = ciEval(c), off = isOff(d), st = statusOn(id, d); const dt = parse(d);
   const chip = `<div class="dr-date"><b>${dt.getDate()}</b><small>${dt.toLocaleDateString("en-IN",{weekday:"short"})}</small></div>`;
-  const times = c ? `<span>${tmIST(c.in.t)}</span><span class="dr-arrow">→</span><span>${c.out?tmIST(c.out.t):"—"}</span>` : `<span class="dr-none">${off ? (HOL[d] ? esc(HOL[d].name||"Holiday") : "Weekly off") : leaveOn(id,d) ? "On leave" : S.att[d]?.marks?.[id] ? "Marked by HR" : "No check-in"}</span>`;
-  const sub = [c ? esc(placeName(c.in.place)) : "", c && v && c.out ? m2hm(Math.max(0, v.outM - v.inM)) : "", c && S.att[d]?.marks?.[id] ? "Status set by HR" : ""].filter(Boolean).join(" · ");
-  const pill = off && !st ? `<span class="pill mute">Off</span>` : statusPill(st);
-  return `<div class="dayrow${off?" off":""}">${chip}<div class="dr-mid"><div class="dr-times">${times}</div>${sub?`<div class="dr-sub">${sub}</div>`:""}${ciFlags(c, v, d) ? `<div class="dr-flags">${ciFlags(c, v, d)}</div>` : ""}</div><div class="dr-st">${pill}</div></div>`;
+  const main = c ? `<span>${tmIST(c.in.t)}</span><span class="dr-arrow">–</span><span>${c.out ? tmIST(c.out.t) : "…"}</span>`
+    : `<span class="dr-none">${off ? (HOL[d] ? esc(HOL[d].name||"Holiday") : "Weekly off") : leaveOn(id,d) ? "On leave" : S.att[d]?.marks?.[id] ? "Marked by HR" : st==="A" ? "No check-in" : d===today ? "Not checked in yet" : "No record"}</span>`;
+  const sub = c ? [esc(placeName(c.in.place)), c.out && v ? m2hm(Math.max(0, v.outM - v.inM)) : ""].filter(Boolean).join(" · ") : "";
+  // one label on the right: the most useful thing to know about the day
+  const tag = off && !st ? "" : (v && v.st==="P" && v.late && !S.att[d]?.marks?.[id]) ? `<span class="tag warn">Late</span>`
+    : (v && v.noOut && d < today && !S.att[d]?.marks?.[id]) ? `<span class="tag bad">No check-out</span>`
+    : st==="P" ? `<span class="tag ok">Present</span>` : st==="HD" ? `<span class="tag warn">Half day</span>` : st==="A" ? `<span class="tag bad">Absent</span>` : st==="L" ? `<span class="tag leave">Leave</span>` : "";
+  return `<div class="dayrow${off?" off":""}">${chip}<div class="dr-mid"><div class="dr-times">${main}</div>${sub?`<div class="dr-sub">${sub}</div>`:""}</div><div class="dr-st">${tag}</div></div>`;
 }
 function myRecent(id){
   const out = []; let d = today;
