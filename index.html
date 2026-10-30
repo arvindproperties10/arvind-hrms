@@ -1772,6 +1772,8 @@ body.dark .ck-selfie{box-shadow:0 0 0 4px rgba(255,255,255,.12),0 10px 26px -8px
 #overlay .scrim{z-index:120}#overlay .drawer,#overlay .modal{z-index:121}
 .uc-edit input[type=text],.uc-edit input:not([type]),.uc-edit select{min-height:44px;border-radius:14px!important;padding:0 14px;border:1px solid var(--line)!important;background:var(--surface);font-size:15px;width:100%;box-sizing:border-box}
 body.dark .uc-edit input:not([type]),body.dark .uc-edit select{background:rgba(255,255,255,.06);color:var(--ink)}
+
+.upd-bar{position:fixed;left:50%;transform:translateX(-50%);top:calc(env(safe-area-inset-top,0px) + 10px);z-index:200;border:0;border-radius:999px;padding:10px 18px;font:600 14px/1.2 inherit;background:#0b6b4f;color:#fff;box-shadow:0 6px 20px rgba(0,0,0,.25);cursor:pointer}
 </style>
 </head>
 <body>
@@ -4071,6 +4073,28 @@ if("serviceWorker" in navigator){
   navigator.serviceWorker.addEventListener("controllerchange", () => { if(hadController && !reloaded){ reloaded = true; location.reload(); } hadController = true; });
   window.addEventListener("load", () => navigator.serviceWorker.register("sw.js", {updateViaCache:"none"}).then(r => { r.update().catch(()=>{}); document.addEventListener("visibilitychange", () => { if(document.visibilityState==="visible") r.update().catch(()=>{}); }); }).catch(() => {}));
 }
+// Version check: whenever the app is opened or brought back to the front, ask GitHub for the latest version number.
+// If it is newer than what is running, reload (straight away if nothing is open, otherwise offer a button).
+window.APP_VERSION = "20261030101208";
+(function(){
+  let busy = false, shown = false;
+  function bar(v){ if(shown) return; shown = true; const b = document.createElement("button"); b.className = "upd-bar"; b.textContent = "New version ready — tap to update"; b.onclick = () => go(v); document.body.appendChild(b); }
+  function go(v){ try{ sessionStorage.setItem("apUpd", v); }catch(_){} location.reload(); }
+  async function check(){
+    if(busy || !navigator.onLine) return; busy = true;
+    try{
+      const r = await fetch("version.json?t=" + Date.now(), {cache:"no-store"}); if(!r.ok) return;
+      const v = (await r.json()).v; if(!v || v === window.APP_VERSION) return;
+      let tried = null; try{ tried = sessionStorage.getItem("apUpd"); }catch(_){}
+      if(tried === v){ bar(v); return; }          // already reloaded once for this version; don't loop
+      const open = document.querySelector("#overlay .drawer, #overlay .modal") || document.querySelector("video");
+      if(open) bar(v); else go(v);
+    }catch(_){} finally{ busy = false; }
+  }
+  window.addEventListener("load", () => setTimeout(check, 1500));
+  document.addEventListener("visibilitychange", () => { if(document.visibilityState === "visible") check(); });
+  setInterval(() => { if(document.visibilityState === "visible") check(); }, 10*60*1000);
+})();
 </script>
 </body>
 </html>
