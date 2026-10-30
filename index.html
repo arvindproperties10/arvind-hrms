@@ -1563,6 +1563,21 @@ body.dark .tag.ok{color:#34c759}body.dark .tag.warn{color:#ff9f0a}body.dark .tag
   body.emp-app .daypanel{padding-left:12px!important;padding-right:12px!important}
   body.emp-app .head{padding-left:10px!important;padding-right:10px!important}
 }
+/* ---- team directory ---- */
+.teamsearch input{width:100%;min-height:46px;border-radius:16px;padding:0 16px;font-size:15px}
+.grp-h{display:flex;align-items:center;gap:8px;margin:10px 2px 4px;font-size:13px!important;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.grp-h span{font-weight:600;color:var(--muted);opacity:.7}
+.sect-h{margin:6px 6px -4px;font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.person{display:grid;grid-template-columns:42px minmax(0,1fr) auto;gap:12px;align-items:center;padding:11px 2px;border-bottom:1px solid var(--line)}
+.person:last-child{border-bottom:0}
+.person .av{width:42px;height:42px;font-size:14px}
+.ps-mid{display:flex;flex-direction:column;min-width:0}
+.ps-mid b{font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ps-mid small{font-size:12.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ps-meta{font-size:11.5px!important;opacity:.85}
+.ps-call{display:grid;place-items:center;width:40px;height:40px;border-radius:50%;background:rgba(31,157,85,.12);color:#1f9d55}
+.ps-call svg{width:19px;height:19px}
+body.emp-app .person{border-bottom-color:rgba(16,42,94,.07)}
 </style>
 </head>
 <body>
@@ -1582,6 +1597,7 @@ body.dark .tag.ok{color:#34c759}body.dark .tag.warn{color:#ff9f0a}body.dark .tag
       <a href="#myatt" data-v="myatt" hidden><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="4" width="14" height="13" rx="1.5"/><path d="M3 8h14M7 2.5v3M13 2.5v3"/></svg>My attendance</a>
       <a href="#myleave" data-v="myleave" hidden><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 16c0-6 4-11 12-12-1 8-6 12-12 12z"/><path d="M4 16l6-6"/></svg>My leave</a>
       <a href="#myslips" data-v="myslips" hidden><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M5 2.5h7l3 3v12H5z"/><path d="M8 9h4M8 12h4"/></svg>My payslips</a>
+      <a href="#team" data-v="team" hidden><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="8" cy="7" r="3"/><path d="M2.5 17c.6-3 2.8-4.5 5.5-4.5s4.9 1.5 5.5 4.5"/><path d="M13 4.5a3 3 0 0 1 0 5M15 12.8c1.4.6 2.3 2 2.6 4.2"/></svg>Team directory</a>
       <a href="#myinc" data-v="myinc" hidden><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 15l4.5-4.5 3 3L17 7"/><path d="M12.5 7H17v4.5"/></svg>My incentives</a>
       <a href="#access" data-v="access" hidden><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="4" y="9" width="12" height="8" rx="2"/><path d="M7 9V6.5a3 3 0 0 1 6 0V9"/><circle cx="10" cy="13" r="1.2" fill="currentColor"/></svg>Users &amp; access</a>
     </nav>
@@ -1646,6 +1662,7 @@ function perm(v){
   if(v==="myinc"){ const e = S.emps[myEmp()]; if(!myEmp() || (e && (NO_INCENTIVE.has(e.dept) || e.noIncentive))) return "none"; }
   if(SELF_VIEWS.includes(v)) return myEmp() ? "edit" : "none";
   if(v==="selftest") return "edit";
+  if(v==="team") return (myEmp() || isStaffU()) ? "edit" : "none";
   if(isOwnerV) return "edit";
   if(v==="access" || !isStaffU()) return "none";
   if(v==="checkins") return ME.perms?.checkins || ME.perms?.attendance || "none";
@@ -1661,7 +1678,7 @@ function firstAllowed(){ if(!isStaffU() && myEmp()) return "checkin"; for(const 
 // which section a stored path belongs to, for the in-page write guard
 function pathSection(path){
   if(path.startsWith("data/hr/salaries") || path.startsWith("data/hr/payruns") || path.startsWith("data/hr/config/payroll") || path.startsWith("payslips")) return "payroll";
-  if(path.startsWith("employees")) return "employees";
+  if(path.startsWith("employees") || path.startsWith("directory")) return "employees";
   if(path.startsWith("attendance") || path.startsWith("attfix") || path.startsWith("config/app")) return "attendance";
   if(path.startsWith("leaves") || path.startsWith("holidays")) return "leave";
   if(path.startsWith("data/hr/incentives") || path.startsWith("data/hr/config/incentive") || path.startsWith("data/hr/registrations") || path.startsWith("myinc")) return "incentives";
@@ -1683,7 +1700,7 @@ function wrapDoc(r){ return {id:r.id, path:r.path, get:()=>r.get(), onSnapshot:(
 function wrapCol(c){ const w = wrapQ(c); w.path = c.path; w.doc = id => wrapDoc(id===undefined ? c.doc() : c.doc(id)); w.add = async d => { const g = deny(c.path); if(g) return g; return wrapDoc(await c.add(d)); }; return w; }
 function guardDb(raw){ return {doc:pp=>wrapDoc(raw.doc(pp)), collection:pp=>wrapCol(raw.collection(pp)),
   batch: ops => { for(const o of ops){ const g = deny(o.path); if(g) return g; } return raw.batch(ops); }, SERVER_TIME: raw.SERVER_TIME}; }
-const S = { emps:{}, sal:{}, att:{}, leaves:{}, runs:{}, inc:{}, cfgDoc:{}, incCfg:{}, reg:{}, ci:{}, slips:{}, myinc:{} };
+const S = { emps:{}, sal:{}, att:{}, leaves:{}, runs:{}, inc:{}, cfgDoc:{}, incCfg:{}, reg:{}, ci:{}, slips:{}, myinc:{}, dir:{} };
 const CFG_DEF = {payDay:5, incDay:20};
 const monthlyPay = s => s ? (+s.pay || ((+s.basic||0)+(+s.hra||0)+(+s.allowance||0))) : 0;
 const cfg = () => { const c = {...CFG_DEF}; for(const k of Object.keys(CFG_DEF)) if(typeof S.cfgDoc[k]==="number") c[k]=S.cfgDoc[k]; return c; };
@@ -1830,7 +1847,7 @@ const quiet = e => console.warn(e);
 function resetData(){
   for(const k of Object.keys(S)) S[k] = {};
   for(const k of Object.keys(HOL)) delete HOL[k];
-  USERS = {}; APP = {}; CI_LOADED.clear(); CI_FROM = ""; loaded.emp = false; LEDGER = {};
+  USERS = {}; APP = {}; DIR_LOADED = false; CI_LOADED.clear(); CI_FROM = ""; loaded.emp = false; LEDGER = {};
 }
 const intoMap = (target, s, key = d => d.id) => { s.docs.forEach(d => target[key(d)] = d.data()); };
 function subscribe(){
@@ -1838,7 +1855,7 @@ function subscribe(){
   sub(db.doc("config/app").onSnapshot(d => { APP = d.exists ? d.data() : {}; render(); }, quiet));
   const me = ME.empId || "";
   if(isStaffU()){
-    sub(db.collection("employees").onSnapshot(s => { S.emps={}; s.docs.forEach(d=>{ const x=d.data(); if(x.dept) x.dept=normDept(x.dept); S.emps[d.id]=x; }); loaded.emp=true; render(); }, quiet));
+    sub(db.collection("employees").onSnapshot(s => { S.emps={}; s.docs.forEach(d=>{ const x=d.data(); if(x.dept) x.dept=normDept(x.dept); S.emps[d.id]=x; }); loaded.emp=true; queueDirSync(); render(); }, quiet));
     sub(db.collection("attendance").onSnapshot(s => { S.att={}; intoMap(S.att, s); render(); }, quiet));
     sub(db.collection("leaves").onSnapshot(s => { S.leaves={}; intoMap(S.leaves, s); render(); }, quiet));
     sub(db.doc("data/hr/config/payroll").onSnapshot(d => { S.cfgDoc = d.exists ? d.data() : {}; render(); }, quiet));
@@ -1853,10 +1870,12 @@ function subscribe(){
       sub(db.collection("data/hr/registrations").onSnapshot(s => { S.reg={}; intoMap(S.reg, s); render(); }, quiet));
       sub(db.doc("data/hr/config/incentive").onSnapshot(d => { S.incCfg = d.exists ? d.data() : {}; render(); }, quiet));
     }
+    sub(db.collection("directory").onSnapshot(s => { S.dir = {}; intoMap(S.dir, s); DIR_LOADED = true; queueDirSync(); render(); }, quiet));
     if(isOwnerV) sub(db.collection("users").onSnapshot(s => { USERS = {}; s.docs.forEach(d => USERS[d.id] = {...d.data(), uid:d.id}); render(); }, quiet));
     if(canEditView("attendance")) setTimeout(cleanupSelfies, 4000);
   } else if(me){
     sub(db.doc("employees/"+me).onSnapshot(d => { S.emps = {}; if(d.exists){ const x = d.data(); if(x.dept) x.dept = normDept(x.dept); S.emps[me] = x; } loaded.emp = true; render(); }, quiet));
+    sub(db.collection("directory").onSnapshot(s => { S.dir = {}; intoMap(S.dir, s); render(); }, quiet));
     sub(db.collection("checkins").where("empId", "==", me).onSnapshot(s => { S.ci = {}; intoMap(S.ci, s); render(); }, quiet));
     sub(db.collection("attfix").where("empId", "==", me).onSnapshot(s => { S.att = {}; s.docs.forEach(d => { const x = d.data(); if(x.date && x.mark) S.att[x.date] = {marks:{[me]:x.mark}}; }); render(); }, quiet));
     sub(db.collection("leaves").where("empId", "==", me).onSnapshot(s => { S.leaves = {}; intoMap(S.leaves, s); render(); }, quiet));
@@ -1870,6 +1889,20 @@ function subscribe(){
 function mirrorMarks(date, marks){
   if(!marks || !db) return;
   const ops = Object.entries(marks).map(([id, v]) => v ? {op:"set", path:`attfix/${date}_${id}`, data:{empId:id, date, mark:v}} : {op:"delete", path:`attfix/${date}_${id}`});
+  if(ops.length) db.batch(ops).catch(quiet);
+}
+
+// ---- staff directory: the basic, non-private details every employee can see ----
+let DIR_LOADED = false, dirTimer = 0;
+function dirEntry(id, e){ const tl = S.emps[e.reportsTo]; return {name:e.name||"", code:e.code||"", designation:e.designation||"", dept:e.dept||"", team:tl?.name||"", location:e.location||"", companyPhone:e.companyPhone||""}; }
+function queueDirSync(){ clearTimeout(dirTimer); dirTimer = setTimeout(syncDirectory, 1500); }
+async function syncDirectory(){
+  if(!db || !loaded.emp || !DIR_LOADED || !canEditView("employees")) return;
+  const want = {}; for(const [id,e] of Object.entries(S.emps)) if(e.status!=="Exited" && e.name) want[id] = dirEntry(id, e);
+  const ops = [];
+  const pick = x => x ? {name:x.name||"", code:x.code||"", designation:x.designation||"", dept:x.dept||"", team:x.team||"", location:x.location||"", companyPhone:x.companyPhone||""} : null;
+  for(const [id,d] of Object.entries(want)) if(JSON.stringify(d) !== JSON.stringify(pick(S.dir[id]))) ops.push({op:"set", path:"directory/"+id, data:d});
+  for(const id of Object.keys(S.dir)) if(!want[id]) ops.push({op:"delete", path:"directory/"+id});
   if(ops.length) db.batch(ops).catch(quiet);
 }
 
@@ -2044,15 +2077,15 @@ function roleLabel(u){ if(!u) return ""; if(u.role==="owner") return "Administra
 const TABS = [["checkin","Today",'<path d="M12 21s-6.5-6.1-6.5-11a6.5 6.5 0 0 1 13 0c0 4.9-6.5 11-6.5 11z"/><circle cx="12" cy="10" r="2.3"/>'],
   ["myatt","Attendance",'<rect x="3.5" y="5" width="17" height="15" rx="2"/><path d="M3.5 9.5h17M8 3v4M16 3v4M8.5 14.5l2.2 2.2 4.8-4.8"/>'],
   ["myleave","Leave",'<path d="M5 19c0-7.5 5-13.5 14-14.5-1.2 9.5-7.2 14.5-14 14.5z"/><path d="M5 19l7-7"/>'],
-  ["myslips","Payslips",'<path d="M6 3h9l4 4v14H6z"/><path d="M9.5 11h6M9.5 15h6"/>'],
-  ["myinc","Incentives",'<path d="M4 17l5.5-5.5 3.5 3.5L20 8"/><path d="M15 8h5v5"/>']];
+  ["team","Team",'<circle cx="9" cy="8.5" r="3.2"/><path d="M3 19.5c.7-3.4 3.2-5.2 6-5.2s5.3 1.8 6 5.2"/><path d="M15.5 5.6a3 3 0 0 1 0 5.8M17.6 14.6c1.6.7 2.7 2.3 3 4.9"/>'],
+  ["myslips","Pay",'<rect x="3" y="6" width="18" height="12" rx="2"/><circle cx="12" cy="12" r="2.6"/><path d="M6.5 9.5v5M17.5 9.5v5"/>']];
 function renderTabbar(){
   const tb = $("#tabbar"); if(!tb) return;
   const on = !needLogin() && !isStaffU() && !!myEmp();
   document.body.classList.toggle("emp-app", on);
   if(!on){ tb.hidden = true; return; }
   tb.hidden = false;
-  tb.innerHTML = TABS.filter(([v]) => canSee(v)).map(([v,l,ic]) => `<a href="#${v}" data-v="${v}" ${view===v?'aria-current="page"':""}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ic}</svg><span>${l}</span></a>`).join("");
+  tb.innerHTML = TABS.filter(([v]) => canSee(v)).map(([v,l,ic]) => `<a href="#${v}" data-v="${v}" ${(view===v || (v==="myslips" && view==="myinc"))?'aria-current="page"':""}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ic}</svg><span>${l}</span></a>`).join("");
 }
 function renderShell(){
   renderTabbar();
@@ -2351,11 +2384,16 @@ myleave(){
 },
 myslips(){
   const id = myEmp(); const list = Object.values(S.slips).filter(p => p.empId===id).sort((a,b) => (b.ym||"").localeCompare(a.ym||""));
-  return head("My payslips", "") + (list.length ? `<div class="cards">${list.map(p => `<div class="panel mcard"><div class="mc-top"><div><b>${monthName(p.ym)}</b><small>${p.paid} paid day${p.paid===1?"":"s"}${p.lateLop?` · ${p.lates} late marks`:""}</small></div><span class="mc-amt">${inr(p.net)}</span></div><button class="btn primary mc-btn" data-myslip="${p.ym}">Download payslip (PDF)</button></div>`).join("")}</div>` : `<div class="panel"><p class="empty">Payslips appear here once HR finalizes a month's payroll.</p></div>`);
+  const incHtml = canSee("myinc") ? `<h2 class="sect-h">Incentives</h2>` + MORE_VIEWS.myincBody() : "";
+  return head("My pay", "") + `<h2 class="sect-h">Payslips</h2>` + (list.length ? `<div class="cards">${list.map(p => `<div class="panel mcard"><div class="mc-top"><div><b>${monthName(p.ym)}</b><small>${p.paid} paid day${p.paid===1?"":"s"}${p.lateLop?` · ${p.lates} late marks`:""}</small></div><span class="mc-amt">${inr(p.net)}</span></div><button class="btn primary mc-btn" data-myslip="${p.ym}">Download payslip (PDF)</button></div>`).join("")}</div>` : `<div class="panel"><p class="empty">Payslips appear here once HR finalizes a month's payroll.</p></div>`) + incHtml;
 },
 myinc(){
   const id = myEmp(); const list = Object.values(S.myinc).filter(p => p.empId===id).sort((a,b) => (b.ym||"").localeCompare(a.ym||""));
-  return head("My incentives", "") + (list.length ? `<div class="cards">${list.map(p => `<div class="panel mcard"><div class="mc-top"><div><b>${monthName(p.ym)}</b><small>Paid on ${fmtD(p.payDate || incDue(p.ym))}</small></div><span class="mc-amt">${inr(p.total)}</span></div>
+  return head("My incentives", "") + MORE_VIEWS.myincBody();
+},
+myincBody(){
+  const id = myEmp(); const list = Object.values(S.myinc).filter(p => p.empId===id).sort((a,b) => (b.ym||"").localeCompare(a.ym||""));
+  return (list.length ? `<div class="cards">${list.map(p => `<div class="panel mcard"><div class="mc-top"><div><b>${monthName(p.ym)}</b><small>Paid on ${fmtD(p.payDate || incDue(p.ym))}</small></div><span class="mc-amt">${inr(p.total)}</span></div>
     <div class="mc-lines"><div><span>Site visits</span><b>${p.visits||0}${p.vAmt?` · ${inr(p.vAmt)}`:""}</b></div><div><span>Sq ft registered</span><b>${(p.sqft||0).toLocaleString("en-IN")}${p.sAmt?` · ${inr(p.sAmt)}`:""}</b></div>${(p.bonus||p.overall)?`<div><span>Top performer bonus</span><b>${inr((p.bonus||0)+(p.overall||0))}</b></div>`:""}${p.adj?`<div><span>Adjustment</span><b>${inr(p.adj)}</b></div>`:""}</div></div>`).join("")}</div>` : `<div class="panel"><p class="empty">Incentives appear here once HR finalizes a month.</p></div>`);
 },
 checkins(){
@@ -2371,6 +2409,20 @@ checkins(){
     `<div class="attsum"><span class="pill ok">${c0.in} of ${list.length} checked in</span><span class="pill warn">${c0.late} late</span><span class="pill warn">${c0.hd} half day</span><span class="pill mute">${c0.none} not checked in</span><span class="pill mute">${c0.out} checked out</span></div>
     <div class="tablewrap fill stickyhead"><table><thead><tr><th>Employee</th><th>Check-in</th><th>Check-out</th><th>Status</th><th>Flags</th><th></th></tr></thead><tbody>${rows || `<tr><td colspan="6" class="empty">No active employees on this date.</td></tr>`}</tbody></table></div>
 `;
+},
+team(){
+  const q = (UI.teamQ||"").trim().toLowerCase();
+  const src = Object.keys(S.dir).length ? S.dir : Object.fromEntries(Object.entries(S.emps).filter(([,e]) => e.status!=="Exited").map(([id,e]) => [id, {name:e.name, code:e.code, designation:e.designation, dept:e.dept, team:S.emps[e.reportsTo]?.name||"", location:e.location, companyPhone:e.companyPhone}]));
+  const all = Object.entries(src).map(([id,d]) => ({id, ...d})).filter(d => d.name);
+  const list = all.filter(d => !q || [d.name, d.code, d.designation, d.dept, d.team, d.location].join(" ").toLowerCase().includes(q));
+  const groups = {}; list.forEach(d => { const g = isTele(d.dept) ? "Tele-calling" : d.dept==="Team Leader" || /team lead/i.test(d.designation||"") ? "Team leaders" : isSalesR(d.dept) ? "Sales" : d.dept || "Others"; (groups[g] = groups[g] || []).push(d); });
+  const order = ["Team leaders","Sales","Tele-calling","Reception","Administration","Accounts","Housekeeping","Others"];
+  const keys = Object.keys(groups).sort((a,b) => (order.indexOf(a)<0?99:order.indexOf(a)) - (order.indexOf(b)<0?99:order.indexOf(b)) || a.localeCompare(b));
+  const card = d => `<div class="person"><span class="av">${esc(initials(d.name))}</span><div class="ps-mid"><b>${esc(d.name)}${d.id===myEmp()?` <span class="pill mute">You</span>`:""}</b><small>${esc(d.designation || d.dept || "")}</small><small class="ps-meta">${[d.code, d.team ? `${esc(d.team)}'s team` : "", esc(d.location||"")].filter(Boolean).join(" · ")}</small></div>${d.companyPhone ? `<a class="ps-call" href="tel:${esc(d.companyPhone.replace(/[^0-9+]/g,""))}" aria-label="Call ${esc(d.name)}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4h3l1.6 4-2 1.3a11 11 0 0 0 5.1 5.1l1.3-2 4 1.6v3a2 2 0 0 1-2.2 2A16 16 0 0 1 3 6.2 2 2 0 0 1 5 4z"/></svg></a>` : ""}</div>`;
+  return head("Team", `${all.length} people`) +
+    `<div class="teamsearch"><input type="search" id="teamQ" placeholder="Search name, role or team" value="${esc(UI.teamQ||"")}" autocomplete="off"></div>` +
+    (keys.length ? keys.map(k => `<div class="panel daypanel"><h2 class="grp-h">${esc(k)} <span>${groups[k].length}</span></h2>${groups[k].sort((a,b)=>a.name.localeCompare(b.name)).map(card).join("")}</div>`).join("") : `<div class="panel"><p class="empty">No one matches that search.</p></div>`) +
+    `<p class="hint">Only work details are shown here. Personal numbers, pay and attendance stay private.</p>`;
 },
 selftest(){
   const r = ST?.rows || []; const bad = r.filter(x => !x.ok).length;
@@ -3527,6 +3579,7 @@ document.addEventListener("click", async ev => {
 document.addEventListener("input", ev => {
   const id = ev.target.id;
   if(id==="empQ"){ UI.empQ=ev.target.value; render(); }
+  if(id==="teamQ"){ UI.teamQ=ev.target.value; render(); }
   if(id==="p_site") UI.punchPlace = ev.target.value;
   if(/^inc[vsan]_/.test(id)) UI.incDraft[id] = ev.target.value;
   if(id==="impText") importPreview();
@@ -3577,7 +3630,7 @@ document.addEventListener("keydown", async ev => {
 });
 
 Object.assign(VIEWS, MORE_VIEWS);
-const VALID = ["dashboard","employees","attendance","leave","payroll","incentives","access","checkin","checkins","myatt","myleave","myslips","myinc","selftest"];
+const VALID = ["dashboard","employees","attendance","leave","payroll","incentives","access","checkin","checkins","myatt","myleave","myslips","myinc","team","selftest"];
 // ---- phone: slide-out menu ----
 const isPhone = () => matchMedia("(max-width:760px)").matches;
 function setNav(open){ document.body.classList.toggle("navopen", open); const sc=$("#navScrim"); if(sc) sc.hidden = !open; const t=$("#navToggle"); if(t){ t.setAttribute("aria-expanded", String(open)); t.setAttribute("aria-label", open?"Close menu":"Open menu"); } if(open){ const a=document.querySelector("#nav a[aria-current]")||document.querySelector("#nav a:not([hidden])"); if(a) setTimeout(()=>a.focus({preventScroll:true}),260); } }

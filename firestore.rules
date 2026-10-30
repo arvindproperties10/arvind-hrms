@@ -74,6 +74,10 @@ service cloud.firestore {
       allow read: if isStaff() || (empOk() && id == myEmp());
       allow write: if canEdit('employees');
     }
+    match /directory/{id} {        // work details only (name, role, team, location, company phone)
+      allow read: if isStaff() || empOk();
+      allow write: if canEdit('employees');
+    }
     match /attendance/{d} {
       allow read: if isStaff();
       allow write: if canEdit('attendance');
