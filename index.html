@@ -1578,6 +1578,92 @@ body.dark .tag.ok{color:#34c759}body.dark .tag.warn{color:#ff9f0a}body.dark .tag
 .ps-call{display:grid;place-items:center;width:40px;height:40px;border-radius:50%;background:rgba(31,157,85,.12);color:#1f9d55}
 .ps-call svg{width:19px;height:19px}
 body.emp-app .person{border-bottom-color:rgba(16,42,94,.07)}
+/* ================= employee app v3: tidy check-in and sections ================= */
+.hello{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:6px 8px 0}
+.hello p{margin:0;font-size:14px;color:var(--muted);font-weight:500}
+.hello h1{margin:0;font-size:30px;letter-spacing:-.03em;line-height:1.1}
+.av.big{width:46px;height:46px;font-size:16px;flex:none}
+.sect-h{margin:4px 10px -6px!important;font-size:12.5px!important;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted)}
+.sect-row{display:flex;align-items:baseline;justify-content:space-between;margin:4px 10px -6px}
+.sect-row .sect-h{margin:0!important}
+.sect-link{font-size:13.5px;font-weight:600;color:var(--accent);text-decoration:none}
+.sumstrip.three{grid-template-columns:repeat(3,minmax(0,1fr))}
+.hint{margin:-4px 10px 0!important;text-align:left!important}
+/* check-in card */
+.ck-card{display:flex;flex-direction:column;align-items:stretch!important;text-align:left!important;gap:14px!important}
+.ck-card > *{max-width:none!important}
+.ck-top{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.ck-date{font-size:13px;color:var(--muted);font-weight:600}
+.ck-state{display:inline-flex;align-items:center;gap:7px;font-size:13px;font-weight:700;padding:5px 11px 5px 9px;border-radius:999px;background:rgba(110,110,115,.12);color:var(--muted)}
+.ck-state i{width:8px;height:8px;border-radius:50%;background:currentColor}
+.ck-state.live{background:rgba(31,157,85,.13);color:#1f9d55}.ck-state.live i{animation:ckpulse 1.6s ease-in-out infinite}
+.ck-state.ok{background:rgba(0,113,227,.12);color:var(--accent)}
+.ck-state.done{background:rgba(0,113,227,.12);color:var(--accent)}
+.ck-state.busy{background:rgba(199,119,0,.13);color:#c77700}.ck-state.busy i{animation:ckpulse 1s ease-in-out infinite}
+@keyframes ckpulse{50%{opacity:.25}}
+.ck-center{display:flex;flex-direction:column;align-items:center;text-align:center;gap:4px;padding:4px 0}
+.ck-time{font-size:52px!important;font-weight:700;letter-spacing:-.04em;margin:0!important;line-height:1.05;font-variant-numeric:tabular-nums}
+.ck-msg{margin:6px 0 0;font-size:17px;font-weight:700}
+.ck-sub{margin:0;font-size:13px;color:var(--muted);text-align:center}
+.ck-note{margin:0;font-size:13px;color:var(--muted);background:rgba(0,113,227,.07);padding:9px 12px;border-radius:14px}
+.ck-err{display:flex;flex-direction:column;gap:2px;padding:11px 13px;border-radius:16px;background:rgba(215,0,21,.08);font-size:13px}
+.ck-err b{color:#d70015;font-size:13.5px}
+.btn.ck-go{width:100%;min-height:56px;border-radius:18px!important;font-size:17px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:9px}
+.btn.ck-go svg{width:21px;height:21px}
+.btn.ck-out{background:linear-gradient(180deg,#ff9f0a,#f08400)!important;border-color:transparent!important;color:#fff!important}
+.ck-row{display:flex;justify-content:center;gap:6px;margin-top:-6px}
+.ck-link{min-height:40px;font-weight:600;color:var(--accent)!important;cursor:pointer}
+.btn.ghost.ck-link{align-self:center;margin-top:-6px}
+.ck-ic{display:grid;place-items:center;width:44px;height:44px;border-radius:14px;background:rgba(0,113,227,.1);color:var(--accent)}
+.ck-ic svg{width:24px;height:24px}
+.ck-ic.big{width:60px;height:60px;border-radius:20px}.ck-ic.big svg{width:30px;height:30px}
+.ck-where{display:flex;align-items:center;gap:8px;padding:10px 12px;border-radius:14px;background:rgba(31,157,85,.10);color:#1f7a45;font-size:14px}
+.ck-where svg{width:18px;height:18px;flex:none}
+.ck-selfie{width:132px!important;height:132px!important;border-radius:50%!important;object-fit:cover;box-shadow:0 0 0 4px rgba(255,255,255,.9),0 10px 26px -8px rgba(16,42,94,.4)!important}
+.ck-split{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.ck-split.three{grid-template-columns:repeat(3,1fr)}
+.ck-split > div{display:flex;flex-direction:column;gap:2px;padding:12px 14px;border-radius:18px;background:rgba(0,113,227,.06)}
+.ck-split span{font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.ck-split b{font-size:22px;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.ck-split.three b{font-size:18px}
+.ck-split small{font-size:12.5px;color:var(--muted)}
+.ck-foot{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.ck-place{display:inline-flex;align-items:center;gap:5px;font-size:12.5px;color:var(--muted);margin-left:auto}
+.ck-place svg{width:14px;height:14px}
+.ck-consent h2{margin:0;font-size:19px}
+.ck-list{margin:0;padding:0 0 0 18px;display:flex;flex-direction:column;gap:8px;font-size:14px;line-height:1.45}
+body.dark .ck-split > div{background:rgba(255,255,255,.05)}
+body.dark .ck-where{color:#5fd38a}
+body.dark .ck-selfie{box-shadow:0 0 0 4px rgba(255,255,255,.12),0 10px 26px -8px rgba(0,0,0,.6)!important}
+/* leave */
+.lv-form{gap:12px!important}
+.lv-dates{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.lv-form .field label{font-size:12.5px;font-weight:600}
+.opt{font-weight:400;color:var(--muted)}
+.lvrow{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 2px;border-bottom:1px solid var(--line)}
+.lvrow:last-child{border-bottom:0}
+.lv-main{display:flex;flex-direction:column;min-width:0}
+.lv-main b{font-size:15px}
+.lv-main small{font-size:12.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lv-side{display:flex;align-items:center;gap:6px;flex:none}
+@media (max-width:760px){
+  /* the bottom bar replaces the page links in the slide-out menu */
+  body.emp-app #nav a,body.emp-app #nav .navsep{display:none!important}
+  body.emp-app .lvrow{border-bottom-color:rgba(16,42,94,.07)}
+  body.emp-app .ck-card{padding:18px 16px!important}
+  body.emp-app .head{padding-top:8px!important}
+  body.emp-app .head h1{font-size:30px!important}
+  .lv-dates input{min-height:46px}
+  body.emp-app .teamsearch input{background:rgba(255,255,255,.7);border:1px solid rgba(255,255,255,.8);box-shadow:inset 0 1px 2px rgba(16,42,94,.06)}
+  body.emp-app .mcard .mc-btn{border-radius:16px}
+}
+.ck-split b{white-space:nowrap}
+.ck-split.three > div{padding:12px 10px}
+.ck-split.three b{font-size:16px}
+@media (max-width:760px){
+  .lv-dates{grid-template-columns:minmax(0,1fr)}
+  body.emp-app .panel .empty{margin:0;padding:4px 0;font-size:14px}
+}
 </style>
 </head>
 <body>
@@ -2356,9 +2442,12 @@ async function importJson(file){
 const MORE_VIEWS = {
 checkin(){
   const id = myEmp(); const e = S.emps[id] || {}; const ym = today.slice(0,7); const s = monthStats(id, ym); const L = ledger(id);
-  return head(`Hello${e.name?", "+esc(e.name.split(" ")[0]):""}`, fmtDay(today)) + checkinCard() +
-    `<div class="sumstrip"><div><b>${s.P}</b><span>Present</span></div><div><b>${s.late}</b><span>Late${s.lateLop?` · ${s.lateLop}d cut`:""}</span></div><div><b>${s.A}</b><span>Absent</span></div><div><b>${L.balance}</b><span>Leave left</span></div></div>
-    <div class="panel"><div class="tt-head"><h2>Recent days</h2><a class="btn small ghost" href="#myatt">See all</a></div><div class="days">${myRecent(id)}</div></div>`;
+  const h = istNow().mins / 60; const hello = h < 12 ? "Good morning" : h < 17 ? "Good afternoon" : "Good evening";
+  const first = (e.name || ME.name || "").split(" ")[0];
+  const recent = myRecent(id).split('<div class="dayrow').slice(1, 5).map(x => '<div class="dayrow' + x).join("");
+  return `<div class="hello"><div><p>${hello}</p><h1>${esc(first)}</h1></div><span class="av big">${esc(initials(e.name || ME.name))}</span></div>` + checkinCard() +
+    `<h2 class="sect-h">This month</h2><div class="sumstrip"><div><b>${s.P}</b><span>Present</span></div><div><b>${s.late}</b><span>Late${s.lateLop?` · ${s.lateLop}d cut`:""}</span></div><div><b>${s.A}</b><span>Absent</span></div><div><b>${L.balance}</b><span>Leave left</span></div></div>
+    <div class="sect-row"><h2 class="sect-h">Recent days</h2><a class="sect-link" href="#myatt">See all</a></div><div class="panel daypanel"><div class="days">${recent}</div></div>`;
 },
 myatt(){
   const id = myEmp(); const ym = UI.myMonth || today.slice(0,7); const [y,m] = ym.split("-").map(Number); const dim = new Date(y,m,0).getDate(); const e = S.emps[id] || {};
@@ -2366,7 +2455,7 @@ myatt(){
   for(let i=dim;i>=1;i--){ const d = `${ym}-${pad(i)}`; if(d > today) continue; if(e.joined && d < e.joined) continue;
     if(isOff(d) && !ciFor(id, d) && !S.att[d]?.marks?.[id]) continue;   // skip quiet weekly offs and holidays
     rows.push(dayRow(id, d)); }
-  return head("My attendance", "", monthBar(ym, "my")) +
+  return head("Attendance", "", monthBar(ym, "my")) +
     `<div class="sumstrip"><div><b>${s.P}</b><span>Present</span></div><div><b>${s.HD}</b><span>Half day</span></div><div><b>${s.A}</b><span>Absent</span></div><div><b>${s.late}</b><span>Late</span></div></div>
     ${s.late ? `<p class="hint">${s.late} late mark${s.late===1?"":"s"} this month${s.lateLop ? ` · ${s.lateLop} day's pay deducted` : ` · ${3 - s.late % 3} more = half day's pay cut`}</p>` : ""}
     <div class="panel daypanel"><div class="days">${rows.join("") || `<p class="empty">Nothing for this month yet.</p>`}</div></div>
@@ -2375,17 +2464,20 @@ myatt(){
 myleave(){
   const id = myEmp(); const L = ledger(id);
   const mine = Object.entries(S.leaves).map(([k,l]) => ({id:k, ...l})).filter(l => l.empId===id).sort((a,b) => (b.from||"").localeCompare(a.from||""));
-  const row = l => `<div class="req"><div><b>${fmtD(l.from)}${l.to!==l.from?` → ${fmtD(l.to)}`:""}</b> · ${l.days} day${l.days===1?"":"s"}${l.reason?`<div class="meta">${esc(l.reason)}</div>`:""}</div><div class="acts">${l.status==="pending" ? `<span class="pill warn">Waiting for approval</span><button class="btn small ghost" data-mlcancel="${l.id}">Withdraw</button>` : `<span class="pill ${l.status==="approved"?"ok":"bad"}">${l.status==="approved"?"Approved":"Rejected"}</span>`}</div></div>`;
-  return head("My leave", "") +
-    `<div class="kpis"><div class="kpi"><span class="k">Balance</span><span class="v">${L.balance}</span><span class="s">Paid leave days</span></div><div class="kpi"><span class="k">Earned</span><span class="v">${L.accrued}</span><span class="s">1 every month</span></div><div class="kpi"><span class="k">Used</span><span class="v">${L.used}</span><span class="s">${L.booked?`${L.booked} more booked`:"So far"}</span></div></div>
-    <div class="panel"><h2>Apply for leave</h2><div class="formgrid"><div class="field"><label for="ml_from">From</label><input type="date" id="ml_from" min="${today}" value="${today}"></div><div class="field"><label for="ml_to">To</label><input type="date" id="ml_to" min="${today}" value="${today}"></div></div>
-      <div class="field"><label for="ml_reason">Reason</label><textarea id="ml_reason" placeholder="Optional"></textarea></div><p class="note" style="margin:0">Days beyond your balance are unpaid. The CEO approves requests.</p><div><button class="btn primary" data-act="ml-apply">Send request</button></div></div>
-    <div class="panel"><h2>My requests</h2>${mine.length ? mine.map(row).join("") : `<p class="empty">No leave requests yet.</p>`}</div>`;
+  const row = l => `<div class="lvrow"><div class="lv-main"><b>${fmtDs(l.from)}${l.to!==l.from?` – ${fmtDs(l.to)}`:""}</b><small>${l.days} day${l.days===1?"":"s"}${l.reason?` · ${esc(l.reason)}`:""}</small></div><div class="lv-side">${l.status==="pending" ? `<span class="tag warn">Pending</span><button class="btn small ghost" data-mlcancel="${l.id}">Withdraw</button>` : `<span class="tag ${l.status==="approved"?"ok":"bad"}">${l.status==="approved"?"Approved":"Rejected"}</span>`}</div></div>`;
+  return head("Leave", "") +
+    `<div class="sumstrip three"><div><b>${L.balance}</b><span>Available</span></div><div><b>${L.accrued}</b><span>Earned</span></div><div><b>${L.used}</b><span>Used${L.booked?` · ${L.booked} booked`:""}</span></div></div>
+    <p class="hint">You earn 1 paid leave every month. Unused days carry forward.</p>
+    <h2 class="sect-h">Apply</h2>
+    <div class="panel lv-form"><div class="lv-dates"><div class="field"><label for="ml_from">From</label><input type="date" id="ml_from" min="${today}" value="${today}"></div><div class="field"><label for="ml_to">To</label><input type="date" id="ml_to" min="${today}" value="${today}"></div></div>
+      <div class="field"><label for="ml_reason">Reason <span class="opt">optional</span></label><textarea id="ml_reason" rows="2" placeholder="e.g. Family function"></textarea></div>
+      <button class="btn primary ck-go" data-act="ml-apply">Send request</button><p class="ck-sub">Days beyond your balance are unpaid. The CEO approves requests.</p></div>
+    <h2 class="sect-h">My requests</h2><div class="panel daypanel">${mine.length ? mine.map(row).join("") : `<p class="empty">No leave requests yet.</p>`}</div>`;
 },
 myslips(){
   const id = myEmp(); const list = Object.values(S.slips).filter(p => p.empId===id).sort((a,b) => (b.ym||"").localeCompare(a.ym||""));
   const incHtml = canSee("myinc") ? `<h2 class="sect-h">Incentives</h2>` + MORE_VIEWS.myincBody() : "";
-  return head("My pay", "") + `<h2 class="sect-h">Payslips</h2>` + (list.length ? `<div class="cards">${list.map(p => `<div class="panel mcard"><div class="mc-top"><div><b>${monthName(p.ym)}</b><small>${p.paid} paid day${p.paid===1?"":"s"}${p.lateLop?` · ${p.lates} late marks`:""}</small></div><span class="mc-amt">${inr(p.net)}</span></div><button class="btn primary mc-btn" data-myslip="${p.ym}">Download payslip (PDF)</button></div>`).join("")}</div>` : `<div class="panel"><p class="empty">Payslips appear here once HR finalizes a month's payroll.</p></div>`) + incHtml;
+  return head("Pay", "") + `<h2 class="sect-h">Payslips</h2>` + (list.length ? `<div class="cards">${list.map(p => `<div class="panel mcard"><div class="mc-top"><div><b>${monthName(p.ym)}</b><small>${p.paid} paid day${p.paid===1?"":"s"}${p.lateLop?` · ${p.lates} late marks`:""}</small></div><span class="mc-amt">${inr(p.net)}</span></div><button class="btn primary mc-btn" data-myslip="${p.ym}">Download payslip (PDF)</button></div>`).join("")}</div>` : `<div class="panel"><p class="empty">Payslips appear here once HR finalizes a month's payroll.</p></div>`) + incHtml;
 },
 myinc(){
   const id = myEmp(); const list = Object.values(S.myinc).filter(p => p.empId===id).sort((a,b) => (b.ym||"").localeCompare(a.ym||""));
@@ -2419,7 +2511,7 @@ team(){
   const order = ["Team leaders","Sales","Tele-calling","Reception","Administration","Accounts","Housekeeping","Others"];
   const keys = Object.keys(groups).sort((a,b) => (order.indexOf(a)<0?99:order.indexOf(a)) - (order.indexOf(b)<0?99:order.indexOf(b)) || a.localeCompare(b));
   const card = d => `<div class="person"><span class="av">${esc(initials(d.name))}</span><div class="ps-mid"><b>${esc(d.name)}${d.id===myEmp()?` <span class="pill mute">You</span>`:""}</b><small>${esc(d.designation || d.dept || "")}</small><small class="ps-meta">${[d.code, d.team ? `${esc(d.team)}'s team` : "", esc(d.location||"")].filter(Boolean).join(" · ")}</small></div>${d.companyPhone ? `<a class="ps-call" href="tel:${esc(d.companyPhone.replace(/[^0-9+]/g,""))}" aria-label="Call ${esc(d.name)}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4h3l1.6 4-2 1.3a11 11 0 0 0 5.1 5.1l1.3-2 4 1.6v3a2 2 0 0 1-2.2 2A16 16 0 0 1 3 6.2 2 2 0 0 1 5 4z"/></svg></a>` : ""}</div>`;
-  return head("Team", `${all.length} people`) +
+  return head("Team", `${all.length} people at Arvind Properties`) +
     `<div class="teamsearch"><input type="search" id="teamQ" placeholder="Search name, role or team" value="${esc(UI.teamQ||"")}" autocomplete="off"></div>` +
     (keys.length ? keys.map(k => `<div class="panel daypanel"><h2 class="grp-h">${esc(k)} <span>${groups[k].length}</span></h2>${groups[k].sort((a,b)=>a.name.localeCompare(b.name)).map(card).join("")}</div>`).join("") : `<div class="panel"><p class="empty">No one matches that search.</p></div>`) +
     `<p class="hint">Only work details are shown here. Personal numbers, pay and attendance stay private.</p>`;
@@ -2615,27 +2707,46 @@ function monthStats(id, ym){
 }
 
 // ---------- employee: today / check in ----------
+const PIN = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s-6.5-6.1-6.5-11a6.5 6.5 0 0 1 13 0c0 4.9-6.5 11-6.5 11z"/><circle cx="12" cy="10" r="2.3"/></svg>';
+const CAM = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>';
+const TICK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
+function ckState(label, cls){ return `<span class="ck-state ${cls}"><i></i>${label}</span>`; }
 function checkinCard(){
   const id = myEmp(); const now = istNow(); const c = ciFor(id, now.date); const v = ciEval(c);
-  if(!consentOk()) return `<div class="panel ck-card"><h2>Before you check in</h2>
-    <p>Arvind Properties records your <b>location</b> and a <b>selfie</b> only at the moment you tap Check in, and your location again when you tap Check out. This confirms you're at one of the offices. Your location is <b>not</b> tracked at any other time.</p>
-    <p>Check-in records are used only for attendance and payroll. Selfies are deleted after 90 days. HR and management can see them; other employees can't.</p>
-    <div><button class="btn primary big" data-act="consent-ok">I agree</button></div></div>`;
-  const err = CK.err ? `<div class="banner bad ck-err"><span>${esc(CK.err)}</span></div>` : "";
+  if(!consentOk()) return `<div class="panel ck-card ck-consent">
+    <div class="ck-ic">${PIN}</div><h2>Before your first check-in</h2>
+    <ul class="ck-list"><li>Your <b>location</b> and a <b>selfie</b> are taken only when you tap Check in. Check out takes location only.</li>
+      <li>You're <b>never tracked</b> at any other time.</li>
+      <li>Only HR and management can see check-ins. Selfies are deleted after 90 days.</li></ul>
+    <button class="btn primary big ck-go" data-act="consent-ok">I agree</button></div>`;
+  const err = CK.err ? `<div class="ck-err"><b>Couldn't check ${CK.kind}</b><span>${esc(CK.err)}</span></div>` : "";
   const leave = leaveOn(id, now.date), off = isOff(now.date);
-  const note = leave ? `<p class="note">You're on approved leave today.</p>` : off ? `<p class="note">${offLabel(now.date)}. You can still check in if you're working today.</p>` : "";
-  const where = CK.near ? `<p class="ck-where"><span class="ck-dot"></span>You're at <b>${esc(CK.near.p.name)}</b> · ${Math.round(CK.near.d)} m from the pin · GPS ±${Math.round(CK.pos.acc)} m</p>` : "";
-  let body = "";
-  if(CK.step==="locating") body = `<div class="ck-big"><span class="spin"></span><p>Finding your location…</p><p class="note">Keep this screen open. It can take up to 20 seconds indoors.</p></div>`;
-  else if(CK.step==="selfie") body = `${where}<p>Now take a quick selfie.</p><label class="btn primary big ck-file">Take selfie<input type="file" id="ci_selfie" accept="image/*" capture="user" hidden></label><button class="btn ghost" data-act="ci-cancel">Cancel</button>`;
-  else if(CK.step==="confirm") body = `${where}${CK.img?`<img class="ck-selfie" src="${CK.img}" alt="Your selfie">`:""}
-      <div class="ck-acts"><button class="btn primary big" data-act="ci-save">${CK.kind==="in"?"Confirm check-in":"Confirm check-out"}</button>${CK.kind==="in"?`<label class="btn">Retake<input type="file" id="ci_selfie" accept="image/*" capture="user" hidden></label>`:""}<button class="btn ghost" data-act="ci-cancel">Cancel</button></div>`;
-  else if(!c) body = `<div class="ck-big"><p class="ck-time" id="clock">${tmIST(new Date())}</p><p class="note">Shift 10:00 AM – 6:00 PM · on time until 10:15 AM</p><button class="btn primary big ck-go" data-act="ci-in">Check in</button></div>`;
-  else if(!c.out) body = `<div class="ck-done"><div><span class="h">Checked in</span><b>${tmIST(c.in.t)}</b><small>${esc(placeName(c.in.place))}</small></div></div><div class="ck-flags">${ciFlags(c, v, now.date)}</div><button class="btn primary big ck-go" data-act="ci-out">Check out</button>`;
-  else body = `<div class="ck-done"><div><span class="h">Checked in</span><b>${tmIST(c.in.t)}</b><small>${esc(placeName(c.in.place))}</small></div><div><span class="h">Checked out</span><b>${tmIST(c.out.t)}</b><small>${esc(placeName(c.out.place))}</small></div><div><span class="h">Worked</span><b>${m2hm(Math.max(0, v.outM - v.inM))}</b><small>${v.st==="HD"?"Half day":"Full day"}</small></div></div><div class="ck-flags">${ciFlags(c, v, now.date)}</div><p class="note">All done for today.</p>`;
-  return `<div class="panel ck-card">${err}${note}${body}</div>`;
+  const note = leave ? `<p class="ck-note">You're on approved leave today.</p>` : off ? `<p class="ck-note">${offLabel(now.date)} · you can still check in if you're working.</p>` : "";
+  const where = CK.near ? `<div class="ck-where">${PIN}<span><b>${esc(CK.near.p.name)}</b> · ${Math.round(CK.near.d)} m away</span></div>` : "";
+  const worked = v ? (v.outM!=null ? v.outM : now.mins) - v.inM : 0;
+  const tag = v ? (v.st==="HD" ? `<span class="tag warn">Half day</span>` : v.late ? `<span class="tag warn">Late</span>` : `<span class="tag ok">On time</span>`) : "";
+  let top, body;
+  if(CK.step==="locating"){ top = ckState("Checking location","busy");
+    body = `<div class="ck-center"><span class="spin"></span><p class="ck-msg">Finding where you are…</p><p class="ck-sub">Keep this screen open. Indoors it can take up to 20 seconds.</p></div>`; }
+  else if(CK.step==="selfie"){ top = ckState("Location confirmed","ok");
+    body = `${where}<div class="ck-center"><div class="ck-ic big">${CAM}</div><p class="ck-msg">Take a quick selfie</p><p class="ck-sub">It confirms it's really you checking in.</p></div>
+      <label class="btn primary ck-go">${CAM}<span>Open camera</span><input type="file" id="ci_selfie" accept="image/*" capture="user" hidden></label>
+      <button class="btn ghost ck-link" data-act="ci-cancel">Cancel</button>`; }
+  else if(CK.step==="confirm"){ top = ckState(CK.kind==="in" ? "Ready to check in" : "Ready to check out","ok");
+    body = `${CK.img ? `<div class="ck-center"><img class="ck-selfie" src="${CK.img}" alt="Your selfie"></div>` : ""}${where}
+      <button class="btn primary ck-go" data-act="ci-save">${CK.kind==="in" ? "Confirm check-in" : "Confirm check-out"}</button>
+      <div class="ck-row">${CK.kind==="in" ? `<label class="btn ghost ck-link">Retake photo<input type="file" id="ci_selfie" accept="image/*" capture="user" hidden></label>` : ""}<button class="btn ghost ck-link" data-act="ci-cancel">Cancel</button></div>`; }
+  else if(!c){ top = ckState("Not checked in","idle");
+    body = `<div class="ck-center"><p class="ck-time" id="clock">${tmIST(new Date())}</p><p class="ck-sub">Shift 10:00 AM – 6:00 PM · on time until 10:15</p></div>
+      <button class="btn primary ck-go" data-act="ci-in">${PIN}<span>Check in</span></button>`; }
+  else if(!c.out){ top = ckState("Checked in","live");
+    body = `<div class="ck-split"><div><span>In</span><b>${tmIST(c.in.t)}</b><small>${esc(placeName(c.in.place))}</small></div><div><span>Working</span><b>${m2hm(Math.max(0,worked))}</b><small>${tag}</small></div></div>
+      <button class="btn primary ck-go ck-out" data-act="ci-out">Check out</button>`; }
+  else { top = ckState("Done for today","done");
+    body = `<div class="ck-split three"><div><span>In</span><b>${tmIST(c.in.t)}</b></div><div><span>Out</span><b>${tmIST(c.out.t)}</b></div><div><span>Worked</span><b>${m2hm(Math.max(0,worked))}</b></div></div>
+      <div class="ck-foot">${tag}${v.early ? `<span class="tag warn">Left early</span>` : ""}<span class="ck-place">${PIN}${esc(placeName(c.in.place))}</span></div>`; }
+  return `<div class="panel ck-card"><div class="ck-top">${top}<span class="ck-date">${parse(now.date).toLocaleDateString("en-IN",{weekday:"short", day:"numeric", month:"short"})}</span></div>${err}${note}${body}</div>`;
 }
-// one day as a compact card row: date chip · in/out times · status
 function dayRow(id, d){
   const c = ciFor(id, d), v = ciEval(c), off = isOff(d), st = statusOn(id, d); const dt = parse(d);
   const chip = `<div class="dr-date"><b>${dt.getDate()}</b><small>${dt.toLocaleDateString("en-IN",{weekday:"short"})}</small></div>`;
