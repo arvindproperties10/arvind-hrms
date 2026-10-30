@@ -1664,6 +1664,26 @@ body.dark .ck-selfie{box-shadow:0 0 0 4px rgba(255,255,255,.12),0 10px 26px -8px
   .lv-dates{grid-template-columns:minmax(0,1fr)}
   body.emp-app .panel .empty{margin:0;padding:4px 0;font-size:14px}
 }
+/* ---- HR boards as cards on phones ---- */
+.ci-cards,.att-cards{display:none}
+.cicard{display:flex;flex-direction:column;gap:7px;padding:13px 2px;border-bottom:1px solid var(--line)}
+.cicard:last-child{border-bottom:0}
+.cc-head{display:grid;grid-template-columns:38px minmax(0,1fr) auto;gap:10px;align-items:center}
+.cc-head .av{width:38px;height:38px;font-size:13px}
+.cc-name{display:flex;flex-direction:column;min-width:0}
+.cc-name b{font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cc-name small{font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cc-times{display:flex;gap:14px;flex-wrap:wrap;padding-left:48px;font-weight:600;font-size:14.5px;font-variant-numeric:tabular-nums}
+.cc-times small{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-right:3px}
+.cc-sub{padding-left:48px;font-size:12px;color:var(--muted)}
+.cc-flags{padding-left:48px;display:flex;gap:10px;flex-wrap:wrap}
+.cc-acts{padding-left:48px;display:flex;gap:8px}
+.cc-seg{display:grid!important;grid-template-columns:repeat(4,1fr);margin-left:48px}
+.cc-seg button{font-size:12.5px;padding:8px 2px;min-height:38px}
+@media (max-width:760px){
+  .ci-cards,.att-cards{display:flex;flex-direction:column}
+  .ci-table,.att-table{display:none!important}
+}
 </style>
 </head>
 <body>
@@ -2118,7 +2138,7 @@ function draw(){
   main.innerHTML = banners() + (VIEWS[view] || VIEWS.dashboard)();
   if(!canEditView(view)){ const hd = main.querySelector(".head"); if(hd) hd.insertAdjacentHTML("afterend", `<div class="banner info"><span><span class="pill mute">View only</span>&nbsp; You can look at this section but not change it.</span></div>`); }
   lockRO(main, view); enhanceNumbers(main); enhanceDates(main); enhanceSort(main);
-  main.classList.toggle("fit", !!main.querySelector(":scope > .fill"));
+  main.classList.toggle("fit", !!main.querySelector(":scope > .fill") && !matchMedia("(max-width:760px)").matches);
   refreshIncModal(); UI.incDir = ""; if(flash) setTimeout(()=>{ flash=""; }, 0);
   if(keepFocus){ const el=document.getElementById(keepFocus); if(el && main.contains(el)){ el.focus(); try{ if(selStart!=null) el.setSelectionRange(selStart,selStart); }catch(_){} } }
 }
@@ -2499,7 +2519,8 @@ checkins(){
   const gl = goLive();
   return head("Check-ins", fmtDay(d) + (gl ? "" : ` · <span class="pill mute">Absent marking off</span>`), dateBar("ciDate", d, "ci") + `<button class="btn" data-act="golive-open">Settings</button>`) +
     `<div class="attsum"><span class="pill ok">${c0.in} of ${list.length} checked in</span><span class="pill warn">${c0.late} late</span><span class="pill warn">${c0.hd} half day</span><span class="pill mute">${c0.none} not checked in</span><span class="pill mute">${c0.out} checked out</span></div>
-    <div class="tablewrap fill stickyhead"><table><thead><tr><th>Employee</th><th>Check-in</th><th>Check-out</th><th>Status</th><th>Flags</th><th></th></tr></thead><tbody>${rows || `<tr><td colspan="6" class="empty">No active employees on this date.</td></tr>`}</tbody></table></div>
+    <div class="panel daypanel ci-cards">${[...list].sort((a,b) => { const ca = ciFor(a.id,d), cb = ciFor(b.id,d); return (!!cb - !!ca) || (ca && cb ? String(ca.in.t).localeCompare(String(cb.in.t)) : 0); }).map(e => ciCard(e, d)).join("") || `<p class="empty">No active employees on this date.</p>`}</div>
+    <div class="tablewrap fill stickyhead ci-table"><table><thead><tr><th>Employee</th><th>Check-in</th><th>Check-out</th><th>Status</th><th>Flags</th><th></th></tr></thead><tbody>${rows || `<tr><td colspan="6" class="empty">No active employees on this date.</td></tr>`}</tbody></table></div>
 `;
 },
 team(){
@@ -2535,6 +2556,24 @@ function goLiveDrawer(){
     <p class="note" style="margin:0">${PLACES.map(p => `<b>${esc(p.name)}</b> within ${p.r} m`).join(" · ")}. Shift 10:00 AM – 6:00 PM, late after 10:15 AM, half day if in after 1:00 PM or out before 2:00 PM. Every 3 late marks in a month cost half a day's pay.</p>
   </div>
   <footer><button class="btn" data-act="close">Close</button>${ed?`<button class="btn primary" data-act="golive-save">Save</button>`:""}</footer>`);
+}
+
+// one employee's check-in for the HR board on phones
+function ciCard(e, d){
+  const c = ciFor(e.id, d), v = ciEval(c), st = statusOn(e.id, d), hr = S.att[d]?.marks?.[e.id];
+  const tag = st==="P" ? (v && v.late && !hr ? `<span class="tag warn">Late</span>` : `<span class="tag ok">Present</span>`) : st==="HD" ? `<span class="tag warn">Half day</span>` : st==="A" ? `<span class="tag bad">Absent</span>` : st==="L" ? `<span class="tag leave">Leave</span>` : `<span class="tag">Not in yet</span>`;
+  const line = c ? `<div class="cc-times"><span><small>In</small> ${tmIST(c.in.t)}</span><span><small>Out</small> ${c.out ? tmIST(c.out.t) : "—"}</span>${c.out && v ? `<span><small>Worked</small> ${m2hm(Math.max(0, v.outM - v.inM))}</span>` : ""}</div>
+    <div class="cc-sub">${esc(placeName(c.in.place))} · ${c.in.dist} m · GPS ±${c.in.acc} m${hr ? " · status set by HR" : ""}</div>` : (hr ? `<div class="cc-sub">Marked by HR</div>` : "");
+  const flags = c ? [v.early ? `<span class="tag warn">Left early</span>` : "", v.noOut && d < today ? `<span class="tag bad">No check-out</span>` : "", v.lowAcc ? `<span class="tag">Rough GPS</span>` : ""].filter(Boolean).join("") : "";
+  const acts = c ? `<div class="cc-acts"><button class="btn small" data-selfie="${d}_${e.id}" data-name="${esc(e.name)}">Selfie</button><a class="btn small ghost" href="https://www.google.com/maps?q=${c.in.lat},${c.in.lng}" target="_blank" rel="noopener">Map</a></div>` : "";
+  return `<div class="cicard"><div class="cc-head"><span class="av">${esc(initials(e.name))}</span><div class="cc-name"><b>${esc(e.name)}</b><small>${esc(e.designation || e.dept || "")}</small></div>${tag}</div>${line}${flags ? `<div class="cc-flags">${flags}</div>` : ""}${acts}</div>`;
+}
+// one employee's attendance row for HR on phones (with the mark buttons)
+function attCard(e, d, canMark){
+  const c = ciFor(e.id, d), cv = ciEval(c), s = S.att[d]?.marks?.[e.id] || (leaveOn(e.id,d) ? "L" : null), shown = statusOn(e.id, d);
+  return `<div class="cicard"><div class="cc-head"><span class="av">${esc(initials(e.name))}</span><div class="cc-name"><b>${esc(e.name)}</b><small>${c ? `In ${tmIST(c.in.t)}${c.out ? ` · Out ${tmIST(c.out.t)}` : ""} · ${esc(placeName(c.in.place))}` : esc(e.designation || e.dept || "")}</small></div>${statusPill(shown)}</div>
+    <div class="seg cc-seg" role="group" aria-label="Attendance for ${esc(e.name)}">${MARKS.map(([v,t]) => `<button data-att="${e.id}" data-v="${v}" aria-pressed="${s===v}" title="${t}" ${canMark ? "" : "disabled"}>${t}</button>`).join("")}</div>
+    ${!s && shown ? `<div class="cc-sub">${c ? "Status from check-in" : "No check-in"}${cv && cv.late ? " · late" : ""}</div>` : ""}</div>`;
 }
 
 function banners(){
@@ -2899,7 +2938,7 @@ attendance(){
     return `<tr><td>${who(e, e.dept)}</td><td>${c?`${tmIST(c.in.t)}${c.out?` – ${tmIST(c.out.t)}`:""}<div class="note">${esc(placeName(c.in.place))}</div>`:`<span class="note">—</span>`}</td><td><div class="seg" role="group" aria-label="Attendance for ${esc(e.name)}">${MARKS.map(([v,t])=>`<button data-att="${e.id}" data-v="${v}" aria-pressed="${s===v}" title="${t}" ${!canWrite||future?"disabled":""}>${v}</button>`).join("")}</div></td><td>${statusPill(shown)}${!s && shown ? `<div class="note" style="margin-top:3px">${c?"From check-in":"No check-in"}</div>`:""}${ciFlags(c, cv, d)}${lv?`<div class="note" style="margin-top:3px">Leave approved${ledger(e.id).unpaid.has(d)?" · unpaid, no balance left":""}</div>`:""}</td></tr>`; }).join("");
   return head("Attendance", parse(d).toLocaleDateString("en-IN",{weekday:"long",day:"numeric",month:"long",year:"numeric"}) + (isOff(d)?` · <span class="pill sample">${offLabel(d)}</span>`:""), tools) +
    `<div class="attsum"><span class="pill ok">${c.P} present</span><span class="pill warn">${c.HD} half day</span><span class="pill bad">${c.A} absent</span><span class="pill leave">${c.L} on leave</span><span class="pill mute">${c.U} not marked</span></div>
-   <div class="tablewrap fill stickyhead"><table class="t-att"><thead><tr><th>Employee</th><th>Check-in</th><th>Mark</th><th>Status</th></tr></thead><tbody>${rows || `<tr><td colspan="4" class="empty">No active employees on this date.</td></tr>`}</tbody></table></div>
+   <div class="panel daypanel att-cards">${list.map(e => attCard(e, d, canWrite && !future)).join("") || `<p class="empty">No active employees on this date.</p>`}</div><div class="tablewrap fill stickyhead att-table"><table class="t-att"><thead><tr><th>Employee</th><th>Check-in</th><th>Mark</th><th>Status</th></tr></thead><tbody>${rows || `<tr><td colspan="4" class="empty">No active employees on this date.</td></tr>`}</tbody></table></div>
    <p class="note">P present · HD half day (half a day's pay is deducted) · A absent (loss of pay) · L leave. A mark set here overrides the check-in, including any late mark. Tap a selected mark again to clear it. Approved leave fills in on its own.</p>`;
 },
 
