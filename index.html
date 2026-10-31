@@ -1903,9 +1903,9 @@ body.dark .uc-edit input:not([type]),body.dark .uc-edit select{background:rgba(2
 
   /* paid leave balances: fit the full width, no sideways scrolling */
   body.has-tabbar .lg-bal table{width:100%!important;min-width:0!important;table-layout:fixed}
-  body.has-tabbar .lg-bal th:first-child,body.has-tabbar .lg-bal td:first-child{width:44%}
+  body.has-tabbar .lg-bal th:first-child,body.has-tabbar .lg-bal td:first-child{width:38%}
   body.has-tabbar .lg-bal th,body.has-tabbar .lg-bal td{padding-left:4px;padding-right:4px}
-  body.has-tabbar .lg-bal th{font-size:12px!important;line-height:1.2!important;white-space:normal!important;vertical-align:bottom!important;padding-top:12px!important;padding-bottom:10px!important}
+  body.has-tabbar .lg-bal th{font-size:12px!important;line-height:1.2!important;white-space:normal!important;vertical-align:middle!important;padding-top:12px!important;padding-bottom:12px!important}
   body.has-tabbar .lg-bal td{padding-top:11px!important;padding-bottom:11px!important}
   body.has-tabbar .lg-bal td.num{font-size:14px;font-variant-numeric:tabular-nums}
   body.has-tabbar .lg-bal td:first-child b,body.has-tabbar .lg-bal td:first-child .nm{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:14px}
@@ -1918,6 +1918,22 @@ body.dark .uc-edit input:not([type]),body.dark .uc-edit select{background:rgba(2
   body.has-tabbar .panel.lg-bal table th.num,body.has-tabbar .panel.lg-bal table td.num{text-align:center!important}
   body.has-tabbar .lg-bal th.num:last-child,body.has-tabbar .lg-bal td.num:last-child{padding-right:14px!important}
 }
+@media (max-width:760px){
+  /* table header row: every label sits on the same middle line, centred over its column; sort arrows sit centred under the label */
+  body.has-tabbar table thead th{vertical-align:middle!important;line-height:1.2!important;padding-top:12px!important;padding-bottom:12px!important}
+  body.has-tabbar table thead th .sarr{display:block!important;margin:3px auto 0!important;width:max-content;vertical-align:0}
+  body.has-tabbar table thead th:first-child .sarr{margin-left:0!important}
+  body.has-tabbar .tablewrap th.num,body.has-tabbar .tablewrap td.num,body.has-tabbar .scrollbox th.num,body.has-tabbar .scrollbox td.num,
+  body.has-tabbar .panel table th.num,body.has-tabbar .panel table td.num,body.has-tabbar .panel.lg-bal table th.num,body.has-tabbar .panel.lg-bal table td.num{text-align:center!important}
+  body.has-tabbar table thead th:not(:first-child){text-align:center!important}
+  body.has-tabbar table thead th:first-child{text-align:left!important}
+}
+@media (max-width:760px){
+  /* cells sit under their centred headers (first column stays left with the names) */
+  body.has-tabbar .tablewrap td:not(:first-child),body.has-tabbar .scrollbox td:not(:first-child){text-align:center!important}
+}
+.lbl-short{display:none}
+@media (max-width:760px){ body.has-tabbar .lbl-long{display:none} body.has-tabbar .lbl-short{display:inline} }
 </style>
 </head>
 <body>
@@ -3297,7 +3313,7 @@ leave(){
   const pendN = Object.values(S.leaves).filter(x=>x.status==="pending").length;
   return head("Leave", `${canApprove() && pendN ? `<b>${pendN} waiting for your approval</b> · ` : ""}1 paid leave a month from ${monthName(LEAVE_START)}. Unused days carry forward; leave beyond the balance is loss of pay. Tuesdays and company holidays don't count.`, tools) +
    `<div class="leavegrid fill"><div class="panel lg-req"><h2>${f==="all"?"All requests":f[0].toUpperCase()+f.slice(1)+" requests"}</h2><div class="scrollbox">${all.length? all.map(reqRow).join("") : `<p class="empty">No ${f==="all"?"":f} requests.</p>`}</div></div>
-   <div class="panel lg-bal" style="padding:0;overflow:hidden"><div style="padding:16px 18px 4px"><h2>Paid leave balances</h2></div><div class="scrollbox stickyhead" style="overflow:auto"><table><thead><tr><th>Employee</th><th class="num">Earned</th><th class="num">Used</th><th class="num">Balance</th><th class="num">Unpaid days</th></tr></thead><tbody>${balRows||`<tr><td colspan="5" class="empty">No staff yet.</td></tr>`}</tbody></table></div></div>${holidaysPanel()}</div>`;
+   <div class="panel lg-bal" style="padding:0;overflow:hidden"><div style="padding:16px 18px 4px"><h2>Paid leave balances</h2></div><div class="scrollbox stickyhead" style="overflow:auto"><table><thead><tr><th>Employee</th><th class="num">Earned</th><th class="num">Used</th><th class="num">Balance</th><th class="num" title="Unpaid days"><span class="lbl-long">Unpaid days</span><span class="lbl-short">Unpaid</span></th></tr></thead><tbody>${balRows||`<tr><td colspan="5" class="empty">No staff yet.</td></tr>`}</tbody></table></div></div>${holidaysPanel()}</div>`;
 },
 
 payroll(){
@@ -4219,7 +4235,7 @@ if("serviceWorker" in navigator){
 }
 // Version check: whenever the app is opened or brought back to the front, ask GitHub for the latest version number.
 // If it is newer than what is running, reload (straight away if nothing is open, otherwise offer a button).
-window.APP_VERSION = "20261031061353";
+window.APP_VERSION = "20261031062553";
 (function(){
   let busy = false, shown = false;
   function bar(v){ if(shown) return; shown = true; const b = document.createElement("button"); b.className = "upd-bar"; b.textContent = "New version ready — tap to update"; b.onclick = () => go(v); document.body.appendChild(b); }
