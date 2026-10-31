@@ -1803,7 +1803,7 @@ body.dark .uc-edit input:not([type]),body.dark .uc-edit select{background:rgba(2
       inset 0 1.5px 0 rgba(255,255,255,.95),inset 0 -1px 0 rgba(255,255,255,.35),inset 0 0 22px rgba(255,255,255,.18)!important}
   /* bright rim, strongest at the top-left like light catching the edge */
   body.has-tabbar .panel::after,body.has-tabbar .sumstrip::after,body.has-tabbar .kpi::after,body.has-tabbar .ucard::after,body.has-tabbar .mcard::after,body.has-tabbar .ck-card::after{
-    content:""!important;display:block!important;position:absolute;inset:-1px;border-radius:inherit;padding:1px;pointer-events:none;z-index:-1;
+    content:""!important;display:block!important;position:absolute;inset:0;border-radius:inherit;padding:1px;pointer-events:none;z-index:-1;
     background:linear-gradient(140deg,rgba(255,255,255,.95),rgba(255,255,255,.15) 35%,rgba(255,255,255,0) 60%,rgba(255,255,255,.55))!important;
     -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude}
   body.has-tabbar .panel::before,body.has-tabbar .sumstrip::before,body.has-tabbar .kpi::before{display:none!important}
@@ -1868,7 +1868,7 @@ body.dark .uc-edit input:not([type]),body.dark .uc-edit select{background:rgba(2
   body.has-tabbar .panel .kpi,body.has-tabbar .panel .mcard,body.has-tabbar .panel .pcard,body.has-tabbar .panel .teamtile,body.has-tabbar .panel .ucard{border-radius:16px!important}
   body.has-tabbar .panel input,body.has-tabbar .panel select,body.has-tabbar .panel textarea{border-radius:12px!important}
   /* tables: rounded box clips the header band, first and last columns kept clear of the corners */
-  body.has-tabbar .tablewrap,body.has-tabbar .scrollbox{border-radius:24px!important;overflow:hidden}
+  body.has-tabbar .tablewrap,body.has-tabbar .scrollbox{border-radius:24px!important;overflow-x:auto;overflow-y:hidden}
   body.has-tabbar .tablewrap th:first-child,body.has-tabbar .tablewrap td:first-child,body.has-tabbar .scrollbox th:first-child,body.has-tabbar .scrollbox td:first-child{padding-left:18px!important}
   body.has-tabbar .tablewrap th:last-child,body.has-tabbar .tablewrap td:last-child,body.has-tabbar .scrollbox th:last-child,body.has-tabbar .scrollbox td:last-child{padding-right:18px!important}
   body.has-tabbar .tablewrap thead th,body.has-tabbar .scrollbox thead th{padding-top:14px!important;padding-bottom:10px!important}
@@ -1888,6 +1888,10 @@ body.dark .uc-edit input:not([type]),body.dark .uc-edit select{background:rgba(2
   body.has-tabbar .tablewrap td:last-child .pill{padding-left:8px;padding-right:8px}
   body.has-tabbar .tablewrap td,body.has-tabbar .tablewrap th{padding-left:8px;padding-right:8px}
   body.has-tabbar .tablewrap td .av{width:30px;height:30px;font-size:11px;flex:none}
+}
+@media (max-width:760px){
+  /* tiles grow to fit their content on phones — no scroll bar inside a tile */
+  body.has-tabbar .panel,body.has-tabbar .kpi,body.has-tabbar .sumstrip,body.has-tabbar .ucard,body.has-tabbar .mcard,body.has-tabbar .ck-card{overflow:visible!important;max-height:none!important}
 }
 </style>
 </head>
@@ -4190,7 +4194,7 @@ if("serviceWorker" in navigator){
 }
 // Version check: whenever the app is opened or brought back to the front, ask GitHub for the latest version number.
 // If it is newer than what is running, reload (straight away if nothing is open, otherwise offer a button).
-window.APP_VERSION = "20261031055756";
+window.APP_VERSION = "20261031060548";
 (function(){
   let busy = false, shown = false;
   function bar(v){ if(shown) return; shown = true; const b = document.createElement("button"); b.className = "upd-bar"; b.textContent = "New version ready — tap to update"; b.onclick = () => go(v); document.body.appendChild(b); }
