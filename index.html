@@ -1774,6 +1774,121 @@ body.dark .ck-selfie{box-shadow:0 0 0 4px rgba(255,255,255,.12),0 10px 26px -8px
 body.dark .uc-edit input:not([type]),body.dark .uc-edit select{background:rgba(255,255,255,.06);color:var(--ink)}
 
 .upd-bar{position:fixed;left:50%;transform:translateX(-50%);top:calc(env(safe-area-inset-top,0px) + 10px);z-index:200;border:0;border-radius:999px;padding:10px 18px;font:600 14px/1.2 inherit;background:#0b6b4f;color:#fff;box-shadow:0 6px 20px rgba(0,0,0,.25);cursor:pointer}
+
+/* ===================== Phone polish v2: alignment + liquid glass ===================== */
+@media (max-width:760px){
+  /* ---- backdrop: soft colour fields so the glass has something to refract ---- */
+  body.has-tabbar{background:
+    radial-gradient(60vmax 60vmax at -10% -5%, rgba(0,113,227,.30), transparent 60%),
+    radial-gradient(50vmax 50vmax at 110% 18%, rgba(255,186,73,.28), transparent 62%),
+    radial-gradient(55vmax 55vmax at 85% 105%, rgba(88,86,214,.22), transparent 60%),
+    radial-gradient(45vmax 45vmax at 0% 80%, rgba(48,176,199,.20), transparent 60%),
+    linear-gradient(180deg,#eef3fb,#e7edf8)!important;background-attachment:fixed!important}
+  body.dark.has-tabbar{background:
+    radial-gradient(60vmax 60vmax at -10% -5%, rgba(10,132,255,.28), transparent 60%),
+    radial-gradient(50vmax 50vmax at 110% 18%, rgba(255,159,10,.16), transparent 62%),
+    radial-gradient(55vmax 55vmax at 85% 105%, rgba(94,92,230,.24), transparent 60%),
+    radial-gradient(45vmax 45vmax at 0% 80%, rgba(64,200,224,.14), transparent 60%),
+    linear-gradient(180deg,#0d0f14,#11141b)!important;background-attachment:fixed!important}
+
+  /* ---- glass surfaces: tiles, panels, strips ---- */
+  body.has-tabbar .panel,body.has-tabbar .sumstrip,body.has-tabbar .kpi,body.has-tabbar .ucard,body.has-tabbar .mcard,body.has-tabbar .ck-card{
+    position:relative;isolation:isolate;
+    background:
+      linear-gradient(180deg,rgba(255,255,255,.55) 0%,rgba(255,255,255,0) 38%),
+      linear-gradient(160deg,rgba(255,255,255,.50),rgba(255,255,255,.30))!important;
+    -webkit-backdrop-filter:blur(30px) saturate(200%) brightness(1.04)!important;backdrop-filter:blur(30px) saturate(200%) brightness(1.04)!important;
+    border:1px solid rgba(255,255,255,.55)!important;
+    box-shadow:0 18px 40px -24px rgba(16,42,94,.50),0 3px 10px -4px rgba(16,42,94,.10),
+      inset 0 1.5px 0 rgba(255,255,255,.95),inset 0 -1px 0 rgba(255,255,255,.35),inset 0 0 22px rgba(255,255,255,.18)!important}
+  /* bright rim, strongest at the top-left like light catching the edge */
+  body.has-tabbar .panel::after,body.has-tabbar .sumstrip::after,body.has-tabbar .kpi::after,body.has-tabbar .ucard::after,body.has-tabbar .mcard::after,body.has-tabbar .ck-card::after{
+    content:""!important;display:block!important;position:absolute;inset:-1px;border-radius:inherit;padding:1px;pointer-events:none;z-index:-1;
+    background:linear-gradient(140deg,rgba(255,255,255,.95),rgba(255,255,255,.15) 35%,rgba(255,255,255,0) 60%,rgba(255,255,255,.55))!important;
+    -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude}
+  body.has-tabbar .panel::before,body.has-tabbar .sumstrip::before,body.has-tabbar .kpi::before{display:none!important}
+  body.dark.has-tabbar .panel,body.dark.has-tabbar .sumstrip,body.dark.has-tabbar .kpi,body.dark.has-tabbar .ucard,body.dark.has-tabbar .mcard,body.dark.has-tabbar .ck-card{
+    background:
+      linear-gradient(180deg,rgba(255,255,255,.08) 0%,rgba(255,255,255,0) 38%),
+      linear-gradient(160deg,rgba(40,44,56,.62),rgba(22,24,31,.48))!important;
+    border-color:rgba(255,255,255,.10)!important;
+    box-shadow:0 18px 40px -22px rgba(0,0,0,.75),inset 0 1px 0 rgba(255,255,255,.12),inset 0 0 22px rgba(255,255,255,.03)!important}
+  body.dark.has-tabbar .panel::after,body.dark.has-tabbar .sumstrip::after,body.dark.has-tabbar .kpi::after,body.dark.has-tabbar .ucard::after,body.dark.has-tabbar .mcard::after,body.dark.has-tabbar .ck-card::after{
+    background:linear-gradient(140deg,rgba(255,255,255,.30),rgba(255,255,255,.04) 35%,rgba(255,255,255,0) 60%,rgba(255,255,255,.14))!important}
+  /* glass inside glass stays light so it doesn't turn muddy */
+  body.has-tabbar .panel .kpi,body.has-tabbar .panel .mcard,body.has-tabbar .panel .ucard{-webkit-backdrop-filter:none!important;backdrop-filter:none!important;background:rgba(255,255,255,.42)!important}
+  body.dark.has-tabbar .panel .kpi,body.dark.has-tabbar .panel .mcard,body.dark.has-tabbar .panel .ucard{background:rgba(255,255,255,.05)!important}
+
+  /* ---- one rhythm for inside padding ---- */
+  body.has-tabbar .panel{padding:16px!important}
+  body.has-tabbar .panel > h2,body.has-tabbar .panel > .sub{padding-left:0!important;padding-right:0!important;text-align:left}
+  body.has-tabbar .panel > h2{margin:0 0 4px!important;font-size:17px}
+  body.has-tabbar .panel > .sub{margin-bottom:6px}
+
+  /* ---- number tiles (Overview etc.): value, label, note, all centred the same way ---- */
+  body.has-tabbar .kpis{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:10px!important}
+  body.has-tabbar .kpi{display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:center!important;text-align:center!important;padding:14px 10px!important;gap:2px!important;min-height:92px}
+  body.has-tabbar .kpi .v{order:1;font-size:28px!important;line-height:1.05;font-weight:700;letter-spacing:-.02em}
+  body.has-tabbar .kpi .k{order:2;font-size:12.5px!important;font-weight:600;color:var(--ink);opacity:.85;text-transform:none!important;letter-spacing:0!important}
+  body.has-tabbar .kpi .s{order:3;font-size:11.5px!important;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+
+  /* ---- button rows under the page title: even grid, never off-screen ---- */
+  body.has-tabbar .head .tools{display:flex!important;flex-wrap:wrap!important;gap:8px!important}
+  body.has-tabbar .head .tools:empty{display:none!important}
+  body.has-tabbar .head .tools > *{min-width:0;flex:1 1 calc(50% - 4px)!important}
+  body.has-tabbar .head .tools > .monthbar{flex-basis:100%!important}
+  body.has-tabbar .head .tools > .btn{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;justify-content:center;text-align:center;padding-left:10px!important;padding-right:10px!important}
+
+  /* ---- rows with text on the left and status/actions on the right ---- */
+  body.has-tabbar .req{display:grid!important;grid-template-columns:minmax(0,1fr) auto!important;align-items:center!important;gap:8px 12px!important;text-align:left}
+  body.has-tabbar .req > div:first-child{min-width:0}
+  body.has-tabbar .req b{display:block;line-height:1.3}
+  body.has-tabbar .req .acts{display:flex;align-items:center;justify-content:flex-end;gap:6px;flex-wrap:nowrap}
+  body.has-tabbar .req .acts .btn{white-space:nowrap}
+
+  /* ---- tables: names and text read left, numbers right, labels stay on one line ---- */
+  body.has-tabbar .tablewrap th,body.has-tabbar .tablewrap td,body.has-tabbar .scrollbox th,body.has-tabbar .scrollbox td,body.has-tabbar .panel table th,body.has-tabbar .panel table td{text-align:left!important;vertical-align:middle}
+  body.has-tabbar .tablewrap td.num,body.has-tabbar .tablewrap th.num,body.has-tabbar .scrollbox td.num,body.has-tabbar .scrollbox th.num,body.has-tabbar .panel table td.num,body.has-tabbar .panel table th.num{text-align:right!important}
+  body.has-tabbar td .pill,body.has-tabbar td .tag{white-space:nowrap}
+  body.has-tabbar td{font-size:13px;line-height:1.35}
+  body.has-tabbar td small,body.has-tabbar td .meta{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+
+  /* ---- users & access cards ---- */
+  body.has-tabbar .ucard [data-uopen]{padding:8px 0 0!important;margin:0!important;justify-content:flex-start;background:none!important;box-shadow:none!important}
+}
+
+/* ===== Phone polish v3: content follows the rounded corners (concentric spacing) ===== */
+@media (max-width:760px){
+  body.has-tabbar .head .tools > :not(.btn){flex-basis:100%!important}
+  /* outer tiles: 24px corners with 18px inside spacing, so text never sits in the curve */
+  body.has-tabbar .panel,body.has-tabbar .ucard,body.has-tabbar .mcard,body.has-tabbar .ck-card{border-radius:24px!important;padding:18px!important}
+  body.has-tabbar .sumstrip{border-radius:24px!important;padding:14px 10px!important}
+  body.has-tabbar .kpi{border-radius:22px!important}
+  /* tiles inside tiles: radius = outer radius − spacing */
+  body.has-tabbar .panel .kpi,body.has-tabbar .panel .mcard,body.has-tabbar .panel .pcard,body.has-tabbar .panel .teamtile,body.has-tabbar .panel .ucard{border-radius:16px!important}
+  body.has-tabbar .panel input,body.has-tabbar .panel select,body.has-tabbar .panel textarea{border-radius:12px!important}
+  /* tables: rounded box clips the header band, first and last columns kept clear of the corners */
+  body.has-tabbar .tablewrap,body.has-tabbar .scrollbox{border-radius:24px!important;overflow:hidden}
+  body.has-tabbar .tablewrap th:first-child,body.has-tabbar .tablewrap td:first-child,body.has-tabbar .scrollbox th:first-child,body.has-tabbar .scrollbox td:first-child{padding-left:18px!important}
+  body.has-tabbar .tablewrap th:last-child,body.has-tabbar .tablewrap td:last-child,body.has-tabbar .scrollbox th:last-child,body.has-tabbar .scrollbox td:last-child{padding-right:18px!important}
+  body.has-tabbar .tablewrap thead th,body.has-tabbar .scrollbox thead th{padding-top:14px!important;padding-bottom:10px!important}
+  body.has-tabbar .tablewrap tbody tr:last-child td,body.has-tabbar .scrollbox tbody tr:last-child td{padding-bottom:16px!important}
+  /* tables sitting inside a panel already have the panel's spacing */
+  body.has-tabbar .panel .tablewrap,body.has-tabbar .panel .scrollbox{border-radius:16px!important}
+  body.has-tabbar .panel table th:first-child,body.has-tabbar .panel table td:first-child{padding-left:12px!important}
+  body.has-tabbar .panel table th:last-child,body.has-tabbar .panel table td:last-child{padding-right:12px!important}
+  /* list rows in a panel: dividers stop short of the edges, like iOS */
+  body.has-tabbar .panel .req:last-child,body.has-tabbar .panel .dayrow:last-child,body.has-tabbar .panel .person:last-child{border-bottom:0!important;padding-bottom:2px!important}
+  body.has-tabbar .panel .req:first-of-type{padding-top:6px}
+  /* the status chip on check-in sits inside the corner curve, not on it */
+  body.has-tabbar .ck-card{padding-top:20px!important}
+}
+@media (max-width:760px){
+  body.has-tabbar .tablewrap td.code + td{font-size:12.5px!important;line-height:1.3!important;min-width:128px;letter-spacing:-.01em}
+  body.has-tabbar .tablewrap td:last-child .pill{padding-left:8px;padding-right:8px}
+  body.has-tabbar .tablewrap td,body.has-tabbar .tablewrap th{padding-left:8px;padding-right:8px}
+  body.has-tabbar .tablewrap td .av{width:30px;height:30px;font-size:11px;flex:none}
+}
 </style>
 </head>
 <body>
@@ -4075,7 +4190,7 @@ if("serviceWorker" in navigator){
 }
 // Version check: whenever the app is opened or brought back to the front, ask GitHub for the latest version number.
 // If it is newer than what is running, reload (straight away if nothing is open, otherwise offer a button).
-window.APP_VERSION = "20261030101208";
+window.APP_VERSION = "20261031055756";
 (function(){
   let busy = false, shown = false;
   function bar(v){ if(shown) return; shown = true; const b = document.createElement("button"); b.className = "upd-bar"; b.textContent = "New version ready — tap to update"; b.onclick = () => go(v); document.body.appendChild(b); }
