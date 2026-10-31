@@ -1893,6 +1893,31 @@ body.dark .uc-edit input:not([type]),body.dark .uc-edit select{background:rgba(2
   /* tiles grow to fit their content on phones — no scroll bar inside a tile */
   body.has-tabbar .panel,body.has-tabbar .kpi,body.has-tabbar .sumstrip,body.has-tabbar .ucard,body.has-tabbar .mcard,body.has-tabbar .ck-card{overflow:visible!important;max-height:none!important}
 }
+@media (max-width:760px){
+  /* panels that hold an edge-to-edge table keep their own spacing (no double padding) */
+  body.has-tabbar .panel[style*="padding:0"]{padding:0!important}
+  body.has-tabbar .panel[style*="padding:0"] > div:first-child{padding:18px 18px 6px!important}
+  body.has-tabbar .panel[style*="padding:0"] .scrollbox{border-radius:0 0 24px 24px!important}
+  body.has-tabbar .panel[style*="padding:0"] table th:first-child,body.has-tabbar .panel[style*="padding:0"] table td:first-child{padding-left:18px!important}
+  body.has-tabbar .panel[style*="padding:0"] table th:last-child,body.has-tabbar .panel[style*="padding:0"] table td:last-child{padding-right:18px!important}
+
+  /* paid leave balances: fit the full width, no sideways scrolling */
+  body.has-tabbar .lg-bal table{width:100%!important;min-width:0!important;table-layout:fixed}
+  body.has-tabbar .lg-bal th:first-child,body.has-tabbar .lg-bal td:first-child{width:44%}
+  body.has-tabbar .lg-bal th,body.has-tabbar .lg-bal td{padding-left:4px;padding-right:4px}
+  body.has-tabbar .lg-bal th{font-size:12px!important;line-height:1.2!important;white-space:normal!important;vertical-align:bottom!important;padding-top:12px!important;padding-bottom:10px!important}
+  body.has-tabbar .lg-bal td{padding-top:11px!important;padding-bottom:11px!important}
+  body.has-tabbar .lg-bal td.num{font-size:14px;font-variant-numeric:tabular-nums}
+  body.has-tabbar .lg-bal td:first-child b,body.has-tabbar .lg-bal td:first-child .nm{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:14px}
+  body.has-tabbar .lg-bal td:first-child small,body.has-tabbar .lg-bal td:first-child .meta,body.has-tabbar .lg-bal td:first-child .sub{display:block!important;-webkit-line-clamp:unset!important;white-space:nowrap!important;overflow:hidden;text-overflow:ellipsis;font-size:12px}
+}
+@media (max-width:760px){
+  body.has-tabbar .lg-bal td:first-child{overflow:hidden;padding-right:10px!important}
+  body.has-tabbar .lg-bal td:first-child > *,body.has-tabbar .lg-bal td:first-child .who > *{min-width:0;max-width:100%}
+  body.has-tabbar .lg-bal td:first-child *{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  body.has-tabbar .panel.lg-bal table th.num,body.has-tabbar .panel.lg-bal table td.num{text-align:center!important}
+  body.has-tabbar .lg-bal th.num:last-child,body.has-tabbar .lg-bal td.num:last-child{padding-right:14px!important}
+}
 </style>
 </head>
 <body>
@@ -4194,7 +4219,7 @@ if("serviceWorker" in navigator){
 }
 // Version check: whenever the app is opened or brought back to the front, ask GitHub for the latest version number.
 // If it is newer than what is running, reload (straight away if nothing is open, otherwise offer a button).
-window.APP_VERSION = "20261031060548";
+window.APP_VERSION = "20261031061353";
 (function(){
   let busy = false, shown = false;
   function bar(v){ if(shown) return; shown = true; const b = document.createElement("button"); b.className = "upd-bar"; b.textContent = "New version ready — tap to update"; b.onclick = () => go(v); document.body.appendChild(b); }
