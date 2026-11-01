@@ -1934,6 +1934,34 @@ body.dark .uc-edit input:not([type]),body.dark .uc-edit select{background:rgba(2
 }
 .lbl-short{display:none}
 @media (max-width:760px){ body.has-tabbar .lbl-long{display:none} body.has-tabbar .lbl-short{display:inline} }
+/* ---- permissions ---- */
+.mp-tabs{display:flex;width:100%;margin:2px 0 12px}
+.mp-tabs button{flex:1;justify-content:center;position:relative}
+.mp-dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:#ff9f0a;margin-left:5px;vertical-align:2px}
+.mp-types{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.mp-type{border:1px solid var(--line);background:rgba(255,255,255,.55);color:var(--ink);border-radius:14px;padding:11px 8px;font:600 13.5px/1.2 inherit;cursor:pointer;text-align:center}
+.mp-type[aria-pressed="true"]{background:var(--accent,#0071e3);border-color:transparent;color:#fff;box-shadow:0 6px 16px -8px rgba(0,113,227,.7)}
+body.dark .mp-type{background:rgba(255,255,255,.06);color:var(--ink)}
+body.dark .mp-type[aria-pressed="true"]{background:#0a84ff;color:#fff}
+.mp-hint{margin:10px 0 2px;font-size:13px;color:var(--muted);text-align:left}
+.mp-form .lv-dates{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.mp-form .field{display:flex;flex-direction:column;gap:4px;min-width:0}
+.mp-form input,.mp-form select{width:100%;min-width:0}
+.dr-extra{display:flex;flex-wrap:wrap;gap:6px;margin-top:5px;align-items:center}
+.dr-ask{border:0;background:rgba(0,113,227,.10);color:var(--accent,#0071e3);border-radius:999px;padding:4px 10px;font:600 12px/1.3 inherit;cursor:pointer}
+body.dark .dr-ask{background:rgba(10,132,255,.18);color:#64b5ff}
+.dr-perm{font-size:11.5px;font-weight:600;color:#1f8a4c}
+.dr-perm.warn{color:#b26a00}
+.ck-perm{margin-top:4px;font-size:13px}
+.req-perm .who small{color:var(--accent,#0071e3)}
+/* request lists: details wrap instead of being cut off; status and Withdraw stack on the right */
+.lv-main{min-width:0;flex:1}
+.lv-main small{white-space:normal!important;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;line-height:1.35;margin-top:2px}
+.lv-side{flex-direction:column;align-items:flex-end;gap:4px}
+.lv-side .btn.small{padding:3px 8px;min-height:0;font-size:12px}
+.mp-form .lv-dates{grid-template-columns:minmax(0,1.15fr) minmax(0,1fr)}
+@media (max-width:420px){ .mp-form .lv-dates{grid-template-columns:1fr} }
+.mp-form input[type="time"],.mp-form input[type="date"]{padding-left:14px!important;padding-right:12px!important}
 </style>
 </head>
 <body>
@@ -2036,7 +2064,7 @@ function pathSection(path){
   if(path.startsWith("data/hr/salaries") || path.startsWith("data/hr/payruns") || path.startsWith("data/hr/config/payroll") || path.startsWith("payslips")) return "payroll";
   if(path.startsWith("employees") || path.startsWith("directory")) return "employees";
   if(path.startsWith("attendance") || path.startsWith("attfix") || path.startsWith("config/app")) return "attendance";
-  if(path.startsWith("leaves") || path.startsWith("holidays")) return "leave";
+  if(path.startsWith("leaves") || path.startsWith("holidays") || path.startsWith("perms")) return "leave";
   if(path.startsWith("data/hr/incentives") || path.startsWith("data/hr/config/incentive") || path.startsWith("data/hr/registrations") || path.startsWith("myinc")) return "incentives";
   if(path.startsWith("checkins") || path.startsWith("selfies") || path.startsWith("meta") || (ME && path==="users/"+ME.uid)) return "self";
   if(path.startsWith("users") || path.startsWith("logins")) return "access";
@@ -2045,7 +2073,7 @@ function pathSection(path){
 function deny(path){
   const sec = pathSection(path);
   if(sec==="self") return null;
-  if(sec==="leave" && !isStaffU() && myEmp() && path.startsWith("leaves")) return null;
+  if(sec==="leave" && !isStaffU() && myEmp() && (path.startsWith("leaves") || path.startsWith("perms"))) return null;
   if(sec==="attendance" && path.startsWith("config/app") && (isOwnerV || canEditView("attendance"))) return null;
   if(sec==="access" ? isOwnerV : (canEditView(sec) || (sec==="leave" && canApprove()))) return null;
   return Promise.reject({code:"invalid_argument", message:"You have view-only access to this section."});
@@ -2056,7 +2084,7 @@ function wrapDoc(r){ return {id:r.id, path:r.path, get:()=>r.get(), onSnapshot:(
 function wrapCol(c){ const w = wrapQ(c); w.path = c.path; w.doc = id => wrapDoc(id===undefined ? c.doc() : c.doc(id)); w.add = async d => { const g = deny(c.path); if(g) return g; return wrapDoc(await c.add(d)); }; return w; }
 function guardDb(raw){ return {doc:pp=>wrapDoc(raw.doc(pp)), collection:pp=>wrapCol(raw.collection(pp)),
   batch: ops => { for(const o of ops){ const g = deny(o.path); if(g) return g; } return raw.batch(ops); }, SERVER_TIME: raw.SERVER_TIME}; }
-const S = { emps:{}, sal:{}, att:{}, leaves:{}, runs:{}, inc:{}, cfgDoc:{}, incCfg:{}, reg:{}, ci:{}, slips:{}, myinc:{}, dir:{} };
+const S = { emps:{}, sal:{}, att:{}, leaves:{}, runs:{}, inc:{}, cfgDoc:{}, incCfg:{}, reg:{}, ci:{}, slips:{}, myinc:{}, dir:{}, perms:{} };
 const CFG_DEF = {payDay:5, incDay:20};
 const monthlyPay = s => s ? (+s.pay || ((+s.basic||0)+(+s.hra||0)+(+s.allowance||0))) : 0;
 const cfg = () => { const c = {...CFG_DEF}; for(const k of Object.keys(CFG_DEF)) if(typeof S.cfgDoc[k]==="number") c[k]=S.cfgDoc[k]; return c; };
@@ -2214,6 +2242,7 @@ function subscribe(){
     sub(db.collection("employees").onSnapshot(s => { S.emps={}; s.docs.forEach(d=>{ const x=d.data(); if(x.dept) x.dept=normDept(x.dept); S.emps[d.id]=x; }); loaded.emp=true; queueDirSync(); render(); }, quiet));
     sub(db.collection("attendance").onSnapshot(s => { S.att={}; intoMap(S.att, s); render(); }, quiet));
     sub(db.collection("leaves").onSnapshot(s => { S.leaves={}; intoMap(S.leaves, s); render(); }, quiet));
+    sub(db.collection("perms").where("date", ">=", shiftYm(today.slice(0,7), -2) + "-01").onSnapshot(s => { S.perms={}; intoMap(S.perms, s); render(); }, quiet));
     sub(db.doc("data/hr/config/payroll").onSnapshot(d => { S.cfgDoc = d.exists ? d.data() : {}; render(); }, quiet));
     CI_FROM = shiftYm(today.slice(0,7), -1) + "-01";
     sub(db.collection("checkins").where("date", ">=", CI_FROM).onSnapshot(s => { for(const k of Object.keys(S.ci)) if(k >= CI_FROM) delete S.ci[k]; intoMap(S.ci, s); render(); }, quiet));
@@ -2235,6 +2264,7 @@ function subscribe(){
     sub(db.collection("checkins").where("empId", "==", me).onSnapshot(s => { S.ci = {}; intoMap(S.ci, s); render(); }, quiet));
     sub(db.collection("attfix").where("empId", "==", me).onSnapshot(s => { S.att = {}; s.docs.forEach(d => { const x = d.data(); if(x.date && x.mark) S.att[x.date] = {marks:{[me]:x.mark}}; }); render(); }, quiet));
     sub(db.collection("leaves").where("empId", "==", me).onSnapshot(s => { S.leaves = {}; intoMap(S.leaves, s); render(); }, quiet));
+    sub(db.collection("perms").where("empId", "==", me).onSnapshot(s => { S.perms = {}; intoMap(S.perms, s); render(); }, quiet));
   }
   if(me){
     sub(db.collection("payslips").where("empId", "==", me).onSnapshot(s => { S.slips = {}; intoMap(S.slips, s); render(); }, quiet));
@@ -2373,14 +2403,14 @@ document.addEventListener("keydown", ev => {
 addEventListener("resize", () => { const el = document.getElementById("dp"); if(el && !el.hidden) dpPlace(); });
 document.addEventListener("scroll", () => { const el = document.getElementById("dp"); if(el && !el.hidden) dpPlace(); }, true);
 
-function lockRO(root, v){ if(!root || canEditView(v)) return; root.querySelectorAll("input,select,textarea,button").forEach(el => { if(!el.matches(RO_ALLOW) && !(el.dataset.leave && canApprove())) el.disabled = true; }); }
+function lockRO(root, v){ if(!root || canEditView(v)) return; root.querySelectorAll("input,select,textarea,button").forEach(el => { if(!el.matches(RO_ALLOW) && !((el.dataset.leave || el.dataset.permdec) && canApprove())) el.disabled = true; }); }
 function draw(){
   renderShell();
   if(needLogin()){ $("#main").innerHTML = ""; showGate(); return; }
   hideGate();
   if(!canSee(view)){ const f = firstAllowed(); if(f && f!==view){ view = f; } else if(!f){ $("#main").innerHTML = `<div class="panel" style="margin-top:12px"><h2>No sections assigned</h2><p class="empty">Your user ID has no sections yet. Ask the administrator to give you access.</p></div>`; return; } }
   document.querySelectorAll("#nav a").forEach(a => { if(a.dataset.v===view) a.setAttribute("aria-current","page"); else a.removeAttribute("aria-current"); });
-  const pend = Object.values(S.leaves).filter(l=>l.status==="pending").length;
+  const pend = Object.values(S.leaves).filter(l=>l.status==="pending").length + pendingPerms().length;
   const pc = $("#pendingCount"); pc.hidden = !pend; pc.textContent = pend;
   const main = $("#main");
   const keepFocus = document.activeElement && document.activeElement.id ? document.activeElement.id : null;
@@ -2790,7 +2820,11 @@ myleave(){
   const id = myEmp(); const L = ledger(id);
   const mine = Object.entries(S.leaves).map(([k,l]) => ({id:k, ...l})).filter(l => l.empId===id).sort((a,b) => (b.from||"").localeCompare(a.from||""));
   const row = l => `<div class="lvrow"><div class="lv-main"><b>${fmtDs(l.from)}${l.to!==l.from?` – ${fmtDs(l.to)}`:""}</b><small>${l.days} day${l.days===1?"":"s"}${l.reason?` · ${esc(l.reason)}`:""}</small></div><div class="lv-side">${l.status==="pending" ? `<span class="tag warn">Pending</span><button class="btn small ghost" data-mlcancel="${l.id}">Withdraw</button>` : `<span class="tag ${l.status==="approved"?"ok":"bad"}">${l.status==="approved"?"Approved":"Rejected"}</span>`}</div></div>`;
-  return head("Leave", "") +
+  const tab = UI.mlTab || "leave";
+  const tabs = `<div class="seg mp-tabs" role="tablist"><button data-mltab="leave" aria-pressed="${tab==="leave"}">Leave</button><button data-mltab="perm" aria-pressed="${tab==="perm"}">Permission${permList().some(p=>p.empId===id&&p.status==="pending")?` <span class="mp-dot"></span>`:""}</button></div>`;
+  if(tab==="perm") return head("Leave", "") + tabs +
+    `<h2 class="sect-h">Ask for permission</h2>${permForm()}<h2 class="sect-h">My permission requests</h2><div class="panel daypanel">${myPermRows(id)}</div>`;
+  return head("Leave", "") + tabs +
     `<div class="sumstrip three"><div><b>${L.balance}</b><span>Available</span></div><div><b>${L.accrued}</b><span>Earned</span></div><div><b>${L.used}</b><span>Used${L.booked?` · ${L.booked} booked`:""}</span></div></div>
     <p class="hint">You earn 1 paid leave every month. Unused days carry forward.</p>
     <h2 class="sect-h">Apply</h2>
@@ -2973,6 +3007,90 @@ function head(title, sub, tools=""){ return `<div class="head"><div><h1>${title}
 function who(e, extra){ return `<div class="who"><span class="av">${esc(initials(e.name))}</span><div><b>${esc(e.name)} ${e.sample?'<span class="pill sample">Sample</span>':""}</b><small>${esc(extra ?? e.designation ?? "")}</small></div></div>`; }
 function statusPill(st){ return st==="P"?`<span class="pill ok">Present</span>`:st==="HD"?`<span class="pill warn">Half day</span>`:st==="A"?`<span class="pill bad">Absent</span>`:st==="L"?`<span class="pill leave">On leave</span>`:`<span class="pill mute">Not marked</span>`; }
 
+// ---------- permissions: late arrival, early leave, forgot check-in / check-out ----------
+// Late and early permissions are capped at 2 hours (arrive by 12:00, leave from 16:00).
+// Forgot check-in / check-out is for a past working day in the last 7 days.
+const PERM_TYPES = {late:"Late arrival", early:"Early leave", in:"Forgot check-in", out:"Forgot check-out"};
+const PERM_ORDER = {in:0, out:1, late:2, early:3};
+const PERM_WIN = {
+  late:  {min:"10:16", max:"12:00", label:"I'll arrive by", hint:"Up to 2 hours late — arrive by 12:00 PM at the latest."},
+  early: {min:"16:00", max:"17:59", label:"I'll leave at", hint:"Up to 2 hours early — leave no earlier than 4:00 PM."},
+  in:    {min:"07:00", max:"20:00", label:"I actually came in at", hint:"For a day in the last week when you came to work but didn't check in."},
+  out:   {min:"10:00", max:"23:59", label:"I actually left at", hint:"For a day in the last week when you checked in but didn't check out."}
+};
+const PERM_BACK_DAYS = 7, PERM_AHEAD_DAYS = 30;
+const addDays = (d, n) => { const x = parse(d); x.setDate(x.getDate() + n); return iso(x); };
+const istTs = (d, hm) => new Date(`${d}T${hm}:00+05:30`);
+const hm12 = hm => { if(!hm) return ""; const [h, m] = hm.split(":").map(Number); return `${((h + 11) % 12) + 1}:${String(m).padStart(2,"0")} ${h < 12 ? "AM" : "PM"}`; };
+const permList = () => Object.entries(S.perms || {}).map(([id, p]) => ({id, ...p}));
+function permsOn(id, d, status = "approved"){ return permList().filter(p => p.empId===id && p.date===d && (!status || p.status===status)).sort((a,b) => PERM_ORDER[a.type]-PERM_ORDER[b.type]); }
+const durTxt = m => { const h = Math.floor(m/60), mm = m%60; return h ? `${h} hr${mm ? ` ${mm} min` : ""}` : `${mm} min`; };
+function permDur(p){
+  if(p.type==="late") return durTxt(Math.max(0, hm2m(p.time) - hm2m(SHIFT.start))) + " late";
+  if(p.type==="early") return durTxt(Math.max(0, hm2m(SHIFT.end) - hm2m(p.time))) + " early";
+  return "";
+}
+function permWhat(p){
+  return p.type==="late" ? `Arrive by ${hm12(p.time)} · ${permDur(p)}` : p.type==="early" ? `Leave at ${hm12(p.time)} · ${permDur(p)}`
+    : p.type==="in" ? `Came in at ${hm12(p.time)}${p.place ? ` · ${esc(placeName(p.place))}` : ""}` : `Left at ${hm12(p.time)}`;
+}
+const pendingPerms = () => permList().filter(p => p.status==="pending");
+
+// ---------- employee: request form + list ----------
+function permForm(){
+  const t = UI.mpType || "late"; const w = PERM_WIN[t]; const forgot = t==="in" || t==="out";
+  const dMin = addDays(today, -PERM_BACK_DAYS), dMax = forgot ? addDays(today, -1) : addDays(today, PERM_AHEAD_DAYS);
+  let d = UI.mpDate || (forgot ? addDays(today, -1) : today); if(d < dMin) d = dMin; if(d > dMax) d = dMax;
+  const tv = UI.mpTime && UI.mpTime >= w.min && UI.mpTime <= w.max ? UI.mpTime : (t==="late" ? "11:00" : t==="early" ? "17:00" : t==="in" ? "10:00" : "18:00");
+  return `<div class="panel lv-form mp-form">
+    <div class="mp-types" role="group" aria-label="Type of permission">${Object.entries(PERM_TYPES).map(([k, l]) => `<button class="mp-type" data-mptype="${k}" aria-pressed="${k===t}">${l}</button>`).join("")}</div>
+    <p class="mp-hint">${w.hint}</p>
+    <div class="lv-dates"><div class="field"><label for="mp_date">Date</label><input type="date" id="mp_date" min="${dMin}" max="${dMax}" value="${d}"></div>
+      <div class="field"><label for="mp_time">${w.label}</label><input type="time" id="mp_time" min="${w.min}" max="${w.max}" step="300" value="${tv}"></div></div>
+    ${t==="in" ? `<div class="field"><label for="mp_place">Where</label><select id="mp_place">${PLACES.map(p => `<option value="${p.id}">${esc(p.name)}</option>`).join("")}</select></div>` : ""}
+    <div class="field"><label for="mp_reason">Reason</label><textarea id="mp_reason" rows="2" placeholder="${t==="late" ? "e.g. Client meeting on the way" : t==="early" ? "e.g. Doctor's appointment" : "e.g. Phone battery was dead"}"></textarea></div>
+    <button class="btn primary ck-go" data-act="mp-send">Send request</button><p class="ck-sub">Your approver sees it straight away. An approved late or early permission doesn't count as a late mark.</p></div>`;
+}
+function myPermRows(id){
+  const mine = permList().filter(p => p.empId===id).sort((a,b) => (b.date||"").localeCompare(a.date||"") || (b.at||"").localeCompare(a.at||""));
+  if(!mine.length) return `<p class="empty">No permission requests yet.</p>`;
+  return mine.map(p => `<div class="lvrow"><div class="lv-main"><b>${PERM_TYPES[p.type]} · ${fmtDs(p.date)}</b><small>${permWhat(p)}${p.reason ? ` · ${esc(p.reason)}` : ""}</small></div><div class="lv-side">${p.status==="pending" ? `<span class="tag warn">Pending</span><button class="btn small ghost" data-mpcancel="${p.id}">Withdraw</button>` : `<span class="tag ${p.status==="approved"?"ok":"bad"}">${p.status==="approved"?"Approved":"Rejected"}</span>`}</div></div>`).join("");
+}
+async function permSend(btn){
+  const id = myEmp(); const t = UI.mpType || "late"; const w = PERM_WIN[t];
+  const date = $("#mp_date").value, time = $("#mp_time").value, reason = $("#mp_reason").value.trim(), place = $("#mp_place")?.value || "";
+  const forgot = t==="in" || t==="out";
+  const dMin = addDays(today, -PERM_BACK_DAYS), dMax = forgot ? addDays(today, -1) : addDays(today, PERM_AHEAD_DAYS);
+  if(!date || date < dMin || date > dMax){ toast(forgot ? "Choose a day from the last week (not today)." : "Choose a date from the last week up to a month ahead."); return; }
+  if(!time || time < w.min || time > w.max){ toast(t==="late" ? "Late permission is up to 2 hours — arrive by 12:00 PM." : t==="early" ? "Early leave is up to 2 hours — leave no earlier than 4:00 PM." : `Choose a time between ${hm12(w.min)} and ${hm12(w.max)}.`); return; }
+  if(!reason){ toast("Add a short reason."); $("#mp_reason").focus(); return; }
+  const raw = S.ci[`${date}_${id}`];
+  if(t==="in" && raw?.in){ toast("You already have a check-in that day."); return; }
+  if(t==="out"){ const c = ciFor(id, date); if(!c?.in){ toast("There's no check-in that day. Ask for a forgotten check-in first."); return; } if(c.out){ toast("You already checked out that day."); return; } if(hm2m(time) <= istParts(c.in.t).mins){ toast("The check-out time must be after you came in."); return; } }
+  if(permList().some(p => p.empId===id && p.date===date && p.type===t && p.status!=="rejected")){ toast("You've already asked for this on that day."); return; }
+  btn.disabled = true;
+  try{ const ref = db.collection("perms").doc();
+    await ref.set({id:ref.id, empId:id, name:S.emps[id]?.name || ME.name || "", type:t, date, time, place:t==="in" ? place : "", reason, status:"pending", at:new Date().toISOString(), appliedBy:ME.name || S.emps[id]?.name || ""});
+    toast("Permission request sent"); UI.mpTime = ""; $("#mp_reason").value = ""; }catch(e){ fail(e); }
+  btn.disabled = false;
+}
+async function permCancel(pid){ try{ await db.collection("perms").doc(pid).delete(); toast("Request withdrawn"); }catch(e){ fail(e); } }
+
+// ---------- approvers ----------
+function permRow(p){
+  const e = S.emps[p.empId] || {name:p.name || "Removed employee"}; const st = p.status;
+  const trail = [p.appliedBy ? `Asked by ${esc(p.appliedBy)}` : "", st!=="pending" && p.decidedBy ? `${st==="approved"?"Approved":"Rejected"} by ${esc(p.decidedBy)}${p.decidedOn?` on ${fmtD(p.decidedOn)}`:""}` : ""].filter(Boolean).join(" · ");
+  const status = st==="pending" ? `<span class="pill warn">Waiting</span>` : `<span class="pill ${st==="approved"?"ok":"bad"}">${st==="approved"?"Approved":"Rejected"}</span>`;
+  return `<div class="req req-perm"><div>${who(e, `Permission · ${PERM_TYPES[p.type]}`)}<div class="meta" style="margin-top:4px">${fmtD(p.date)} · ${permWhat(p)}${p.reason ? ` · ${esc(p.reason)}` : ""}</div>${trail ? `<div class="meta">${trail}</div>` : ""}</div>
+  <div class="acts">${st==="pending" && canApprove() ? `<button class="btn small primary" data-permdec="${p.id}" data-s="approved" data-keep>Approve</button><button class="btn small" data-permdec="${p.id}" data-s="rejected" data-keep>Reject</button>` : status}</div></div>`;
+}
+async function permDecide(t){
+  if(!canApprove()) return; t.disabled = true;
+  try{ await db.collection("perms").doc(t.dataset.permdec).update({status:t.dataset.s, decidedOn:today, decidedBy:actorName()}); toast(t.dataset.s==="approved" ? "Permission approved" : "Permission rejected"); }
+  catch(e){ t.disabled = false; fail(e); }
+}
+if(window.__NOW) window.__T = () => ({latesIn, statusOn, ciEval, ciFor, S, UI, today});   // test hook (only when the test clock is set)
+
 
 // ================= GPS check-in, attendance rules and self-service =================
 const PLACES = [
@@ -2993,7 +3111,18 @@ let APP = {};                       // config/app → {goLive}
 const goLive = () => APP.goLive || "";
 const CI_LOADED = new Set();        // months of check-ins fetched on demand (staff)
 let CI_FROM = "";                   // live check-in feed starts here (staff)
-const ciFor = (id, d) => S.ci[`${d}_${id}`];
+function ciFor(id, d){
+  const raw = S.ci[`${d}_${id}`];
+  const ps = typeof permsOn==="function" ? permsOn(id, d) : []; if(!ps.length) return raw;
+  const c = raw ? {...raw} : {empId:id, date:d};
+  for(const p of ps){
+    if(p.type==="in" && !c.in) c.in = {t:istTs(d, p.time), place:p.place || "", manual:true};
+    else if(p.type==="out" && c.in && !c.out) c.out = {t:istTs(d, p.time), manual:true};
+    else if(p.type==="late") c.permLate = hm2m(p.time);
+    else if(p.type==="early") c.permEarly = hm2m(p.time);
+  }
+  c.perms = ps; return c;
+}
 // Turn one check-in into a day status using the shift rules.
 function ciEval(c){
   if(!c || !c.in || !c.in.t) return null;
@@ -3001,7 +3130,11 @@ function ciEval(c){
   let st = "P", late = false, early = false;
   if(inM > hm2m(SHIFT.halfIn) || (outM!=null && outM < hm2m(SHIFT.halfOut))) st = "HD";
   else { late = inM > hm2m(SHIFT.grace); early = outM!=null && outM < hm2m(SHIFT.end); }
-  return {st, late, early, noOut: !c.out, inM, outM, lowAcc: (c.in.acc||0) > 100};
+  // an approved permission (up to 2 hours) clears the late / left-early mark
+  let pLate = false, pEarly = false;
+  if(late && c.permLate!=null && inM <= c.permLate){ late = false; pLate = true; }
+  if(early && c.permEarly!=null && outM >= c.permEarly){ early = false; pEarly = true; }
+  return {st, late, early, pLate, pEarly, manualIn: !!c.in.manual, manualOut: !!c.out?.manual, noOut: !c.out, inM, outM, lowAcc: (c.in.acc||0) > 100};
 }
 // From the go-live date, a working day with no check-in, mark or leave counts as absent (today only after 6 PM).
 function autoAbsent(id, d){
@@ -3012,11 +3145,13 @@ function autoAbsent(id, d){
 }
 // Late marks that count toward loss of pay: late check-in on a day HR hasn't marked and that isn't leave.
 function latesIn(id, ym){
+  const days = new Set();
+  for(const c of Object.values(S.ci)) if(c.empId===id && c.date && c.date.slice(0,7)===ym) days.add(c.date);
+  for(const p of Object.values(S.perms||{})) if(p.empId===id && p.status==="approved" && p.type==="in" && (p.date||"").slice(0,7)===ym) days.add(p.date);
   let n = 0;
-  for(const c of Object.values(S.ci)){
-    if(c.empId!==id || !c.date || c.date.slice(0,7)!==ym) continue;
-    if(S.att[c.date]?.marks?.[id] || leaveOn(id, c.date)) continue;
-    const v = ciEval(c); if(v && v.st==="P" && v.late) n++;
+  for(const d of days){
+    if(S.att[d]?.marks?.[id] || leaveOn(id, d)) continue;
+    const v = ciEval(ciFor(id, d)); if(v && v.st==="P" && v.late) n++;
   }
   return n;
 }
@@ -3095,6 +3230,9 @@ function ciFlags(c, v, d){
   if(v?.late) f.push(`<span class="pill warn">Late</span>`);
   if(v?.st==="HD") f.push(`<span class="pill warn">Half day</span>`);
   if(v?.early) f.push(`<span class="pill warn">Left early</span>`);
+  if(v?.pLate) f.push(`<span class="pill ok">Late · permitted</span>`);
+  if(v?.pEarly) f.push(`<span class="pill ok">Early · permitted</span>`);
+  if(v?.manualIn || v?.manualOut) f.push(`<span class="pill mute">${v.manualIn && v.manualOut ? "Times" : v.manualIn ? "Check-in" : "Check-out"} added by permission</span>`);
   if(v?.noOut && d < today) f.push(`<span class="pill bad">No check-out</span>`);
   if(v?.lowAcc) f.push(`<span class="pill mute" title="GPS accuracy ±${c.in.acc} m">Rough GPS</span>`);
   return f.join(" ");
@@ -3126,7 +3264,7 @@ function checkinCard(){
   const note = leave ? `<p class="ck-note">You're on approved leave today.</p>` : off ? `<p class="ck-note">${offLabel(now.date)} · you can still check in if you're working.</p>` : "";
   const where = CK.near ? `<div class="ck-where">${PIN}<span><b>${esc(CK.near.p.name)}</b> · ${Math.round(CK.near.d)} m away</span></div>` : "";
   const worked = v ? (v.outM!=null ? v.outM : now.mins) - v.inM : 0;
-  const tag = v ? (v.st==="HD" ? `<span class="tag warn">Half day</span>` : v.late ? `<span class="tag warn">Late</span>` : `<span class="tag ok">On time</span>`) : "";
+  const tag = v ? (v.st==="HD" ? `<span class="tag warn">Half day</span>` : v.late ? `<span class="tag warn">Late</span>` : v.pLate ? `<span class="tag ok">Late · permitted</span>` : `<span class="tag ok">On time</span>`) : "";
   let top, body;
   if(CK.step==="locating"){ top = ckState("Checking location","busy");
     body = `<div class="ck-center"><span class="spin"></span><p class="ck-msg">Finding where you are…</p><p class="ck-sub">Keep this screen open. Indoors it can take up to 20 seconds.</p></div>`; }
@@ -3146,7 +3284,10 @@ function checkinCard(){
       <button class="btn primary ck-go ck-out" data-act="ci-out">Check out</button>`; }
   else { top = ckState("Done for today","done");
     body = `<div class="ck-split three"><div><span>In</span><b>${tmIST(c.in.t)}</b></div><div><span>Out</span><b>${tmIST(c.out.t)}</b></div><div><span>Worked</span><b>${m2hm(Math.max(0,worked))}</b></div></div>
-      <div class="ck-foot">${tag}${v.early ? `<span class="tag warn">Left early</span>` : ""}<span class="ck-place">${PIN}${esc(placeName(c.in.place))}</span></div>`; }
+      <div class="ck-foot">${tag}${v.early ? `<span class="tag warn">Left early</span>` : v.pEarly ? `<span class="tag ok">Early · permitted</span>` : ""}<span class="ck-place">${PIN}${esc(placeName(c.in.place))}</span></div>`; }
+  const askLate = v && v.late && !CK.step && !permList().some(p => p.empId===id && p.date===now.date && p.type==="late" && p.status!=="rejected")
+    ? `<button class="btn ghost ck-link ck-perm" data-mpquick="late|${now.date}">Running late for a reason? Ask for permission</button>` : "";
+  body += askLate;
   return `<div class="panel ck-card"><div class="ck-top">${top}<span class="ck-date">${parse(now.date).toLocaleDateString("en-IN",{weekday:"short", day:"numeric", month:"short"})}</span></div>${err}${note}${body}</div>`;
 }
 function dayRow(id, d){
@@ -3156,10 +3297,19 @@ function dayRow(id, d){
     : `<span class="dr-none">${off ? (HOL[d] ? esc(HOL[d].name||"Holiday") : "Weekly off") : leaveOn(id,d) ? "On leave" : S.att[d]?.marks?.[id] ? "Marked by HR" : st==="A" ? "No check-in" : d===today ? "Not checked in yet" : "No record"}</span>`;
   const sub = c ? [esc(placeName(c.in.place)), c.out && v ? m2hm(Math.max(0, v.outM - v.inM)) : ""].filter(Boolean).join(" · ") : "";
   // one label on the right: the most useful thing to know about the day
+  const own = !isStaffU() && id===myEmp(), recent = d < today && d >= addDays(today, -PERM_BACK_DAYS), hr = !!S.att[d]?.marks?.[id];
+  const asked = type => permList().some(p => p.empId===id && p.date===d && p.type===type && p.status!=="rejected");
+  const pend = permsOn(id, d, "pending");
+  const quick = !own || hr || leaveOn(id, d) ? ""
+    : (recent && !c && !off && !asked("in")) ? `<button class="dr-ask" data-mpquick="in|${d}">Forgot to check in?</button>`
+    : (recent && c && !c.out && !asked("out")) ? `<button class="dr-ask" data-mpquick="out|${d}">Forgot to check out?</button>`
+    : (v && v.late && d >= addDays(today, -PERM_BACK_DAYS) && !asked("late")) ? `<button class="dr-ask" data-mpquick="late|${d}">Ask late permission</button>` : "";
+  const permNote = pend.length ? `<span class="dr-perm warn">${pend.map(p => PERM_TYPES[p.type]).join(", ")} · waiting</span>`
+    : (v && (v.pLate || v.pEarly || v.manualIn || v.manualOut)) ? `<span class="dr-perm">${[v.manualIn?"Check-in added":"", v.manualOut?"Check-out added":"", v.pLate?"Late permitted":"", v.pEarly?"Early leave permitted":""].filter(Boolean).join(" · ")}</span>` : "";
   const tag = off && !st ? "" : (v && v.st==="P" && v.late && !S.att[d]?.marks?.[id]) ? `<span class="tag warn">Late</span>`
     : (v && v.noOut && d < today && !S.att[d]?.marks?.[id]) ? `<span class="tag bad">No check-out</span>`
     : st==="P" ? `<span class="tag ok">Present</span>` : st==="HD" ? `<span class="tag warn">Half day</span>` : st==="A" ? `<span class="tag bad">Absent</span>` : st==="L" ? `<span class="tag leave">Leave</span>` : "";
-  return `<div class="dayrow${off?" off":""}">${chip}<div class="dr-mid"><div class="dr-times">${main}</div>${sub?`<div class="dr-sub">${sub}</div>`:""}</div><div class="dr-st">${tag}</div></div>`;
+  return `<div class="dayrow${off?" off":""}">${chip}<div class="dr-mid"><div class="dr-times">${main}</div>${sub?`<div class="dr-sub">${sub}</div>`:""}${permNote||quick ? `<div class="dr-extra">${permNote}${quick}</div>` : ""}</div><div class="dr-st">${tag}</div></div>`;
 }
 function myRecent(id){
   const out = []; let d = today;
@@ -3256,7 +3406,7 @@ dashboard(){
     <div class="kpi"><span class="k">Active staff</span><span class="v">${act.length}</span><span class="s">${DEPTS.filter(x=>act.some(e=>e.dept===x)).length} roles</span></div>
     <div class="kpi"><span class="k">Present today</span><span class="v">${off?"—":p}</span><span class="s">${off?(HOL[d]?esc(HOL[d].name||"Company holiday"):"Office closed"):(u?`${u} not marked yet`:"All marked")}</span></div>
     <div class="kpi"><span class="k">On leave</span><span class="v">${l}</span><span class="s">${a} absent</span></div>
-    <div class="kpi"><span class="k">Leave requests</span><span class="v">${pend.length}</span><span class="s">${pend.length?"Waiting for approval":"Nothing pending"}</span></div>
+    <div class="kpi"><span class="k">Requests</span><span class="v">${pend.length + pendingPerms().length}</span><span class="s">${pend.length + pendingPerms().length ? `${pend.length} leave · ${pendingPerms().length} permission` : "Nothing pending"}</span></div>
   </div>
   ${isAdmin ? (() => { const cur = d.slice(0,7), prev = shiftYm(cur,-1);
     const items = [
@@ -3307,12 +3457,12 @@ attendance(){
 
 leave(){
   const f = UI.leaveFilter;
-  const all = Object.entries(S.leaves).map(([id,l])=>({id,...l})).filter(l=>f==="all"||l.status===f).sort((a,b)=>b.from.localeCompare(a.from));
+  const all = [...Object.entries(S.leaves).map(([id,l])=>({id,...l, _d:l.from})), ...permList().map(p=>({...p, _perm:true, _d:p.date}))].filter(l=>f==="all"||l.status===f).sort((a,b)=>(b._d||"").localeCompare(a._d||""));
   const tools = `<div class="seg" role="group" aria-label="Filter requests">${[["pending","Pending"],["approved","Approved"],["rejected","Rejected"],["all","All"]].map(([v,t])=>`<button data-lf="${v}" aria-pressed="${f===v}" style="${f===v?"background:var(--accent);color:var(--accent-ink)":""}">${t}</button>`).join("")}</div>${canWrite?`<button class="btn primary" data-act="new-leave">Apply for leave</button>`:""}`;
   const balRows = activeEmps().sort((a,b)=>DEPTS.indexOf(a.dept)-DEPTS.indexOf(b.dept) || byRank(a,b)).map(e => { const L=ledger(e.id); return `<tr><td>${who(e, e.dept)}</td><td class="num">${L.accrued}</td><td class="num">${L.used}</td><td class="num"><b>${L.balance}</b>${L.booked?` <span class="note">(${L.booked} booked)</span>`:""}</td><td class="num">${L.unpaidNow?`<span class="pill bad">${L.unpaidNow}</span>`:"0"}</td></tr>`; }).join("");
-  const pendN = Object.values(S.leaves).filter(x=>x.status==="pending").length;
+  const pendN = Object.values(S.leaves).filter(x=>x.status==="pending").length + pendingPerms().length;
   return head("Leave", `${canApprove() && pendN ? `<b>${pendN} waiting for your approval</b> · ` : ""}1 paid leave a month from ${monthName(LEAVE_START)}. Unused days carry forward; leave beyond the balance is loss of pay. Tuesdays and company holidays don't count.`, tools) +
-   `<div class="leavegrid fill"><div class="panel lg-req"><h2>${f==="all"?"All requests":f[0].toUpperCase()+f.slice(1)+" requests"}</h2><div class="scrollbox">${all.length? all.map(reqRow).join("") : `<p class="empty">No ${f==="all"?"":f} requests.</p>`}</div></div>
+   `<div class="leavegrid fill"><div class="panel lg-req"><h2>${f==="all"?"All requests":f[0].toUpperCase()+f.slice(1)+" requests"}</h2><div class="scrollbox">${all.length? all.map(x => x._perm ? permRow(x) : reqRow(x)).join("") : `<p class="empty">No ${f==="all"?"":f} requests.</p>`}</div></div>
    <div class="panel lg-bal" style="padding:0;overflow:hidden"><div style="padding:16px 18px 4px"><h2>Paid leave balances</h2></div><div class="scrollbox stickyhead" style="overflow:auto"><table><thead><tr><th>Employee</th><th class="num">Earned</th><th class="num">Used</th><th class="num">Balance</th><th class="num" title="Unpaid days"><span class="lbl-long">Unpaid days</span><span class="lbl-short">Unpaid</span></th></tr></thead><tbody>${balRows||`<tr><td colspan="5" class="empty">No staff yet.</td></tr>`}</tbody></table></div></div>${holidaysPanel()}</div>`;
 },
 
@@ -4020,7 +4170,12 @@ async function clearSample(btn){
 document.addEventListener("click", async ev => {
   const rs = ev.target.closest("[data-reset]");
   if(rs){ const el = document.getElementById(rs.dataset.reset); if(el && !el.disabled){ el.value = rs.dataset.val; el.dispatchEvent(new Event("input",{bubbles:true})); el.dispatchEvent(new Event("change",{bubbles:true})); } return; }
-  const t = ev.target.closest("[data-act],[data-att],[data-leave],[data-emp],[data-slip],[data-lf],[data-go],[data-regdel],[data-incslide],[data-incopen],[data-uact],[data-holdel],[data-selfie],[data-myslip],[data-mlcancel],[data-umanage],[data-uopen],[data-upermset]"); if(!t) return;
+  const t = ev.target.closest("[data-act],[data-att],[data-leave],[data-emp],[data-slip],[data-lf],[data-go],[data-regdel],[data-incslide],[data-incopen],[data-uact],[data-holdel],[data-selfie],[data-myslip],[data-mlcancel],[data-umanage],[data-uopen],[data-upermset],[data-mptype],[data-mltab],[data-mpcancel],[data-mpquick],[data-permdec]"); if(!t) return;
+  if(t.dataset.mptype){ UI.mpType = t.dataset.mptype; UI.mpTime = ""; render(); return; }
+  if(t.dataset.mltab){ UI.mlTab = t.dataset.mltab; render(); return; }
+  if(t.dataset.mpcancel){ permCancel(t.dataset.mpcancel); return; }
+  if(t.dataset.mpquick){ const [ty, d] = t.dataset.mpquick.split("|"); UI.mlTab = "perm"; UI.mpType = ty; UI.mpDate = d; UI.mpTime = ""; if(location.hash !== "#myleave") location.hash = "myleave"; else render(); setTimeout(() => $("#mp_reason")?.focus(), 250); return; }
+  if(t.dataset.permdec){ permDecide(t); return; }
   if(t.dataset.umanage!==undefined && t.dataset.umanage){ manageDrawer(t.dataset.umanage); return; }
   if(t.dataset.uopen!==undefined){ UI.uOpen = t.dataset.uopen; render(); return; }
   if(t.dataset.upermset){ const uid = t.dataset.upermset; setUserField(uid, {perms:{[t.dataset.sec]:t.dataset.v}}, "Access updated"); render(); return; }
@@ -4084,6 +4239,7 @@ document.addEventListener("click", async ev => {
   else if(a==="setup-close"){ gateMode=""; gateErr=""; render(); }
   else if(a==="my-mprev"||a==="my-mnext"){ const n = shiftYm(UI.myMonth||today.slice(0,7), a==="my-mprev"?-1:1); if(n<=today.slice(0,7)){ UI.myMonth=n; render(); } }
   else if(a==="ml-apply") myLeaveApply(t);
+  else if(a==="mp-send") permSend(t);
   else if(a==="selftest-run") runSelfTest();
   else if(a==="signout") signOut();
   else if(a==="settings") settingsDrawer();
@@ -4104,6 +4260,8 @@ document.addEventListener("input", ev => {
   if(id==="empQ"){ UI.empQ=ev.target.value; render(); }
   if(id==="teamQ"){ UI.teamQ=ev.target.value; render(); }
   if(id==="uQ"){ UI.uQ=ev.target.value; render(); }
+  if(id==="mp_date"){ UI.mpDate=ev.target.value; }
+  if(id==="mp_time"){ UI.mpTime=ev.target.value; }
   if(id==="p_site") UI.punchPlace = ev.target.value;
   if(/^inc[vsan]_/.test(id)) UI.incDraft[id] = ev.target.value;
   if(id==="impText") importPreview();
@@ -4235,7 +4393,7 @@ if("serviceWorker" in navigator){
 }
 // Version check: whenever the app is opened or brought back to the front, ask GitHub for the latest version number.
 // If it is newer than what is running, reload (straight away if nothing is open, otherwise offer a button).
-window.APP_VERSION = "20261031062553";
+window.APP_VERSION = "20261101121111";
 (function(){
   let busy = false, shown = false;
   function bar(v){ if(shown) return; shown = true; const b = document.createElement("button"); b.className = "upd-bar"; b.textContent = "New version ready — tap to update"; b.onclick = () => go(v); document.body.appendChild(b); }
