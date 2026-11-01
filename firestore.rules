@@ -37,9 +37,13 @@ service cloud.firestore {
         || near(p.lat, p.lng, 13.050315, 77.393156, 0.0032, 0.0033)   // Site Office, 300 m
         || near(p.lat, p.lng, 12.979020, 77.504793, 0.0018, 0.0019)); // Home Office, 150 m
     }
+    // field staff (ticked by HR on their employee record) may check in / out anywhere; GPS is still recorded
+    function fieldOk() { return get(/databases/$(database)/documents/employees/$(myEmp())).data.get('fieldOk', false) == true; }
     function validStamp(p) {
-      return p.keys().hasOnly(['t', 'lat', 'lng', 'acc', 'place', 'dist'])
-        && p.t == request.time && inFence(p) && p.place in ['ho', 'so', 'home'];
+      return p.keys().hasOnly(['t', 'lat', 'lng', 'acc', 'place', 'dist', 'note'])
+        && p.t == request.time && p.lat is number && p.lng is number
+        && ((inFence(p) && p.place in ['ho', 'so', 'home']) || (p.place == 'field' && fieldOk()))
+        && (!('note' in p) || (p.note is string && p.note.size() <= 100));
     }
 
     // ---------- set-up and logins ----------

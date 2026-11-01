@@ -1962,6 +1962,7 @@ body.dark .dr-ask{background:rgba(10,132,255,.18);color:#64b5ff}
 .mp-form .lv-dates{grid-template-columns:minmax(0,1.15fr) minmax(0,1fr)}
 @media (max-width:420px){ .mp-form .lv-dates{grid-template-columns:1fr} }
 .mp-form input[type="time"],.mp-form input[type="date"]{padding-left:14px!important;padding-right:12px!important}
+.ck-note-f{width:100%;text-align:left;display:flex;flex-direction:column;gap:4px}.ck-note-f input{width:100%;padding:12px 14px!important}
 </style>
 </head>
 <body>
@@ -2859,7 +2860,7 @@ checkins(){
   const rows = list.map(e => { const c = ciFor(e.id, d), v = ciEval(c), st = statusOn(e.id, d);
     if(c){ c0.in++; if(v.late) c0.late++; if(v.st==="HD") c0.hd++; if(c.out) c0.out++; } else if(!leaveOn(e.id,d)) c0.none++;
     const map = c ? `<a class="btn small ghost" href="https://www.google.com/maps?q=${c.in.lat},${c.in.lng}" target="_blank" rel="noopener">Map</a>` : "";
-    return `<tr><td>${who(e, e.dept)}</td><td>${c?`<b>${tmIST(c.in.t)}</b><div class="note">${esc(placeName(c.in.place))} · ${c.in.dist} m · ±${c.in.acc} m</div>`:`<span class="note">—</span>`}</td><td>${c?.out?`<b>${tmIST(c.out.t)}</b><div class="note">${esc(placeName(c.out.place))}</div>`:`<span class="note">${c?"Not yet":"—"}</span>`}</td><td>${statusPill(st)}${S.att[d]?.marks?.[e.id]?`<div class="note">Set by HR</div>`:""}</td><td>${ciFlags(c, v, d)}</td><td><div class="acts">${c?`<button class="btn small" data-selfie="${d}_${e.id}" data-name="${esc(e.name)}">Selfie</button>${map}`:""}</div></td></tr>`; }).join("");
+    return `<tr><td>${who(e, e.dept)}</td><td>${c?`<b>${tmIST(c.in.t)}</b><div class="note">${esc(placeLbl(c.in))} · ${c.in.dist} m · ±${c.in.acc} m</div>`:`<span class="note">—</span>`}</td><td>${c?.out?`<b>${tmIST(c.out.t)}</b><div class="note">${esc(placeName(c.out.place))}</div>`:`<span class="note">${c?"Not yet":"—"}</span>`}</td><td>${statusPill(st)}${S.att[d]?.marks?.[e.id]?`<div class="note">Set by HR</div>`:""}</td><td>${ciFlags(c, v, d)}</td><td><div class="acts">${c?`${c.in.manual ? "" : `<button class="btn small" data-selfie="${d}_${e.id}" data-name="${esc(e.name)}">Selfie</button>`}${map}`:""}</div></td></tr>`; }).join("");
   const gl = goLive();
   return head("Check-ins", fmtDay(d) + (gl ? "" : ` · <span class="pill mute">Absent marking off</span>`), dateBar("ciDate", d, "ci") + `<button class="btn" data-act="golive-open">Settings</button>`) +
     `<div class="sumstrip ci-sum"><div><b>${c0.in}<small>/${list.length}</small></b><span>Checked in</span></div><div><b>${c0.late}</b><span>Late</span></div><div><b>${c0.hd}</b><span>Half day</span></div><div><b>${c0.none}</b><span>Not in</span></div></div>
@@ -2908,15 +2909,15 @@ function ciCard(e, d){
   const c = ciFor(e.id, d), v = ciEval(c), st = statusOn(e.id, d), hr = S.att[d]?.marks?.[e.id];
   const tag = st==="P" ? (v && v.late && !hr ? `<span class="tag warn">Late</span>` : `<span class="tag ok">Present</span>`) : st==="HD" ? `<span class="tag warn">Half day</span>` : st==="A" ? `<span class="tag bad">Absent</span>` : st==="L" ? `<span class="tag leave">Leave</span>` : `<span class="tag">Not in yet</span>`;
   const line = c ? `<div class="cc-times"><span><small>In</small> ${tmIST(c.in.t)}</span><span><small>Out</small> ${c.out ? tmIST(c.out.t) : "—"}</span>${c.out && v ? `<span><small>Worked</small> ${m2hm(Math.max(0, v.outM - v.inM))}</span>` : ""}</div>
-    <div class="cc-sub">${esc(placeName(c.in.place))} · ${c.in.dist} m · GPS ±${c.in.acc} m${hr ? " · status set by HR" : ""}</div>` : (hr ? `<div class="cc-sub">Marked by HR</div>` : "");
+    <div class="cc-sub">${esc(placeLbl(c.in))}${c.in.manual ? " · added by permission" : c.in.place==="field" ? ` · ${(c.in.dist/1000).toFixed(1)} km from office` : c.in.dist!=null ? ` · ${c.in.dist} m` : ""}${c.in.acc!=null ? ` · GPS ±${c.in.acc} m` : ""}${hr ? " · status set by HR" : ""}</div>` : (hr ? `<div class="cc-sub">Marked by HR</div>` : "");
   const flags = c ? [v.early ? `<span class="tag warn">Left early</span>` : "", v.noOut && d < today ? `<span class="tag bad">No check-out</span>` : "", v.lowAcc ? `<span class="tag">Rough GPS</span>` : ""].filter(Boolean).join("") : "";
-  const acts = c ? `<div class="cc-acts"><button class="btn small" data-selfie="${d}_${e.id}" data-name="${esc(e.name)}">Selfie</button><a class="btn small ghost" href="https://www.google.com/maps?q=${c.in.lat},${c.in.lng}" target="_blank" rel="noopener">Map</a></div>` : "";
+  const acts = c ? `<div class="cc-acts">${c.in.manual ? "" : `<button class="btn small" data-selfie="${d}_${e.id}" data-name="${esc(e.name)}">Selfie</button>`}${c.in.lat!=null ? `<a class="btn small ghost" href="https://www.google.com/maps?q=${c.in.lat},${c.in.lng}" target="_blank" rel="noopener">Map</a>` : ""}</div>` : "";
   return `<div class="cicard"><div class="cc-head"><span class="av">${esc(initials(e.name))}</span><div class="cc-name"><b>${esc(e.name)}</b><small>${esc(e.designation || e.dept || "")}</small></div>${tag}</div>${line}${flags ? `<div class="cc-flags">${flags}</div>` : ""}${acts}</div>`;
 }
 // one employee's attendance row for HR on phones (with the mark buttons)
 function attCard(e, d, canMark){
   const c = ciFor(e.id, d), cv = ciEval(c), s = S.att[d]?.marks?.[e.id] || (leaveOn(e.id,d) ? "L" : null), shown = statusOn(e.id, d);
-  return `<div class="cicard"><div class="cc-head"><span class="av">${esc(initials(e.name))}</span><div class="cc-name"><b>${esc(e.name)}</b><small>${c ? `In ${tmIST(c.in.t)}${c.out ? ` · Out ${tmIST(c.out.t)}` : ""} · ${esc(placeName(c.in.place))}` : esc(e.designation || e.dept || "")}</small></div>${statusPill(shown)}</div>
+  return `<div class="cicard"><div class="cc-head"><span class="av">${esc(initials(e.name))}</span><div class="cc-name"><b>${esc(e.name)}</b><small>${c ? `In ${tmIST(c.in.t)}${c.out ? ` · Out ${tmIST(c.out.t)}` : ""} · ${esc(placeLbl(c.in))}` : esc(e.designation || e.dept || "")}</small></div>${statusPill(shown)}</div>
     <div class="seg cc-seg" role="group" aria-label="Attendance for ${esc(e.name)}">${MARKS.map(([v,t]) => `<button data-att="${e.id}" data-v="${v}" aria-pressed="${s===v}" title="${t}" ${canMark ? "" : "disabled"}>${t}</button>`).join("")}</div>
     ${!s && shown ? `<div class="cc-sub">${c ? "Status from check-in" : "No check-in"}${cv && cv.late ? " · late" : ""}</div>` : ""}</div>`;
 }
@@ -3098,7 +3099,9 @@ const PLACES = [
   {id:"so",   name:"Site Office", lat:13.050315, lng:77.393156, r:300},
   {id:"home", name:"Home Office", lat:12.979020, lng:77.504793, r:150}
 ];
-const placeName = id => PLACES.find(p=>p.id===id)?.name || id || "—";
+const placeName = id => id==="field" ? "Field" : PLACES.find(p=>p.id===id)?.name || id || "—";
+const placeLbl = s => s ? placeName(s.place) + (s.note ? " · " + s.note : "") : "";
+const fieldOk = () => !!S.emps[myEmp()]?.fieldOk;
 const SHIFT = {start:"10:00", grace:"10:15", halfIn:"13:00", halfOut:"14:00", end:"18:00"};
 const hm2m = s => { const [h,m] = s.split(":").map(Number); return h*60+m; };
 const IST_FMT = new Intl.DateTimeFormat("en-CA",{timeZone:"Asia/Kolkata", year:"numeric", month:"2-digit", day:"2-digit", hour:"2-digit", minute:"2-digit", hourCycle:"h23"});
@@ -3180,12 +3183,13 @@ function shrinkPhoto(file, max=360){
   });
 }
 const CK = {step:"idle", pos:null, near:null, img:"", err:"", kind:"in"};
-const ckReset = () => { CK.step="idle"; CK.pos=null; CK.near=null; CK.img=""; CK.err=""; CK.kind="in"; };
+const ckReset = () => { CK.step="idle"; CK.pos=null; CK.near=null; CK.img=""; CK.err=""; CK.kind="in"; CK.field=false; CK.note=""; };
 async function ckLocate(kind){
   CK.kind = kind; CK.err = ""; CK.step = "locating"; render();
   try{
-    const pos = await getPos(); const n = nearestPlace(pos.lat, pos.lng);
-    if(n.d > n.p.r){
+    const pos = await getPos(); let n = nearestPlace(pos.lat, pos.lng); CK.field = false;
+    if(n.d > n.p.r && fieldOk()){ n = {p:{id:"field", name:"Field", r:0}, d:n.d}; CK.field = true; }
+    if(n.d > n.p.r && !CK.field){
       CK.step = "idle";
       CK.err = `You're about ${n.d>=1000 ? (n.d/1000).toFixed(1)+" km" : Math.round(n.d)+" m"} from ${n.p.name}. You can check ${kind} only within ${n.p.r} m of Head Office, Site Office or Home Office.` + (pos.acc > 100 ? ` Your phone's location is rough right now (±${Math.round(pos.acc)} m), so moving near a window may help.` : "");
       render(); return;
@@ -3202,18 +3206,19 @@ async function ckSave(btn){
   const id = myEmp(); if(!id) return;
   if(btn){ btn.disabled = true; btn.textContent = "Saving…"; }
   try{
-    if(!CK.pos || Date.now() - CK.pos.at > 180000){ const pos = await getPos(); const n = nearestPlace(pos.lat, pos.lng); if(n.d > n.p.r){ ckReset(); CK.err = `You've moved out of range of ${n.p.name}. Go back and try again.`; render(); return; } CK.pos = pos; CK.near = n; }
+    if(!CK.pos || Date.now() - CK.pos.at > 180000){ const pos = await getPos(); let n = nearestPlace(pos.lat, pos.lng); if(n.d > n.p.r && CK.field) n = {p:{id:"field", name:"Field", r:0}, d:n.d}; if(n.d > n.p.r && !CK.field){ ckReset(); CK.err = `You've moved out of range of ${n.p.name}. Go back and try again.`; render(); return; } CK.pos = pos; CK.near = n; }
     const now = istNow(); const d = now.date; const docId = `${d}_${id}`;
     const where = {t:db.SERVER_TIME, lat:+CK.pos.lat.toFixed(6), lng:+CK.pos.lng.toFixed(6), acc:Math.round(CK.pos.acc), place:CK.near.p.id, dist:Math.round(CK.near.d)};
+    if(CK.near.p.id==="field"){ const note = ($("#ck_note")?.value || CK.note || "").trim().slice(0,100); if(CK.kind==="in" && !note){ if(btn){ btn.disabled = false; btn.textContent = "Confirm check-in"; } toast("Type where you are, e.g. the client or site name."); $("#ck_note")?.focus(); return; } if(note) where.note = note; }
     if(CK.kind==="in"){
       await db.batch([
         {op:"set", path:`checkins/${docId}`, data:{empId:id, date:d, by:ME.uid, in:where}},
         {op:"set", path:`selfies/${docId}_in`, data:{empId:id, date:d, kind:"in", img:CK.img, t:db.SERVER_TIME}}
       ]);
-      toast(`Checked in at ${CK.near.p.name}`);
+      toast(CK.near.p.id==="field" ? "Checked in from the field" : `Checked in at ${CK.near.p.name}`);
     } else {
       await db.collection("checkins").doc(docId).update({out:where});
-      toast(`Checked out at ${CK.near.p.name}`);
+      toast(CK.near.p.id==="field" ? "Checked out from the field" : `Checked out at ${CK.near.p.name}`);
     }
     ckReset(); render();
   }catch(e){
@@ -3262,7 +3267,7 @@ function checkinCard(){
   const err = CK.err ? `<div class="ck-err"><b>Couldn't check ${CK.kind}</b><span>${esc(CK.err)}</span></div>` : "";
   const leave = leaveOn(id, now.date), off = isOff(now.date);
   const note = leave ? `<p class="ck-note">You're on approved leave today.</p>` : off ? `<p class="ck-note">${offLabel(now.date)} · you can still check in if you're working.</p>` : "";
-  const where = CK.near ? `<div class="ck-where">${PIN}<span><b>${esc(CK.near.p.name)}</b> · ${Math.round(CK.near.d)} m away</span></div>` : "";
+  const where = CK.near ? `<div class="ck-where">${PIN}<span>${CK.near.p.id==="field" ? `<b>Field check-in</b> · ${CK.near.d>=1000 ? (CK.near.d/1000).toFixed(1)+" km" : Math.round(CK.near.d)+" m"} from the nearest office` : `<b>${esc(CK.near.p.name)}</b> · ${Math.round(CK.near.d)} m away`}</span></div>` : "";
   const worked = v ? (v.outM!=null ? v.outM : now.mins) - v.inM : 0;
   const tag = v ? (v.st==="HD" ? `<span class="tag warn">Half day</span>` : v.late ? `<span class="tag warn">Late</span>` : v.pLate ? `<span class="tag ok">Late · permitted</span>` : `<span class="tag ok">On time</span>`) : "";
   let top, body;
@@ -3274,18 +3279,19 @@ function checkinCard(){
       <button class="btn ghost ck-link" data-act="ci-cancel">Cancel</button>`; }
   else if(CK.step==="confirm"){ top = ckState(CK.kind==="in" ? "Ready to check in" : "Ready to check out","ok");
     body = `${CK.img ? `<div class="ck-center"><img class="ck-selfie" src="${CK.img}" alt="Your selfie"></div>` : ""}${where}
+      ${CK.field ? `<div class="field ck-note-f"><label for="ck_note">Where are you?${CK.kind==="out" ? ` <span class="opt">optional</span>` : ""}</label><input id="ck_note" maxlength="100" placeholder="e.g. Client site, Yelahanka" value="${esc(CK.note||"")}"></div>` : ""}
       <button class="btn primary ck-go" data-act="ci-save">${CK.kind==="in" ? "Confirm check-in" : "Confirm check-out"}</button>
       <div class="ck-row">${CK.kind==="in" ? `<label class="btn ghost ck-link">Retake photo<input type="file" id="ci_selfie" accept="image/*" capture="user" hidden></label>` : ""}<button class="btn ghost ck-link" data-act="ci-cancel">Cancel</button></div>`; }
   else if(!c){ top = ckState("Not checked in","idle");
-    body = `<div class="ck-center"><p class="ck-time" id="clock">${tmIST(new Date())}</p><p class="ck-sub">Shift 10:00 AM – 6:00 PM · on time until 10:15</p></div>
+    body = `<div class="ck-center"><p class="ck-time" id="clock">${tmIST(new Date())}</p><p class="ck-sub">Shift 10:00 AM – 6:00 PM · on time until 10:15${fieldOk() ? " · field check-in on" : ""}</p></div>
       <button class="btn primary ck-go" data-act="ci-in">${PIN}<span>Check in</span></button>`; }
   else if(!c.out){ top = ckState("Checked in","live");
-    body = `<div class="ck-split"><div><span>In</span><b>${tmIST(c.in.t)}</b><small>${esc(placeName(c.in.place))}</small></div><div><span>Working</span><b>${m2hm(Math.max(0,worked))}</b><small>${tag}</small></div></div>
+    body = `<div class="ck-split"><div><span>In</span><b>${tmIST(c.in.t)}</b><small>${esc(placeLbl(c.in))}</small></div><div><span>Working</span><b>${m2hm(Math.max(0,worked))}</b><small>${tag}</small></div></div>
       <button class="btn primary ck-go ck-out" data-act="ci-out">Check out</button>`; }
   else { top = ckState("Done for today","done");
     body = `<div class="ck-split three"><div><span>In</span><b>${tmIST(c.in.t)}</b></div><div><span>Out</span><b>${tmIST(c.out.t)}</b></div><div><span>Worked</span><b>${m2hm(Math.max(0,worked))}</b></div></div>
-      <div class="ck-foot">${tag}${v.early ? `<span class="tag warn">Left early</span>` : v.pEarly ? `<span class="tag ok">Early · permitted</span>` : ""}<span class="ck-place">${PIN}${esc(placeName(c.in.place))}</span></div>`; }
-  const askLate = v && v.late && !CK.step && !permList().some(p => p.empId===id && p.date===now.date && p.type==="late" && p.status!=="rejected")
+      <div class="ck-foot">${tag}${v.early ? `<span class="tag warn">Left early</span>` : v.pEarly ? `<span class="tag ok">Early · permitted</span>` : ""}<span class="ck-place">${PIN}${esc(placeLbl(c.in))}</span></div>`; }
+  const askLate = v && v.late && CK.step==="idle" && !permList().some(p => p.empId===id && p.date===now.date && p.type==="late" && p.status!=="rejected")
     ? `<button class="btn ghost ck-link ck-perm" data-mpquick="late|${now.date}">Running late for a reason? Ask for permission</button>` : "";
   body += askLate;
   return `<div class="panel ck-card"><div class="ck-top">${top}<span class="ck-date">${parse(now.date).toLocaleDateString("en-IN",{weekday:"short", day:"numeric", month:"short"})}</span></div>${err}${note}${body}</div>`;
@@ -3295,7 +3301,7 @@ function dayRow(id, d){
   const chip = `<div class="dr-date"><b>${dt.getDate()}</b><small>${dt.toLocaleDateString("en-IN",{weekday:"short"})}</small></div>`;
   const main = c ? `<span>${tmIST(c.in.t)}</span><span class="dr-arrow">–</span><span>${c.out ? tmIST(c.out.t) : "…"}</span>`
     : `<span class="dr-none">${off ? (HOL[d] ? esc(HOL[d].name||"Holiday") : "Weekly off") : leaveOn(id,d) ? "On leave" : S.att[d]?.marks?.[id] ? "Marked by HR" : st==="A" ? "No check-in" : d===today ? "Not checked in yet" : "No record"}</span>`;
-  const sub = c ? [esc(placeName(c.in.place)), c.out && v ? m2hm(Math.max(0, v.outM - v.inM)) : ""].filter(Boolean).join(" · ") : "";
+  const sub = c ? [esc(placeLbl(c.in)), c.out && v ? m2hm(Math.max(0, v.outM - v.inM)) : ""].filter(Boolean).join(" · ") : "";
   // one label on the right: the most useful thing to know about the day
   const own = !isStaffU() && id===myEmp(), recent = d < today && d >= addDays(today, -PERM_BACK_DAYS), hr = !!S.att[d]?.marks?.[id];
   const asked = type => permList().some(p => p.empId===id && p.date===d && p.type===type && p.status!=="rejected");
@@ -3448,7 +3454,7 @@ attendance(){
   const future = d > today;
   const tools = `${dateBar("attDate", d, "att")}${canWrite?`<button class="btn primary" data-act="att-all" ${future?"disabled":""}>Mark rest present</button>`:""}`;
   const rows = list.map(e => { const s = S.att[d]?.marks?.[e.id] || (leaveOn(e.id,d)?"L":null); const lv=leaveOn(e.id,d); const c = ciFor(e.id,d), cv = ciEval(c); const shown = statusOn(e.id,d);
-    return `<tr><td>${who(e, e.dept)}</td><td>${c?`${tmIST(c.in.t)}${c.out?` – ${tmIST(c.out.t)}`:""}<div class="note">${esc(placeName(c.in.place))}</div>`:`<span class="note">—</span>`}</td><td><div class="seg" role="group" aria-label="Attendance for ${esc(e.name)}">${MARKS.map(([v,t])=>`<button data-att="${e.id}" data-v="${v}" aria-pressed="${s===v}" title="${t}" ${!canWrite||future?"disabled":""}>${v}</button>`).join("")}</div></td><td>${statusPill(shown)}${!s && shown ? `<div class="note" style="margin-top:3px">${c?"From check-in":"No check-in"}</div>`:""}${ciFlags(c, cv, d)}${lv?`<div class="note" style="margin-top:3px">Leave approved${ledger(e.id).unpaid.has(d)?" · unpaid, no balance left":""}</div>`:""}</td></tr>`; }).join("");
+    return `<tr><td>${who(e, e.dept)}</td><td>${c?`${tmIST(c.in.t)}${c.out?` – ${tmIST(c.out.t)}`:""}<div class="note">${esc(placeLbl(c.in))}</div>`:`<span class="note">—</span>`}</td><td><div class="seg" role="group" aria-label="Attendance for ${esc(e.name)}">${MARKS.map(([v,t])=>`<button data-att="${e.id}" data-v="${v}" aria-pressed="${s===v}" title="${t}" ${!canWrite||future?"disabled":""}>${v}</button>`).join("")}</div></td><td>${statusPill(shown)}${!s && shown ? `<div class="note" style="margin-top:3px">${c?"From check-in":"No check-in"}</div>`:""}${ciFlags(c, cv, d)}${lv?`<div class="note" style="margin-top:3px">Leave approved${ledger(e.id).unpaid.has(d)?" · unpaid, no balance left":""}</div>`:""}</td></tr>`; }).join("");
   return head("Attendance", parse(d).toLocaleDateString("en-IN",{weekday:"long",day:"numeric",month:"long",year:"numeric"}) + (isOff(d)?` · <span class="pill sample">${offLabel(d)}</span>`:""), tools) +
    `<div class="sumstrip ci-sum"><div><b>${c.P}</b><span>Present</span></div><div><b>${c.HD}</b><span>Half day</span></div><div><b>${c.A}</b><span>Absent</span></div><div><b>${c.U}</b><span>Not marked</span></div></div><div class="attsum"><span class="pill ok">${c.P} present</span><span class="pill warn">${c.HD} half day</span><span class="pill bad">${c.A} absent</span><span class="pill leave">${c.L} on leave</span><span class="pill mute">${c.U} not marked</span></div>
    <div class="panel daypanel att-cards">${list.map(e => attCard(e, d, canWrite && !future)).join("") || `<p class="empty">No active employees on this date.</p>`}</div><div class="tablewrap fill stickyhead att-table"><table class="t-att"><thead><tr><th>Employee</th><th>Check-in</th><th>Mark</th><th>Status</th></tr></thead><tbody>${rows || `<tr><td colspan="4" class="empty">No active employees on this date.</td></tr>`}</tbody></table></div>
@@ -3816,6 +3822,7 @@ function empDrawer(id){
       ${fld("joined","Date of joining","date")}
       ${sel("status","Status",["Active","On notice","Exited"],e.status||"Active")}
       ${fld("exitDate","Last working day","date")}
+      <label class="ceo-flag full" style="max-width:none"><input type="checkbox" id="f_field" ${e.fieldOk?"checked":""} ${ro}> <span><b>Field check-in</b><small>Can check in and out from anywhere, such as client sites. Location and selfie are still recorded, and they note where they are.</small></span></label>
       <label class="ceo-flag full" style="max-width:none"><input type="checkbox" id="f_incElig" ${e.noIncentive?"":"checked"} ${NO_INCENTIVE.has(e.dept)?"disabled":""} ${ro}> <span><b>Eligible for incentives</b><small>${NO_INCENTIVE.has(e.dept)?`${esc(e.dept)} staff don't earn incentives.`:"Untick to leave this person out of the Incentives screen and exports."}</small></span></label>
     </div>
     ${id?(()=>{ const L=ledger(id); return `<div class="sect">Paid leave</div><div class="bal"><div><span>Earned</span><b>${L.accrued}</b></div><div><span>Used</span><b>${L.used}</b></div><div><span>Balance</span><b>${L.balance}</b></div></div>`; })():""}
@@ -3839,7 +3846,7 @@ async function saveEmp(){
   if(!id0 && S.emps[id]) id = "emp-" + Date.now().toString(36);
   const status=v("status"); let exitDate=v("exitDate");
   if(status==="Exited" && !exitDate) exitDate = today;
-  const doc = {...(id0?S.emps[id0]:{}), name, code, designation:v("designation"), dept:v("dept"), reportsTo:v("reportsTo"), reportingTo:v("reportingTo"), location:v("location"), phone:v("phone"), companyPhone:v("companyPhone"), email:v("email"), joined:v("joined"), status, exitDate, noIncentive: !($("#f_incElig")?.checked ?? true), updatedAt:new Date().toISOString()};
+  const doc = {...(id0?S.emps[id0]:{}), name, code, designation:v("designation"), dept:v("dept"), reportsTo:v("reportsTo"), reportingTo:v("reportingTo"), location:v("location"), phone:v("phone"), companyPhone:v("companyPhone"), email:v("email"), joined:v("joined"), status, exitDate, noIncentive: !($("#f_incElig")?.checked ?? true), fieldOk: !!$("#f_field")?.checked, updatedAt:new Date().toISOString()};
   const btn = document.querySelector('[data-act="save-emp"]'); btn.disabled = true;
   try{
     await db.collection("employees").doc(id).set(doc);
@@ -4261,6 +4268,7 @@ document.addEventListener("input", ev => {
   if(id==="teamQ"){ UI.teamQ=ev.target.value; render(); }
   if(id==="uQ"){ UI.uQ=ev.target.value; render(); }
   if(id==="mp_date"){ UI.mpDate=ev.target.value; }
+  if(id==="ck_note"){ CK.note=ev.target.value; }
   if(id==="mp_time"){ UI.mpTime=ev.target.value; }
   if(id==="p_site") UI.punchPlace = ev.target.value;
   if(/^inc[vsan]_/.test(id)) UI.incDraft[id] = ev.target.value;
@@ -4393,7 +4401,7 @@ if("serviceWorker" in navigator){
 }
 // Version check: whenever the app is opened or brought back to the front, ask GitHub for the latest version number.
 // If it is newer than what is running, reload (straight away if nothing is open, otherwise offer a button).
-window.APP_VERSION = "20261101121111";
+window.APP_VERSION = "20261101121739";
 (function(){
   let busy = false, shown = false;
   function bar(v){ if(shown) return; shown = true; const b = document.createElement("button"); b.className = "upd-bar"; b.textContent = "New version ready — tap to update"; b.onclick = () => go(v); document.body.appendChild(b); }
