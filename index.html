@@ -2007,6 +2007,12 @@ body.dark .fg-done{color:#5fd37f}
 @media (max-width:760px){ .dp.sheet{bottom:calc(14px + env(safe-area-inset-bottom,0px))!important;box-shadow:0 -10px 40px rgba(0,0,0,.28),0 0 0 100vmax rgba(10,20,40,.28)!important} }
 .dp{background:rgba(255,255,255,.98)!important;-webkit-backdrop-filter:blur(20px)!important;backdrop-filter:blur(20px)!important}
 body.dark .dp{background:rgba(30,32,40,.98)!important}
+.lv-types{margin-bottom:12px}.co-strip{margin-top:6px}
+@media (max-width:760px){
+  body.has-tabbar .lg-bal th:first-child,body.has-tabbar .lg-bal td:first-child{width:34%}
+  body.has-tabbar .lg-bal th{font-size:11.5px!important;padding-left:2px!important;padding-right:2px!important}
+  body.has-tabbar .lg-bal td.num{padding-left:2px!important;padding-right:2px!important}
+}
 </style>
 </head>
 <body>
@@ -2171,21 +2177,29 @@ function ledger(id){
   if(LEDGER[id]) return LEDGER[id];
   const e = S.emps[id] || {};
   let start = LEAVE_START; if(e.joined && e.joined.slice(0,7) > start) start = e.joined.slice(0,7);
+  if(isStaffU()) loadOffDayCi();
+  const eligYm = (e.joined && !e.leaveWaive && shiftYm(e.joined.slice(0,7), PROBATION_MONTHS) > start) ? shiftYm(e.joined.slice(0,7), PROBATION_MONTHS) : start;
+  const coDates = compEarned(id); let coUsed = 0, coUsedNow = 0, coBooked = 0;
   const nowYm = today.slice(0,7); let end = nowYm;
   for(const l of Object.values(S.leaves)) if(l.empId===id && l.status==="approved" && l.to && l.to.slice(0,7) > end) end = l.to.slice(0,7);
   for(const d of Object.keys(S.att)) if(d.slice(0,7) > end && S.att[d]?.marks?.[id]==="L") end = d.slice(0,7);
   if(UI.payMonth > end) end = UI.payMonth;
   const unpaid = new Set(); let bal = 0, accruedNow = 0, usedNow = 0, unpaidNow = 0, booked = 0;
   for(let ym = start; ym <= end; ym = shiftYm(ym,1)){
-    bal += 1; if(ym <= nowYm) accruedNow++;
+    if(ym >= eligYm){ bal += 1; if(ym <= nowYm) accruedNow++; }
     const [y,m] = ym.split("-").map(Number); const dim = new Date(y,m,0).getDate();
     for(let d=1; d<=dim; d++){
       const ds = `${ym}-${pad(d)}`; if(isOff(ds) || (e.joined && ds < e.joined) || (e.exitDate && ds > e.exitDate)) continue;
       if(statusOn(id, ds) !== "L") continue;
+      if(!S.att[ds]?.marks?.[id] && isCompLeave(leaveOn(id, ds))){
+        if(coDates.filter(x => x <= ds).length - coUsed >= 1){ coUsed++; if(ym <= nowYm) coUsedNow++; else coBooked++; } else { unpaid.add(ds); if(ym <= nowYm) unpaidNow++; }
+        continue;
+      }
       if(bal >= 1){ bal--; if(ym <= nowYm) usedNow++; else booked++; } else { unpaid.add(ds); if(ym <= nowYm) unpaidNow++; }
     }
   }
-  return LEDGER[id] = {start, accrued:accruedNow, used:usedNow, balance:accruedNow-usedNow, booked, unpaid, unpaidNow};
+  return LEDGER[id] = {start, eligYm, waiting: eligYm > nowYm, accrued:accruedNow, used:usedNow, balance:accruedNow-usedNow, booked, unpaid, unpaidNow,
+    co:{earned:coDates.length, used:coUsedNow, booked:coBooked, balance:coDates.length - coUsedNow, free:coDates.length - coUsedNow - coBooked, dates:coDates}};
 }
 // Split a requested range into paid and unpaid days given the current balance.
 function leaveSplit(id, from, to){
@@ -2278,7 +2292,7 @@ const quiet = e => console.warn(e);
 function resetData(){
   for(const k of Object.keys(S)) S[k] = {};
   for(const k of Object.keys(HOL)) delete HOL[k];
-  USERS = {}; APP = {}; DIR_LOADED = false; CI_LOADED.clear(); CI_FROM = ""; loaded.emp = false; LEDGER = {};
+  USERS = {}; APP = {}; DIR_LOADED = false; CI_LOADED.clear(); CI_FROM = ""; loaded.emp = false; LEDGER = {}; OFF_CI.clear();
 }
 const intoMap = (target, s, key = d => d.id) => { s.docs.forEach(d => target[key(d)] = d.data()); };
 function subscribe(){
@@ -2867,18 +2881,20 @@ myatt(){
 myleave(){
   const id = myEmp(); const L = ledger(id);
   const mine = Object.entries(S.leaves).map(([k,l]) => ({id:k, ...l})).filter(l => l.empId===id).sort((a,b) => (b.from||"").localeCompare(a.from||""));
-  const row = l => `<div class="lvrow"><div class="lv-main"><b>${fmtDs(l.from)}${l.to!==l.from?` – ${fmtDs(l.to)}`:""}</b><small>${l.days} day${l.days===1?"":"s"}${l.reason?` · ${esc(l.reason)}`:""}</small></div><div class="lv-side">${l.status==="pending" ? `<span class="tag warn">Pending</span><button class="btn small ghost" data-mlcancel="${l.id}">Withdraw</button>` : `<span class="tag ${l.status==="approved"?"ok":"bad"}">${l.status==="approved"?"Approved":"Rejected"}</span>`}</div></div>`;
+  const row = l => `<div class="lvrow"><div class="lv-main"><b>${isCompLeave(l) ? "Comp off · " : ""}${fmtDs(l.from)}${l.to!==l.from?` – ${fmtDs(l.to)}`:""}</b><small>${l.days} day${l.days===1?"":"s"}${l.reason?` · ${esc(l.reason)}`:""}</small></div><div class="lv-side">${l.status==="pending" ? `<span class="tag warn">Pending</span><button class="btn small ghost" data-mlcancel="${l.id}">Withdraw</button>` : `<span class="tag ${l.status==="approved"?"ok":"bad"}">${l.status==="approved"?"Approved":"Rejected"}</span>`}</div></div>`;
   const tab = UI.mlTab || "leave";
   const tabs = `<div class="seg mp-tabs" role="tablist"><button data-mltab="leave" aria-pressed="${tab==="leave"}">Leave</button><button data-mltab="perm" aria-pressed="${tab==="perm"}">Permission${permList().some(p=>p.empId===id&&p.status==="pending")?` <span class="mp-dot"></span>`:""}</button></div>`;
   if(tab==="perm") return head("Leave", "") + tabs +
     `<h2 class="sect-h">Ask for permission</h2>${permForm()}<h2 class="sect-h">My permission requests</h2><div class="panel daypanel">${myPermRows(id)}</div>`;
   return head("Leave", "") + tabs +
     `<div class="sumstrip three"><div><b>${L.balance}</b><span>Available</span></div><div><b>${L.accrued}</b><span>Earned</span></div><div><b>${L.used}</b><span>Used${L.booked?` · ${L.booked} booked`:""}</span></div></div>
-    <p class="hint">You earn 1 paid leave every month. Unused days carry forward.</p>
+    <p class="hint">${L.waiting ? `Paid leave starts in <b>${monthName(L.eligYm)}</b>, after your first 3 months. Leave before then is unpaid.` : "You earn 1 paid leave every month. Unused days carry forward."}</p>
+    <div class="sumstrip co-strip"><div><b>${L.co.free}</b><span>Comp offs available</span></div><div><b>${L.co.earned}</b><span>Earned</span></div><div><b>${L.co.used + L.co.booked}</b><span>Used</span></div></div>
+    <p class="hint">Check in on the app on a weekly off or company holiday to earn 1 comp off.</p>
     <h2 class="sect-h">Apply</h2>
-    <div class="panel lv-form"><div class="lv-dates"><div class="field"><label for="ml_from">From</label><input type="date" id="ml_from" min="${today}" value="${today}"></div><div class="field"><label for="ml_to">To</label><input type="date" id="ml_to" min="${today}" value="${today}"></div></div>
+    <div class="panel lv-form"><div class="mp-types lv-types" role="group" aria-label="Type of leave"><button class="mp-type" data-mltype="PL" aria-pressed="${(UI.mlType||"PL")==="PL"}">Paid leave</button><button class="mp-type" data-mltype="CO" aria-pressed="${UI.mlType==="CO"}">Comp off${L.co.free ? ` · ${L.co.free}` : ""}</button></div><div class="lv-dates"><div class="field"><label for="ml_from">From</label><input type="date" id="ml_from" min="${today}" value="${today}"></div><div class="field"><label for="ml_to">To</label><input type="date" id="ml_to" min="${today}" value="${today}"></div></div>
       <div class="field"><label for="ml_reason">Reason <span class="opt">optional</span></label><textarea id="ml_reason" rows="2" placeholder="e.g. Family function"></textarea></div>
-      <button class="btn primary ck-go" data-act="ml-apply">Send request</button><p class="ck-sub">Days beyond your balance are unpaid. The CEO approves requests.</p></div>
+      <button class="btn primary ck-go" data-act="ml-apply">Send request</button><p class="ck-sub">${UI.mlType==="CO" ? "Uses your comp offs. Days beyond them are unpaid." : "Days beyond your balance are unpaid."} The CEO approves requests.</p></div>
     <h2 class="sect-h">My requests</h2><div class="panel daypanel">${mine.length ? mine.map(row).join("") : `<p class="empty">No leave requests yet.</p>`}</div>`;
 },
 myslips(){
@@ -3175,7 +3191,32 @@ async function permDecide(t){
   try{ await db.collection("perms").doc(t.dataset.permdec).update({status:t.dataset.s, decidedOn:today, decidedBy:actorName()}); toast(t.dataset.s==="approved" ? "Permission approved" : "Permission rejected"); }
   catch(e){ t.disabled = false; fail(e); }
 }
-if(window.__NOW) window.__T = () => ({latesIn, statusOn, ciEval, ciFor, S, UI, today});   // test hook (only when the test clock is set)
+if(window.__NOW) window.__T = () => ({latesIn, statusOn, ciEval, ciFor, S, UI, today, ledger});   // test hook (only when the test clock is set)
+
+// ---------- comp off ----------
+// 1 comp off is earned for each weekly off or company holiday on which the employee actually checked in on the app
+// (HR marks and permission-added check-ins don't count). Comp offs are used by applying for leave of type "Comp off".
+const COMP_FROM = LEAVE_START + "-01";
+const PROBATION_MONTHS = 3;   // no paid leave for the first 3 months unless HR waives it
+const OFF_CI = new Set();     // weekly-off dates whose check-ins have been loaded (staff)
+function offDaysSince(from){ const out = []; for(let d = from; d <= today; d = addDays(d, 1)) if(isOff(d)) out.push(d); return out; }
+function loadOffDayCi(){
+  if(!isStaffU() || !db) return;
+  const need = offDaysSince(COMP_FROM).filter(d => !OFF_CI.has(d) && !(CI_FROM && d >= CI_FROM));
+  for(let i = 0; i < need.length; i += 30){ const chunk = need.slice(i, i + 30); chunk.forEach(d => OFF_CI.add(d));
+    db.collection("checkins").where("date", "in", chunk).get().then(s => { s.docs.forEach(x => S.ci[x.id] = x.data()); render(); }, e => { chunk.forEach(d => OFF_CI.delete(d)); console.warn(e); }); }
+}
+function compEarned(id){
+  const e = S.emps[id] || {}; const out = [];
+  for(const c of Object.values(S.ci)){
+    if(c.empId!==id || !c.date || !c.in || c.in.manual || c.date < COMP_FROM || c.date > today || !isOff(c.date)) continue;
+    if(e.joined && c.date < e.joined) continue;
+    out.push(c.date);
+  }
+  return out.sort();
+}
+const isCompLeave = l => l && l.type==="CO";
+const leaveTypeName = l => isCompLeave(l) ? "Comp off" : "Leave";
 
 
 // ================= GPS check-in, attendance rules and self-service =================
@@ -3357,7 +3398,7 @@ function checkinCard(){
     <button class="btn primary big ck-go" data-act="consent-ok">I agree</button></div>`;
   const err = CK.err ? `<div class="ck-err"><b>Couldn't check ${CK.kind}</b><span>${esc(CK.err)}</span></div>` : "";
   const leave = leaveOn(id, now.date), off = isOff(now.date);
-  const note = leave ? `<p class="ck-note">You're on approved leave today.</p>` : off ? `<p class="ck-note">${offLabel(now.date)} · you can still check in if you're working.</p>` : "";
+  const note = leave ? `<p class="ck-note">You're on approved leave today.</p>` : off ? `<p class="ck-note">${offLabel(now.date)} · ${c?.in && !c.in.manual ? "<b>1 comp off earned</b> for today." : "check in if you're working to <b>earn 1 comp off</b>."}</p>` : "";
   const where = CK.near ? `<div class="ck-where">${PIN}<span>${CK.near.p.id==="field" ? `<b>Field check-in</b> · ${CK.near.d>=1000 ? (CK.near.d/1000).toFixed(1)+" km" : Math.round(CK.near.d)+" m"} from the nearest office` : `<b>${esc(CK.near.p.name)}</b> · ${Math.round(CK.near.d)} m away`}</span></div>` : "";
   const worked = v ? (v.outM!=null ? v.outM : now.mins) - v.inM : 0;
   const tag = v ? (v.st==="HD" ? `<span class="tag warn">Half day</span>` : v.late ? `<span class="tag warn">Late</span>` : v.pLate ? `<span class="tag ok">Late · permitted</span>` : `<span class="tag ok">On time</span>`) : "";
@@ -3441,12 +3482,13 @@ async function saveGoLive(){
 
 // ---------- employee leave ----------
 async function myLeaveApply(btn){
-  const id = myEmp(); const from = $("#ml_from").value, to = $("#ml_to").value, reason = $("#ml_reason").value.trim();
+  const id = myEmp(); const from = $("#ml_from").value, to = $("#ml_to").value, reason = $("#ml_reason").value.trim(); const type = UI.mlType==="CO" ? "CO" : "PL";
   if(!from || !to || from > to){ toast("Choose a valid date range."); return; }
   const days = workDays(from, to).length; if(!days){ toast("Those dates fall on the weekly off or holidays."); return; }
+  if(type==="CO"){ const f = ledger(id).co.free; if(f < 1){ toast("You have no comp offs yet. Check in on a weekly off or holiday to earn one."); return; } if(days > f){ toast(`You have ${f} comp off${f===1?"":"s"} — choose ${f} day${f===1?"":"s"} or fewer, or use paid leave.`); return; } }
   btn.disabled = true;
-  try{ const ref = db.collection("leaves").doc(); await ref.set({id:ref.id, empId:id, type:"PL", from, to, days, reason, status:"pending", appliedOn:today, appliedBy:ME.name||S.emps[id]?.name||"", self:true});
-    toast("Leave request sent"); $("#ml_reason").value = ""; }catch(e){ fail(e); }
+  try{ const ref = db.collection("leaves").doc(); await ref.set({id:ref.id, empId:id, type, from, to, days, reason, status:"pending", appliedOn:today, appliedBy:ME.name||S.emps[id]?.name||"", self:true});
+    toast(type==="CO" ? "Comp off request sent" : "Leave request sent"); $("#ml_reason").value = ""; }catch(e){ fail(e); }
   btn.disabled = false;
 }
 async function myLeaveCancel(lid){ try{ await db.collection("leaves").doc(lid).delete(); toast("Request withdrawn"); }catch(e){ fail(e); } }
@@ -3556,11 +3598,11 @@ leave(){
   const f = UI.leaveFilter;
   const all = [...Object.entries(S.leaves).map(([id,l])=>({id,...l, _d:l.from})), ...permList().map(p=>({...p, _perm:true, _d:p.date}))].filter(l=>f==="all"||l.status===f).sort((a,b)=>(b._d||"").localeCompare(a._d||""));
   const tools = `<div class="seg" role="group" aria-label="Filter requests">${[["pending","Pending"],["approved","Approved"],["rejected","Rejected"],["all","All"]].map(([v,t])=>`<button data-lf="${v}" aria-pressed="${f===v}" style="${f===v?"background:var(--accent);color:var(--accent-ink)":""}">${t}</button>`).join("")}</div>${canWrite?`<button class="btn primary" data-act="new-leave">Apply for leave</button>`:""}`;
-  const balRows = activeEmps().sort((a,b)=>DEPTS.indexOf(a.dept)-DEPTS.indexOf(b.dept) || byRank(a,b)).map(e => { const L=ledger(e.id); return `<tr><td>${who(e, e.dept)}</td><td class="num">${L.accrued}</td><td class="num">${L.used}</td><td class="num"><b>${L.balance}</b>${L.booked?` <span class="note">(${L.booked} booked)</span>`:""}</td><td class="num">${L.unpaidNow?`<span class="pill bad">${L.unpaidNow}</span>`:"0"}</td></tr>`; }).join("");
+  const balRows = activeEmps().sort((a,b)=>DEPTS.indexOf(a.dept)-DEPTS.indexOf(b.dept) || byRank(a,b)).map(e => { const L=ledger(e.id); return `<tr><td>${who(e, e.dept)}</td><td class="num">${L.accrued}</td><td class="num">${L.used}</td><td class="num"><b>${L.balance}</b>${L.booked?` <span class="note">(${L.booked} booked)</span>`:""}</td><td class="num">${L.unpaidNow?`<span class="pill bad">${L.unpaidNow}</span>`:"0"}</td><td class="num">${L.co.balance}</td></tr>`; }).join("");
   const pendN = Object.values(S.leaves).filter(x=>x.status==="pending").length + pendingPerms().length;
   return head("Leave", `${canApprove() && pendN ? `<b>${pendN} waiting for your approval</b> · ` : ""}1 paid leave a month from ${monthName(LEAVE_START)}. Unused days carry forward; leave beyond the balance is loss of pay. Tuesdays and company holidays don't count.`, tools) +
    `<div class="leavegrid fill"><div class="panel lg-req"><h2>${f==="all"?"All requests":f[0].toUpperCase()+f.slice(1)+" requests"}</h2><div class="scrollbox">${all.length? all.map(x => x._perm ? permRow(x) : reqRow(x)).join("") : `<p class="empty">No ${f==="all"?"":f} requests.</p>`}</div></div>
-   <div class="panel lg-bal" style="padding:0;overflow:hidden"><div style="padding:16px 18px 4px"><h2>Paid leave balances</h2></div><div class="scrollbox stickyhead" style="overflow:auto"><table><thead><tr><th>Employee</th><th class="num">Earned</th><th class="num">Used</th><th class="num">Balance</th><th class="num" title="Unpaid days"><span class="lbl-long">Unpaid days</span><span class="lbl-short">Unpaid</span></th></tr></thead><tbody>${balRows||`<tr><td colspan="5" class="empty">No staff yet.</td></tr>`}</tbody></table></div></div>${holidaysPanel()}</div>`;
+   <div class="panel lg-bal" style="padding:0;overflow:hidden"><div style="padding:16px 18px 4px"><h2>Paid leave balances</h2></div><div class="scrollbox stickyhead" style="overflow:auto"><table><thead><tr><th>Employee</th><th class="num">Earned</th><th class="num">Used</th><th class="num" title="Balance"><span class="lbl-long">Balance</span><span class="lbl-short">Left</span></th><th class="num" title="Unpaid days"><span class="lbl-long">Unpaid days</span><span class="lbl-short">Unpaid</span></th><th class="num" title="Comp offs available"><span class="lbl-long">Comp off</span><span class="lbl-short">C/off</span></th></tr></thead><tbody>${balRows||`<tr><td colspan="6" class="empty">No staff yet.</td></tr>`}</tbody></table></div></div>${holidaysPanel()}</div>`;
 },
 
 payroll(){
@@ -3881,7 +3923,7 @@ function reqRow(l){
   const st = l.status;
   const trail = [l.appliedBy ? `Applied by ${esc(l.appliedBy)}` : "", st!=="pending" && l.decidedBy ? `${st==="approved"?"Approved":"Rejected"} by ${esc(l.decidedBy)}${l.decidedOn?` on ${fmtD(l.decidedOn)}`:""}` : ""].filter(Boolean).join(" · ");
   const status = st==="pending" ? `<span class="pill warn">Waiting for CEO</span>` : `<span class="pill ${st==="approved"?"ok":"bad"}">${st==="approved"?"Approved":"Rejected"}</span>`;
-  return `<div class="req"><div>${who(e, `Leave · ${l.days} day${l.days===1?"":"s"}${st==="approved" && workDays(l.from,l.to).some(d=>ledger(l.empId).unpaid.has(d)) ? " · includes unpaid days" : ""}`)}<div class="meta" style="margin-top:4px">${fmtD(l.from)}${l.to!==l.from?` → ${fmtD(l.to)}`:""}${l.reason?` · ${esc(l.reason)}`:""}</div>${trail?`<div class="meta">${trail}</div>`:""}</div>
+  return `<div class="req"><div>${who(e, `${leaveTypeName(l)} · ${l.days} day${l.days===1?"":"s"}${st==="approved" && workDays(l.from,l.to).some(d=>ledger(l.empId).unpaid.has(d)) ? " · includes unpaid days" : ""}`)}<div class="meta" style="margin-top:4px">${fmtD(l.from)}${l.to!==l.from?` → ${fmtD(l.to)}`:""}${l.reason?` · ${esc(l.reason)}`:""}</div>${trail?`<div class="meta">${trail}</div>`:""}</div>
   <div class="acts">${st==="pending" && canApprove() ? `<button class="btn small primary" data-leave="${l.id}" data-s="approved" data-keep>Approve</button><button class="btn small" data-leave="${l.id}" data-s="rejected" data-keep>Reject</button>` : status}</div></div>`;
 }
 
@@ -3913,6 +3955,7 @@ function empDrawer(id){
       ${fld("joined","Date of joining","date")}
       ${sel("status","Status",["Active","On notice","Exited"],e.status||"Active")}
       ${fld("exitDate","Last working day","date")}
+      <label class="ceo-flag full" style="max-width:none"><input type="checkbox" id="f_waive" ${e.leaveWaive?"checked":""} ${ro}> <span><b>Waive the 3-month wait for paid leave</b><small>New joiners earn paid leave only after 3 months. Tick to let this person earn it from their joining month.</small></span></label>
       <label class="ceo-flag full" style="max-width:none"><input type="checkbox" id="f_field" ${e.fieldOk?"checked":""} ${ro}> <span><b>Field check-in</b><small>Can check in and out from anywhere, such as client sites. Location and selfie are still recorded, and they note where they are.</small></span></label>
       <label class="ceo-flag full" style="max-width:none"><input type="checkbox" id="f_incElig" ${e.noIncentive?"":"checked"} ${NO_INCENTIVE.has(e.dept)?"disabled":""} ${ro}> <span><b>Eligible for incentives</b><small>${NO_INCENTIVE.has(e.dept)?`${esc(e.dept)} staff don't earn incentives.`:"Untick to leave this person out of the Incentives screen and exports."}</small></span></label>
     </div>
@@ -3937,7 +3980,7 @@ async function saveEmp(){
   if(!id0 && S.emps[id]) id = "emp-" + Date.now().toString(36);
   const status=v("status"); let exitDate=v("exitDate");
   if(status==="Exited" && !exitDate) exitDate = today;
-  const doc = {...(id0?S.emps[id0]:{}), name, code, designation:v("designation"), dept:v("dept"), reportsTo:v("reportsTo"), reportingTo:v("reportingTo"), location:v("location"), phone:v("phone"), companyPhone:v("companyPhone"), email:v("email"), joined:v("joined"), status, exitDate, noIncentive: !($("#f_incElig")?.checked ?? true), fieldOk: !!$("#f_field")?.checked, updatedAt:new Date().toISOString()};
+  const doc = {...(id0?S.emps[id0]:{}), name, code, designation:v("designation"), dept:v("dept"), reportsTo:v("reportsTo"), reportingTo:v("reportingTo"), location:v("location"), phone:v("phone"), companyPhone:v("companyPhone"), email:v("email"), joined:v("joined"), status, exitDate, noIncentive: !($("#f_incElig")?.checked ?? true), fieldOk: !!$("#f_field")?.checked, leaveWaive: !!$("#f_waive")?.checked, updatedAt:new Date().toISOString()};
   const btn = document.querySelector('[data-act="save-emp"]'); btn.disabled = true;
   try{
     await db.collection("employees").doc(id).set(doc);
@@ -3951,6 +3994,7 @@ function leaveDrawer(){
   openDrawer(`<header><h3>Apply for leave</h3><button class="btn ghost" data-act="close" aria-label="Close">✕</button></header>
   <div class="body">
     <div class="field"><label for="l_emp">Employee</label><select id="l_emp">${act.map(e=>`<option value="${e.id}">${esc(e.name)} · ${esc(e.code)}</option>`).join("")}</select></div>
+    <div class="field"><label for="l_type">Type</label><select id="l_type"><option value="PL">Paid leave</option><option value="CO">Comp off</option></select></div>
     <div class="formgrid"><div class="field"><label for="l_from">From</label>${withReset(`<input type="date" id="l_from" value="${today}">`, "l_from", "", "Clear")}</div><div class="field"><label for="l_to">To</label>${withReset(`<input type="date" id="l_to" value="${today}">`, "l_to", "", "Clear")}</div></div>
     <div class="field"><label for="l_reason">Reason</label><textarea id="l_reason" placeholder="Optional"></textarea></div>
     <div id="leaveInfo"></div>
@@ -3965,12 +4009,15 @@ function leaveInfo(){
   const L = ledger(id);
   if(!a || !b){ box.innerHTML = `<p class="note">Choose the start and end dates.</p>`; return; }
   if(a>b){ box.innerHTML = `<p class="note">The end date is before the start date.</p>`; return; }
+  if($("#l_type")?.value==="CO"){ const n = workDays(a,b).length, f = L.co.free;
+    box.innerHTML = `<div class="bal"><div><span>Comp offs earned</span><b>${L.co.earned}</b></div><div><span>Used</span><b>${L.co.used + L.co.booked}</b></div><div><span>Available</span><b>${f}</b></div></div>
+    <p class="note" style="margin:8px 0 0">${n} working day${n===1?"":"s"} requested. ${n > f ? `<b>${n - f} more than the comp offs available</b> — those days would be unpaid.` : "All covered by comp offs."}</p>`; return; }
   const sp = leaveSplit(id, a, b);
-  box.innerHTML = `<div class="bal"><div><span>Earned</span><b>${L.accrued}</b></div><div><span>Used</span><b>${L.used}</b></div><div><span>Balance</span><b>${L.balance}</b></div></div>
+  box.innerHTML = `${L.waiting ? `<p class="note" style="margin:0 0 8px"><b>In the 3-month wait</b> — paid leave starts in ${monthName(L.eligYm)}. Leave before then is unpaid.</p>` : ""}<div class="bal"><div><span>Earned</span><b>${L.accrued}</b></div><div><span>Used</span><b>${L.used}</b></div><div><span>Balance</span><b>${L.balance}</b></div></div>
   <p class="note" style="margin:8px 0 0">${sp.days} working day${sp.days===1?"":"s"} requested. ${sp.unpaid ? `${sp.paid} paid from the balance and <b>${sp.unpaid} unpaid</b> (loss of pay).` : "All covered by the paid-leave balance."}</p>`;
 }
 async function saveLeave(){
-  const empId=$("#l_emp").value, type="PL", from=$("#l_from").value, to=$("#l_to").value, reason=$("#l_reason").value.trim();
+  const empId=$("#l_emp").value, type=$("#l_type")?.value || "PL", from=$("#l_from").value, to=$("#l_to").value, reason=$("#l_reason").value.trim();
   if(!empId || !from || !to || from>to){ toast("Choose an employee and a valid date range."); return; }
   const days = workDays(from,to).length; if(!days){ toast("Those dates fall on the weekly off."); return; }
   try{ await db.collection("leaves").add({empId, type, from, to, days, reason, status:"pending", appliedOn:today, appliedBy:actorName()}); closeDrawer(); toast("Leave request submitted"); }catch(e){ fail(e); }
@@ -4268,7 +4315,8 @@ async function clearSample(btn){
 document.addEventListener("click", async ev => {
   const rs = ev.target.closest("[data-reset]");
   if(rs){ const el = document.getElementById(rs.dataset.reset); if(el && !el.disabled){ el.value = rs.dataset.val; el.dispatchEvent(new Event("input",{bubbles:true})); el.dispatchEvent(new Event("change",{bubbles:true})); } return; }
-  const t = ev.target.closest("[data-act],[data-att],[data-leave],[data-emp],[data-slip],[data-lf],[data-go],[data-regdel],[data-incslide],[data-incopen],[data-uact],[data-holdel],[data-selfie],[data-myslip],[data-mlcancel],[data-umanage],[data-uopen],[data-upermset],[data-mptype],[data-mltab],[data-mpcancel],[data-mpquick],[data-permdec],[data-forgive],[data-unforgive]"); if(!t) return;
+  const t = ev.target.closest("[data-act],[data-att],[data-leave],[data-emp],[data-slip],[data-lf],[data-go],[data-regdel],[data-incslide],[data-incopen],[data-uact],[data-holdel],[data-selfie],[data-myslip],[data-mlcancel],[data-umanage],[data-uopen],[data-upermset],[data-mptype],[data-mltab],[data-mpcancel],[data-mpquick],[data-permdec],[data-forgive],[data-unforgive],[data-mltype]"); if(!t) return;
+  if(t.dataset.mltype){ UI.mlType = t.dataset.mltype; render(); return; }
   if(t.dataset.forgive){ forgiveLate(t); return; }
   if(t.dataset.unforgive){ unforgive(t); return; }
   if(t.dataset.mptype){ UI.mpType = t.dataset.mptype; UI.mpTime = ""; render(); return; }
@@ -4366,7 +4414,7 @@ document.addEventListener("input", ev => {
   if(id==="p_site") UI.punchPlace = ev.target.value;
   if(/^inc[vsan]_/.test(id)) UI.incDraft[id] = ev.target.value;
   if(id==="impText") importPreview();
-  if(["l_emp","l_from","l_to"].includes(id)) leaveInfo();
+  if(["l_emp","l_from","l_to","l_type"].includes(id)) leaveInfo();
 });
 document.addEventListener("change", ev => {
   const id = ev.target.id, v = ev.target.value;
@@ -4569,7 +4617,7 @@ if("serviceWorker" in navigator){
 
 // Version check: whenever the app is opened or brought back to the front, ask GitHub for the latest version number.
 // If it is newer than what is running, reload (straight away if nothing is open, otherwise offer a button).
-window.APP_VERSION = "20261102092747";
+window.APP_VERSION = "20261102094442";
 (function(){
   let busy = false, shown = false;
   function bar(v){ if(shown) return; shown = true; const b = document.createElement("button"); b.className = "upd-bar"; b.textContent = "New version ready — tap to update"; b.onclick = () => go(v); document.body.appendChild(b); }
