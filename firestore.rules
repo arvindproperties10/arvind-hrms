@@ -25,6 +25,11 @@ service cloud.firestore {
     function mine(data) { return empOk() && data.empId == myEmp(); }
 
     // today's date in India (server clock), as YYYY-MM-DD
+    // the date n days ago in India, as YYYY-MM-DD
+    function istDateAgo(n) {
+      let t = request.time + duration.value(330, 'm') - duration.value(n * 24, 'h');
+      return string(t.year()) + '-' + (t.month() < 10 ? '0' : '') + string(t.month()) + '-' + (t.day() < 10 ? '0' : '') + string(t.day());
+    }
     function istDate() {
       let t = request.time + duration.value(330, 'm');
       return string(t.year()) + '-' + (t.month() < 10 ? '0' : '') + string(t.month()) + '-' + (t.day() < 10 ? '0' : '') + string(t.day());
@@ -105,19 +110,21 @@ service cloud.firestore {
     // permission requests: late arrival / early leave (max 2 hours) and forgotten check-in / check-out
     function validPerm(d) {
       return d.keys().hasAll(['empId', 'type', 'date', 'time', 'reason', 'status'])
-        && d.type in ['late', 'early', 'in', 'out']
+        && d.type in ['late', 'early', 'in', 'out', 'back']
         && d.date is string && d.date.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$')
         && d.time is string && d.time.matches('^[0-2][0-9]:[0-5][0-9]$')
         && d.reason is string && d.reason.size() > 0 && d.reason.size() <= 300
         && (d.type != 'late' || (d.time > '10:15' && d.time <= '12:00'))
         && (d.type != 'early' || (d.time >= '16:00' && d.time < '18:00'))
         && (d.type != 'in' || (d.time >= '07:00' && d.time <= '20:00' && d.date < istDate()))
-        && (d.type != 'out' || (d.time >= '10:00' && d.time <= '23:59' && d.date < istDate()));
+        && (d.type != 'out' || (d.time >= '10:00' && d.time <= '23:59' && d.date < istDate()))
+        && (d.type != 'back' || (d.time >= '07:00' && d.time <= '20:00' && d.date <= istDate()));
     }
     match /perms/{id} {
       allow read: if isStaff() || mine(resource.data);
       allow create: if validPerm(request.resource.data)
-        && (canEdit('leave') || (mine(request.resource.data) && request.resource.data.status == 'pending'));
+        && (canEdit('leave') || (mine(request.resource.data) && request.resource.data.status == 'pending'
+            && request.resource.data.date >= istDateAgo(2)));   // a past day can be asked about for up to 2 days afterwards
       allow update: if (canEdit('leave') && validPerm(request.resource.data))
         || (isStaff() && me().get('approveLeave', false) == true
             && request.resource.data.status in ['approved', 'rejected']

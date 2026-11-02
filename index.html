@@ -1987,6 +1987,10 @@ body.dark .inst-menu,body.dark .inst-gate{background:rgba(10,132,255,.14);color:
 .inst-small{font-size:12.5px;color:var(--muted)}
 .inst-warn{background:rgba(255,159,10,.12);border:1px solid rgba(255,159,10,.35);border-radius:14px;padding:10px 12px;font-size:13.5px;line-height:1.45;margin:6px 0 4px}
 .inst-diag{margin-top:12px!important;font-size:11.5px;color:var(--muted);text-align:center}
+.mp-types .mp-type:last-child:nth-child(odd){grid-column:1/-1}
+.mp-info{margin:8px 0 2px;padding:9px 12px;border-radius:12px;background:rgba(0,113,227,.08);font-size:13px;line-height:1.4;text-align:left}
+.mp-info.warn{background:rgba(255,159,10,.12)}
+.ck-perms{justify-content:center;flex-wrap:wrap;gap:4px 14px}
 </style>
 </head>
 <body>
@@ -2935,7 +2939,7 @@ function ciCard(e, d){
   const c = ciFor(e.id, d), v = ciEval(c), st = statusOn(e.id, d), hr = S.att[d]?.marks?.[e.id];
   const tag = st==="P" ? (v && v.late && !hr ? `<span class="tag warn">Late</span>` : `<span class="tag ok">Present</span>`) : st==="HD" ? `<span class="tag warn">Half day</span>` : st==="A" ? `<span class="tag bad">Absent</span>` : st==="L" ? `<span class="tag leave">Leave</span>` : `<span class="tag">Not in yet</span>`;
   const line = c ? `<div class="cc-times"><span><small>In</small> ${tmIST(c.in.t)}</span><span><small>Out</small> ${c.out ? tmIST(c.out.t) : "—"}</span>${c.out && v ? `<span><small>Worked</small> ${m2hm(Math.max(0, v.outM - v.inM))}</span>` : ""}</div>
-    <div class="cc-sub">${esc(placeLbl(c.in))}${c.in.manual ? " · added by permission" : c.in.place==="field" ? ` · ${(c.in.dist/1000).toFixed(1)} km from office` : c.in.dist!=null ? ` · ${c.in.dist} m` : ""}${c.in.acc!=null ? ` · GPS ±${c.in.acc} m` : ""}${hr ? " · status set by HR" : ""}</div>` : (hr ? `<div class="cc-sub">Marked by HR</div>` : "");
+    <div class="cc-sub">${esc(placeLbl(c.in))}${c.in.manual ? " · added by permission" : c.in.back ? ` · backdated from ${tmIST(c.in.orig)}` : c.in.place==="field" ? ` · ${(c.in.dist/1000).toFixed(1)} km from office` : c.in.dist!=null ? ` · ${c.in.dist} m` : ""}${c.in.acc!=null ? ` · GPS ±${c.in.acc} m` : ""}${hr ? " · status set by HR" : ""}</div>` : (hr ? `<div class="cc-sub">Marked by HR</div>` : "");
   const flags = c ? [v.early ? `<span class="tag warn">Left early</span>` : "", v.noOut && d < today ? `<span class="tag bad">No check-out</span>` : "", v.lowAcc ? `<span class="tag">Rough GPS</span>` : ""].filter(Boolean).join("") : "";
   const acts = c ? `<div class="cc-acts">${c.in.manual ? "" : `<button class="btn small" data-selfie="${d}_${e.id}" data-name="${esc(e.name)}">Selfie</button>`}${c.in.lat!=null ? `<a class="btn small ghost" href="https://www.google.com/maps?q=${c.in.lat},${c.in.lng}" target="_blank" rel="noopener">Map</a>` : ""}</div>` : "";
   return `<div class="cicard"><div class="cc-head"><span class="av">${esc(initials(e.name))}</span><div class="cc-name"><b>${esc(e.name)}</b><small>${esc(e.designation || e.dept || "")}</small></div>${tag}</div>${line}${flags ? `<div class="cc-flags">${flags}</div>` : ""}${acts}</div>`;
@@ -3036,16 +3040,21 @@ function statusPill(st){ return st==="P"?`<span class="pill ok">Present</span>`:
 
 // ---------- permissions: late arrival, early leave, forgot check-in / check-out ----------
 // Late and early permissions are capped at 2 hours (arrive by 12:00, leave from 16:00).
-// Forgot check-in / check-out is for a past working day in the last 7 days.
-const PERM_TYPES = {late:"Late arrival", early:"Early leave", in:"Forgot check-in", out:"Forgot check-out"};
-const PERM_ORDER = {in:0, out:1, late:2, early:3};
+// Requests about a past day (forgot, backdate, late/early) can be made up to 2 days afterwards.
+const PERM_TYPES = {late:"Late arrival", early:"Early leave", in:"Forgot check-in", out:"Forgot check-out", back:"Backdate check-in"};
+const PERM_ORDER = {in:0, back:1, out:2, late:3, early:4};
+const BACK_MAX = 120;   // a check-in can be moved earlier by at most 2 hours
 const PERM_WIN = {
   late:  {min:"10:16", max:"12:00", label:"I'll arrive by", hint:"Up to 2 hours late — arrive by 12:00 PM at the latest."},
   early: {min:"16:00", max:"17:59", label:"I'll leave at", hint:"Up to 2 hours early — leave no earlier than 4:00 PM."},
-  in:    {min:"07:00", max:"20:00", label:"I actually came in at", hint:"For a day in the last week when you came to work but didn't check in."},
-  out:   {min:"10:00", max:"23:59", label:"I actually left at", hint:"For a day in the last week when you checked in but didn't check out."}
+  in:    {min:"07:00", max:"20:00", label:"I actually came in at", hint:"For a day in the last 2 days when you came to work but didn't check in."},
+  out:   {min:"10:00", max:"23:59", label:"I actually left at", hint:"For a day in the last 2 days when you checked in but didn't check out."},
+  back:  {min:"07:00", max:"20:00", label:"I actually came in at", hint:"You were at work earlier but checked in late. Move your check-in back by up to 2 hours."}
 };
-const PERM_BACK_DAYS = 7, PERM_AHEAD_DAYS = 30;
+const m2t = m => `${String(Math.floor(m/60)).padStart(2,"0")}:${String(m%60).padStart(2,"0")}`;
+// the real check-in time on a day, and the earliest time it can be backdated to
+function backWin(id, d){ const raw = S.ci[`${d}_${id}`]; if(!raw?.in?.t) return null; const a = istParts(raw.in.t).mins; return {actual:m2t(a), min:m2t(Math.max(hm2m("07:00"), a - BACK_MAX)), max:m2t(Math.max(hm2m("07:00"), a - 1))}; }
+const PERM_BACK_DAYS = 2, PERM_AHEAD_DAYS = 30;   // a past day can be asked about for up to 2 days afterwards
 const addDays = (d, n) => { const x = parse(d); x.setDate(x.getDate() + n); return iso(x); };
 const istTs = (d, hm) => new Date(`${d}T${hm}:00+05:30`);
 const hm12 = hm => { if(!hm) return ""; const [h, m] = hm.split(":").map(Number); return `${((h + 11) % 12) + 1}:${String(m).padStart(2,"0")} ${h < 12 ? "AM" : "PM"}`; };
@@ -3059,24 +3068,28 @@ function permDur(p){
 }
 function permWhat(p){
   return p.type==="late" ? `Arrive by ${hm12(p.time)} · ${permDur(p)}` : p.type==="early" ? `Leave at ${hm12(p.time)} · ${permDur(p)}`
-    : p.type==="in" ? `Came in at ${hm12(p.time)}${p.place ? ` · ${esc(placeName(p.place))}` : ""}` : `Left at ${hm12(p.time)}`;
+    : p.type==="in" ? `Came in at ${hm12(p.time)}${p.place ? ` · ${esc(placeName(p.place))}` : ""}`
+    : p.type==="back" ? `Came in at ${hm12(p.time)}${p.actual ? ` · checked in at ${hm12(p.actual)} · ${durTxt(Math.max(0, hm2m(p.actual) - hm2m(p.time)))} earlier` : ""}` : `Left at ${hm12(p.time)}`;
 }
 const pendingPerms = () => permList().filter(p => p.status==="pending");
 
 // ---------- employee: request form + list ----------
 function permForm(){
-  const t = UI.mpType || "late"; const w = PERM_WIN[t]; const forgot = t==="in" || t==="out";
-  const dMin = addDays(today, -PERM_BACK_DAYS), dMax = forgot ? addDays(today, -1) : addDays(today, PERM_AHEAD_DAYS);
+  const t = UI.mpType || "late"; let w = PERM_WIN[t]; const forgot = t==="in" || t==="out";
+  const dMin = addDays(today, -PERM_BACK_DAYS), dMax = forgot ? addDays(today, -1) : t==="back" ? today : addDays(today, PERM_AHEAD_DAYS);
   let d = UI.mpDate || (forgot ? addDays(today, -1) : today); if(d < dMin) d = dMin; if(d > dMax) d = dMax;
-  const tv = UI.mpTime && UI.mpTime >= w.min && UI.mpTime <= w.max ? UI.mpTime : (t==="late" ? "11:00" : t==="early" ? "17:00" : t==="in" ? "10:00" : "18:00");
+  const bw = t==="back" ? backWin(myEmp(), d) : null;
+  if(bw) w = {...w, min:bw.min, max:bw.max};
+  const tv = UI.mpTime && UI.mpTime >= w.min && UI.mpTime <= w.max ? UI.mpTime : (t==="late" ? "11:00" : t==="early" ? "17:00" : t==="in" ? "10:00" : t==="back" ? (bw ? (bw.max < "10:00" ? bw.max : bw.min > "10:00" ? bw.min : "10:00") : "10:00") : "18:00");
+  const backNote = t!=="back" ? "" : bw ? `<p class="mp-info">You checked in at <b>${hm12(bw.actual)}</b> that day. You can move it back to <b>${hm12(bw.min)}</b> at the earliest.</p>` : `<p class="mp-info warn">There's no check-in on this day. If you came to work but didn't check in at all, choose <b>Forgot check-in</b>.</p>`;
   return `<div class="panel lv-form mp-form">
     <div class="mp-types" role="group" aria-label="Type of permission">${Object.entries(PERM_TYPES).map(([k, l]) => `<button class="mp-type" data-mptype="${k}" aria-pressed="${k===t}">${l}</button>`).join("")}</div>
-    <p class="mp-hint">${w.hint}</p>
+    <p class="mp-hint">${w.hint}</p>${backNote}
     <div class="lv-dates"><div class="field"><label for="mp_date">Date</label><input type="date" id="mp_date" min="${dMin}" max="${dMax}" value="${d}"></div>
       <div class="field"><label for="mp_time">${w.label}</label><input type="time" id="mp_time" min="${w.min}" max="${w.max}" step="300" value="${tv}"></div></div>
     ${t==="in" ? `<div class="field"><label for="mp_place">Where</label><select id="mp_place">${PLACES.map(p => `<option value="${p.id}">${esc(p.name)}</option>`).join("")}</select></div>` : ""}
-    <div class="field"><label for="mp_reason">Reason</label><textarea id="mp_reason" rows="2" placeholder="${t==="late" ? "e.g. Client meeting on the way" : t==="early" ? "e.g. Doctor's appointment" : "e.g. Phone battery was dead"}"></textarea></div>
-    <button class="btn primary ck-go" data-act="mp-send">Send request</button><p class="ck-sub">Your approver sees it straight away. An approved late or early permission doesn't count as a late mark.</p></div>`;
+    <div class="field"><label for="mp_reason">Reason</label><textarea id="mp_reason" rows="2" placeholder="${t==="late" ? "e.g. Client meeting on the way" : t==="early" ? "e.g. Doctor's appointment" : t==="back" ? "e.g. Was at the site office, GPS wasn't working" : "e.g. Phone battery was dead"}"></textarea></div>
+    <button class="btn primary ck-go" data-act="mp-send">Send request</button><p class="ck-sub">Requests for a past day must be sent within 2 days. Your approver sees it straight away. An approved late or early permission doesn't count as a late mark.</p></div>`;
 }
 function myPermRows(id){
   const mine = permList().filter(p => p.empId===id).sort((a,b) => (b.date||"").localeCompare(a.date||"") || (b.at||"").localeCompare(a.at||""));
@@ -3084,20 +3097,25 @@ function myPermRows(id){
   return mine.map(p => `<div class="lvrow"><div class="lv-main"><b>${PERM_TYPES[p.type]} · ${fmtDs(p.date)}</b><small>${permWhat(p)}${p.reason ? ` · ${esc(p.reason)}` : ""}</small></div><div class="lv-side">${p.status==="pending" ? `<span class="tag warn">Pending</span><button class="btn small ghost" data-mpcancel="${p.id}">Withdraw</button>` : `<span class="tag ${p.status==="approved"?"ok":"bad"}">${p.status==="approved"?"Approved":"Rejected"}</span>`}</div></div>`).join("");
 }
 async function permSend(btn){
-  const id = myEmp(); const t = UI.mpType || "late"; const w = PERM_WIN[t];
+  const id = myEmp(); const t = UI.mpType || "late"; let w = PERM_WIN[t];
   const date = $("#mp_date").value, time = $("#mp_time").value, reason = $("#mp_reason").value.trim(), place = $("#mp_place")?.value || "";
   const forgot = t==="in" || t==="out";
-  const dMin = addDays(today, -PERM_BACK_DAYS), dMax = forgot ? addDays(today, -1) : addDays(today, PERM_AHEAD_DAYS);
-  if(!date || date < dMin || date > dMax){ toast(forgot ? "Choose a day from the last week (not today)." : "Choose a date from the last week up to a month ahead."); return; }
+  const dMin = addDays(today, -PERM_BACK_DAYS), dMax = forgot ? addDays(today, -1) : t==="back" ? today : addDays(today, PERM_AHEAD_DAYS);
+  if(!date || date < dMin || date > dMax){ toast(forgot ? "Past days can be asked about for up to 2 days afterwards (not today)." : t==="back" ? "Choose today or one of the last 2 days." : "Choose a date from 2 days ago up to a month ahead."); return; }
+  let bw = null;
+  if(t==="back"){ bw = backWin(id, date); if(!bw){ toast("There's no check-in that day. Choose Forgot check-in instead."); return; }
+    if(!time || time >= bw.actual){ toast(`Choose a time before your check-in at ${hm12(bw.actual)}.`); return; }
+    if(time < bw.min){ toast(`A check-in can be moved back by up to 2 hours — ${hm12(bw.min)} at the earliest.`); return; }
+    w = {...w, min:bw.min, max:bw.max}; }
   if(!time || time < w.min || time > w.max){ toast(t==="late" ? "Late permission is up to 2 hours — arrive by 12:00 PM." : t==="early" ? "Early leave is up to 2 hours — leave no earlier than 4:00 PM." : `Choose a time between ${hm12(w.min)} and ${hm12(w.max)}.`); return; }
-  if(!reason){ toast("Add a short reason."); $("#mp_reason").focus(); return; }
+  if(!reason){ toast(t==="back" ? "A reason is required to backdate a check-in." : "Add a short reason."); $("#mp_reason").focus(); return; }
   const raw = S.ci[`${date}_${id}`];
   if(t==="in" && raw?.in){ toast("You already have a check-in that day."); return; }
   if(t==="out"){ const c = ciFor(id, date); if(!c?.in){ toast("There's no check-in that day. Ask for a forgotten check-in first."); return; } if(c.out){ toast("You already checked out that day."); return; } if(hm2m(time) <= istParts(c.in.t).mins){ toast("The check-out time must be after you came in."); return; } }
   if(permList().some(p => p.empId===id && p.date===date && p.type===t && p.status!=="rejected")){ toast("You've already asked for this on that day."); return; }
   btn.disabled = true;
   try{ const ref = db.collection("perms").doc();
-    await ref.set({id:ref.id, empId:id, name:S.emps[id]?.name || ME.name || "", type:t, date, time, place:t==="in" ? place : "", reason, status:"pending", at:new Date().toISOString(), appliedBy:ME.name || S.emps[id]?.name || ""});
+    await ref.set({id:ref.id, empId:id, name:S.emps[id]?.name || ME.name || "", type:t, date, time, place:t==="in" ? place : "", ...(bw ? {actual:bw.actual} : {}), reason, status:"pending", at:new Date().toISOString(), appliedBy:ME.name || S.emps[id]?.name || ""});
     toast("Permission request sent"); UI.mpTime = ""; $("#mp_reason").value = ""; }catch(e){ fail(e); }
   btn.disabled = false;
 }
@@ -3146,6 +3164,7 @@ function ciFor(id, d){
   const c = raw ? {...raw} : {empId:id, date:d};
   for(const p of ps){
     if(p.type==="in" && !c.in) c.in = {t:istTs(d, p.time), place:p.place || "", manual:true};
+    else if(p.type==="back" && c.in && !c.in.manual && p.time < m2t(istParts(c.in.t).mins)) c.in = {...c.in, t:istTs(d, p.time), orig:c.in.t, back:true};
     else if(p.type==="out" && c.in && !c.out) c.out = {t:istTs(d, p.time), manual:true};
     else if(p.type==="late") c.permLate = hm2m(p.time);
     else if(p.type==="early") c.permEarly = hm2m(p.time);
@@ -3163,7 +3182,7 @@ function ciEval(c){
   let pLate = false, pEarly = false;
   if(late && c.permLate!=null && inM <= c.permLate){ late = false; pLate = true; }
   if(early && c.permEarly!=null && outM >= c.permEarly){ early = false; pEarly = true; }
-  return {st, late, early, pLate, pEarly, manualIn: !!c.in.manual, manualOut: !!c.out?.manual, noOut: !c.out, inM, outM, lowAcc: (c.in.acc||0) > 100};
+  return {st, late, early, pLate, pEarly, manualIn: !!c.in.manual, backIn: !!c.in.back, manualOut: !!c.out?.manual, noOut: !c.out, inM, outM, lowAcc: (c.in.acc||0) > 100};
 }
 // From the go-live date, a working day with no check-in, mark or leave counts as absent (today only after 6 PM).
 function autoAbsent(id, d){
@@ -3263,6 +3282,7 @@ function ciFlags(c, v, d){
   if(v?.early) f.push(`<span class="pill warn">Left early</span>`);
   if(v?.pLate) f.push(`<span class="pill ok">Late · permitted</span>`);
   if(v?.pEarly) f.push(`<span class="pill ok">Early · permitted</span>`);
+  if(v?.backIn) f.push(`<span class="pill mute">Check-in backdated from ${tmIST(c.in.orig)}</span>`);
   if(v?.manualIn || v?.manualOut) f.push(`<span class="pill mute">${v.manualIn && v.manualOut ? "Times" : v.manualIn ? "Check-in" : "Check-out"} added by permission</span>`);
   if(v?.noOut && d < today) f.push(`<span class="pill bad">No check-out</span>`);
   if(v?.lowAcc) f.push(`<span class="pill mute" title="GPS accuracy ±${c.in.acc} m">Rough GPS</span>`);
@@ -3317,8 +3337,8 @@ function checkinCard(){
   else { top = ckState("Done for today","done");
     body = `<div class="ck-split three"><div><span>In</span><b>${tmIST(c.in.t)}</b></div><div><span>Out</span><b>${tmIST(c.out.t)}</b></div><div><span>Worked</span><b>${m2hm(Math.max(0,worked))}</b></div></div>
       <div class="ck-foot">${tag}${v.early ? `<span class="tag warn">Left early</span>` : v.pEarly ? `<span class="tag ok">Early · permitted</span>` : ""}<span class="ck-place">${PIN}${esc(placeLbl(c.in))}</span></div>`; }
-  const askLate = v && v.late && CK.step==="idle" && !permList().some(p => p.empId===id && p.date===now.date && p.type==="late" && p.status!=="rejected")
-    ? `<button class="btn ghost ck-link ck-perm" data-mpquick="late|${now.date}">Running late for a reason? Ask for permission</button>` : "";
+  const askLate = v && v.late && CK.step==="idle" && !permList().some(p => p.empId===id && p.date===now.date && (p.type==="late"||p.type==="back") && p.status!=="rejected")
+    ? `<div class="ck-row ck-perms"><button class="btn ghost ck-link ck-perm" data-mpquick="late|${now.date}">Ask late permission</button><button class="btn ghost ck-link ck-perm" data-mpquick="back|${now.date}">Came in earlier? Backdate</button></div>` : "";
   body += askLate;
   return `<div class="panel ck-card"><div class="ck-top">${top}<span class="ck-date">${parse(now.date).toLocaleDateString("en-IN",{weekday:"short", day:"numeric", month:"short"})}</span></div>${err}${note}${body}</div>`;
 }
@@ -3335,9 +3355,9 @@ function dayRow(id, d){
   const quick = !own || hr || leaveOn(id, d) ? ""
     : (recent && !c && !off && !asked("in")) ? `<button class="dr-ask" data-mpquick="in|${d}">Forgot to check in?</button>`
     : (recent && c && !c.out && !asked("out")) ? `<button class="dr-ask" data-mpquick="out|${d}">Forgot to check out?</button>`
-    : (v && v.late && d >= addDays(today, -PERM_BACK_DAYS) && !asked("late")) ? `<button class="dr-ask" data-mpquick="late|${d}">Ask late permission</button>` : "";
+    : (v && v.late && d >= addDays(today, -PERM_BACK_DAYS) && !asked("late") && !asked("back")) ? `<button class="dr-ask" data-mpquick="late|${d}">Ask late permission</button><button class="dr-ask" data-mpquick="back|${d}">Came in earlier?</button>` : "";
   const permNote = pend.length ? `<span class="dr-perm warn">${pend.map(p => PERM_TYPES[p.type]).join(", ")} · waiting</span>`
-    : (v && (v.pLate || v.pEarly || v.manualIn || v.manualOut)) ? `<span class="dr-perm">${[v.manualIn?"Check-in added":"", v.manualOut?"Check-out added":"", v.pLate?"Late permitted":"", v.pEarly?"Early leave permitted":""].filter(Boolean).join(" · ")}</span>` : "";
+    : (v && (v.pLate || v.pEarly || v.manualIn || v.manualOut || v.backIn)) ? `<span class="dr-perm">${[v.manualIn?"Check-in added":"", v.backIn?"Check-in backdated":"", v.manualOut?"Check-out added":"", v.pLate?"Late permitted":"", v.pEarly?"Early leave permitted":""].filter(Boolean).join(" · ")}</span>` : "";
   const tag = off && !st ? "" : (v && v.st==="P" && v.late && !S.att[d]?.marks?.[id]) ? `<span class="tag warn">Late</span>`
     : (v && v.noOut && d < today && !S.att[d]?.marks?.[id]) ? `<span class="tag bad">No check-out</span>`
     : st==="P" ? `<span class="tag ok">Present</span>` : st==="HD" ? `<span class="tag warn">Half day</span>` : st==="A" ? `<span class="tag bad">Absent</span>` : st==="L" ? `<span class="tag leave">Leave</span>` : "";
@@ -4293,7 +4313,7 @@ document.addEventListener("input", ev => {
   if(id==="empQ"){ UI.empQ=ev.target.value; render(); }
   if(id==="teamQ"){ UI.teamQ=ev.target.value; render(); }
   if(id==="uQ"){ UI.uQ=ev.target.value; render(); }
-  if(id==="mp_date"){ UI.mpDate=ev.target.value; }
+  if(id==="mp_date"){ UI.mpDate=ev.target.value; if(UI.mpType==="back"){ UI.mpTime=""; render(); } }
   if(id==="ck_note"){ CK.note=ev.target.value; }
   if(id==="mp_time"){ UI.mpTime=ev.target.value; }
   if(id==="p_site") UI.punchPlace = ev.target.value;
@@ -4484,7 +4504,7 @@ if("serviceWorker" in navigator){
 
 // Version check: whenever the app is opened or brought back to the front, ask GitHub for the latest version number.
 // If it is newer than what is running, reload (straight away if nothing is open, otherwise offer a button).
-window.APP_VERSION = "20261101125200";
+window.APP_VERSION = "20261102053213";
 (function(){
   let busy = false, shown = false;
   function bar(v){ if(shown) return; shown = true; const b = document.createElement("button"); b.className = "upd-bar"; b.textContent = "New version ready — tap to update"; b.onclick = () => go(v); document.body.appendChild(b); }
