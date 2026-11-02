@@ -2056,7 +2056,7 @@ const normDept = d => DEPT_OLD[d] || d;
 const LOCS = ["Head Office","Site Office"];
 const PUNCH_LOCS = ["Head Office","Site Office","Site visit","Client meeting","Field work"];
 const NEEDS_PLACE = new Set(["Site visit","Client meeting","Field work"]);
-const LEAVE_START = "2026-10";   // 1 paid leave accrues each month from here; unused days carry forward
+const LEAVE_START = "2026-11";   // 1 paid leave accrues each month from here; unused days carry forward
 const TRACK_FROM = "2026-11-01"; // deadlines before this date are not flagged as overdue
 const INC_ROLES = ["Tele Calling","Sales Executives","Team Leaders","Others"];
 const MARKS = [["P","Present"],["HD","Half day"],["A","Absent"],["L","Leave"]];
@@ -4569,7 +4569,7 @@ if("serviceWorker" in navigator){
 
 // Version check: whenever the app is opened or brought back to the front, ask GitHub for the latest version number.
 // If it is newer than what is running, reload (straight away if nothing is open, otherwise offer a button).
-window.APP_VERSION = "20261102092310";
+window.APP_VERSION = "20261102092747";
 (function(){
   let busy = false, shown = false;
   function bar(v){ if(shown) return; shown = true; const b = document.createElement("button"); b.className = "upd-bar"; b.textContent = "New version ready — tap to update"; b.onclick = () => go(v); document.body.appendChild(b); }
