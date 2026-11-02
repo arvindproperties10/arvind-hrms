@@ -1991,6 +1991,11 @@ body.dark .inst-menu,body.dark .inst-gate{background:rgba(10,132,255,.14);color:
 .mp-info{margin:8px 0 2px;padding:9px 12px;border-radius:12px;background:rgba(0,113,227,.08);font-size:13px;line-height:1.4;text-align:left}
 .mp-info.warn{background:rgba(255,159,10,.12)}
 .ck-perms{justify-content:center;flex-wrap:wrap;gap:4px 14px}
+.fg-btn{background:rgba(52,199,89,.14)!important;color:#1f8a4c!important;border:0!important}
+.fg-done{display:inline-flex;align-items:center;gap:8px;font-size:12px;font-weight:600;color:#1f8a4c}
+.fg-undo{border:0;background:none;color:var(--accent,#0071e3);font:600 12px/1 inherit;cursor:pointer;padding:2px 0}
+body.dark .fg-btn{background:rgba(52,199,89,.2)!important;color:#5fd37f!important}
+body.dark .fg-done{color:#5fd37f}
 </style>
 </head>
 <body>
@@ -2103,6 +2108,7 @@ function pathSection(path){
 function deny(path){
   const sec = pathSection(path);
   if(sec==="self") return null;
+  if(path.startsWith("perms") && (isOwnerV || canEditView("attendance"))) return null;
   if(sec==="leave" && !isStaffU() && myEmp() && (path.startsWith("leaves") || path.startsWith("perms"))) return null;
   if(sec==="attendance" && path.startsWith("config/app") && (isOwnerV || canEditView("attendance"))) return null;
   if(sec==="access" ? isOwnerV : (canEditView(sec) || (sec==="leave" && canApprove()))) return null;
@@ -2941,7 +2947,7 @@ function ciCard(e, d){
   const line = c ? `<div class="cc-times"><span><small>In</small> ${tmIST(c.in.t)}</span><span><small>Out</small> ${c.out ? tmIST(c.out.t) : "—"}</span>${c.out && v ? `<span><small>Worked</small> ${m2hm(Math.max(0, v.outM - v.inM))}</span>` : ""}</div>
     <div class="cc-sub">${esc(placeLbl(c.in))}${c.in.manual ? " · added by permission" : c.in.back ? ` · backdated from ${tmIST(c.in.orig)}` : c.in.place==="field" ? ` · ${(c.in.dist/1000).toFixed(1)} km from office` : c.in.dist!=null ? ` · ${c.in.dist} m` : ""}${c.in.acc!=null ? ` · GPS ±${c.in.acc} m` : ""}${hr ? " · status set by HR" : ""}</div>` : (hr ? `<div class="cc-sub">Marked by HR</div>` : "");
   const flags = c ? [v.early ? `<span class="tag warn">Left early</span>` : "", v.noOut && d < today ? `<span class="tag bad">No check-out</span>` : "", v.lowAcc ? `<span class="tag">Rough GPS</span>` : ""].filter(Boolean).join("") : "";
-  const acts = c ? `<div class="cc-acts">${c.in.manual ? "" : `<button class="btn small" data-selfie="${d}_${e.id}" data-name="${esc(e.name)}">Selfie</button>`}${c.in.lat!=null ? `<a class="btn small ghost" href="https://www.google.com/maps?q=${c.in.lat},${c.in.lng}" target="_blank" rel="noopener">Map</a>` : ""}</div>` : "";
+  const acts = c ? `<div class="cc-acts">${forgiveCtl(e.id, d, v)}${c.in.manual ? "" : `<button class="btn small" data-selfie="${d}_${e.id}" data-name="${esc(e.name)}">Selfie</button>`}${c.in.lat!=null ? `<a class="btn small ghost" href="https://www.google.com/maps?q=${c.in.lat},${c.in.lng}" target="_blank" rel="noopener">Map</a>` : ""}</div>` : "";
   return `<div class="cicard"><div class="cc-head"><span class="av">${esc(initials(e.name))}</span><div class="cc-name"><b>${esc(e.name)}</b><small>${esc(e.designation || e.dept || "")}</small></div>${tag}</div>${line}${flags ? `<div class="cc-flags">${flags}</div>` : ""}${acts}</div>`;
 }
 // one employee's attendance row for HR on phones (with the mark buttons)
@@ -2949,7 +2955,7 @@ function attCard(e, d, canMark){
   const c = ciFor(e.id, d), cv = ciEval(c), s = S.att[d]?.marks?.[e.id] || (leaveOn(e.id,d) ? "L" : null), shown = statusOn(e.id, d);
   return `<div class="cicard"><div class="cc-head"><span class="av">${esc(initials(e.name))}</span><div class="cc-name"><b>${esc(e.name)}</b><small>${c ? `In ${tmIST(c.in.t)}${c.out ? ` · Out ${tmIST(c.out.t)}` : ""} · ${esc(placeLbl(c.in))}` : esc(e.designation || e.dept || "")}</small></div>${statusPill(shown)}</div>
     <div class="seg cc-seg" role="group" aria-label="Attendance for ${esc(e.name)}">${MARKS.map(([v,t]) => `<button data-att="${e.id}" data-v="${v}" aria-pressed="${s===v}" title="${t}" ${canMark ? "" : "disabled"}>${t}</button>`).join("")}</div>
-    ${!s && shown ? `<div class="cc-sub">${c ? "Status from check-in" : "No check-in"}${cv && cv.late ? " · late" : ""}</div>` : ""}</div>`;
+    ${!s && shown ? `<div class="cc-sub">${c ? "Status from check-in" : "No check-in"}${cv && cv.late ? " · late" : cv && cv.forgiven ? " · late forgiven" : ""}</div>` : ""}${forgiveCtl(e.id, d, cv) ? `<div class="cc-acts">${forgiveCtl(e.id, d, cv)}</div>` : ""}</div>`;
 }
 
 // ---- backup and clearing old records (administrator) ----
@@ -3042,7 +3048,7 @@ function statusPill(st){ return st==="P"?`<span class="pill ok">Present</span>`:
 // Late and early permissions are capped at 2 hours (arrive by 12:00, leave from 16:00).
 // Requests about a past day (forgot, backdate, late/early) can be made up to 2 days afterwards.
 const PERM_TYPES = {late:"Late arrival", early:"Early leave", in:"Forgot check-in", out:"Forgot check-out", back:"Backdate check-in"};
-const PERM_ORDER = {in:0, back:1, out:2, late:3, early:4};
+const PERM_ORDER = {in:0, back:1, out:2, late:3, early:4, forgive:5};
 const BACK_MAX = 120;   // a check-in can be moved earlier by at most 2 hours
 const PERM_WIN = {
   late:  {min:"10:16", max:"12:00", label:"I'll arrive by", hint:"Up to 2 hours late — arrive by 12:00 PM at the latest."},
@@ -3071,7 +3077,31 @@ function permWhat(p){
     : p.type==="in" ? `Came in at ${hm12(p.time)}${p.place ? ` · ${esc(placeName(p.place))}` : ""}`
     : p.type==="back" ? `Came in at ${hm12(p.time)}${p.actual ? ` · checked in at ${hm12(p.actual)} · ${durTxt(Math.max(0, hm2m(p.actual) - hm2m(p.time)))} earlier` : ""}` : `Left at ${hm12(p.time)}`;
 }
-const pendingPerms = () => permList().filter(p => p.status==="pending");
+const pendingPerms = () => permList().filter(p => p.status==="pending" && p.type!=="forgive");
+
+// ---------- administrators: forgive a late check-in ----------
+// A forgiven late doesn't count toward "3 lates = half a day's pay". Stored as an approved record so it can be undone.
+const canForgive = () => isOwnerV || canEditView("attendance");
+const forgiveOf = (id, d) => permList().find(p => p.empId===id && p.date===d && p.type==="forgive" && p.status==="approved");
+function forgiveCtl(id, d, v){
+  if(!canForgive()) return "";
+  const f = forgiveOf(id, d);
+  if(f) return `<span class="fg-done">Late forgiven${f.decidedBy ? ` by ${esc(f.decidedBy)}` : ""}<button class="fg-undo" data-unforgive="${f.id}">Undo</button></span>`;
+  if(v && v.late && !S.att[d]?.marks?.[id]) return `<button class="btn small fg-btn" data-forgive="${id}|${d}">Forgive late</button>`;
+  return "";
+}
+async function forgiveLate(t){
+  if(!canForgive()) return; const [id, d] = t.dataset.forgive.split("|"); const c = ciFor(id, d); if(!c?.in) return;
+  t.disabled = true;
+  try{ const ref = db.collection("perms").doc();
+    await ref.set({id:ref.id, empId:id, name:S.emps[id]?.name || "", type:"forgive", date:d, time:m2t(istParts(c.in.t).mins), reason:"Late forgiven by administrator", status:"approved", at:new Date().toISOString(), appliedBy:actorName(), decidedOn:today, decidedBy:actorName()});
+    toast(`Late forgiven for ${S.emps[id]?.name || "this employee"}`); }
+  catch(e){ t.disabled = false; fail(e); }
+}
+async function unforgive(t){
+  if(!canForgive()) return; t.disabled = true;
+  try{ await db.collection("perms").doc(t.dataset.unforgive).delete(); toast("Late mark restored"); }catch(e){ t.disabled = false; fail(e); }
+}
 
 // ---------- employee: request form + list ----------
 function permForm(){
@@ -3092,7 +3122,7 @@ function permForm(){
     <button class="btn primary ck-go" data-act="mp-send">Send request</button><p class="ck-sub">Requests for a past day must be sent within 2 days. Your approver sees it straight away. An approved late or early permission doesn't count as a late mark.</p></div>`;
 }
 function myPermRows(id){
-  const mine = permList().filter(p => p.empId===id).sort((a,b) => (b.date||"").localeCompare(a.date||"") || (b.at||"").localeCompare(a.at||""));
+  const mine = permList().filter(p => p.empId===id && p.type!=="forgive").sort((a,b) => (b.date||"").localeCompare(a.date||"") || (b.at||"").localeCompare(a.at||""));
   if(!mine.length) return `<p class="empty">No permission requests yet.</p>`;
   return mine.map(p => `<div class="lvrow"><div class="lv-main"><b>${PERM_TYPES[p.type]} · ${fmtDs(p.date)}</b><small>${permWhat(p)}${p.reason ? ` · ${esc(p.reason)}` : ""}</small></div><div class="lv-side">${p.status==="pending" ? `<span class="tag warn">Pending</span><button class="btn small ghost" data-mpcancel="${p.id}">Withdraw</button>` : `<span class="tag ${p.status==="approved"?"ok":"bad"}">${p.status==="approved"?"Approved":"Rejected"}</span>`}</div></div>`).join("");
 }
@@ -3168,6 +3198,7 @@ function ciFor(id, d){
     else if(p.type==="out" && c.in && !c.out) c.out = {t:istTs(d, p.time), manual:true};
     else if(p.type==="late") c.permLate = hm2m(p.time);
     else if(p.type==="early") c.permEarly = hm2m(p.time);
+    else if(p.type==="forgive") c.forgiven = true;
   }
   c.perms = ps; return c;
 }
@@ -3182,7 +3213,8 @@ function ciEval(c){
   let pLate = false, pEarly = false;
   if(late && c.permLate!=null && inM <= c.permLate){ late = false; pLate = true; }
   if(early && c.permEarly!=null && outM >= c.permEarly){ early = false; pEarly = true; }
-  return {st, late, early, pLate, pEarly, manualIn: !!c.in.manual, backIn: !!c.in.back, manualOut: !!c.out?.manual, noOut: !c.out, inM, outM, lowAcc: (c.in.acc||0) > 100};
+  let forgiven = false; if(late && c.forgiven){ late = false; forgiven = true; }
+  return {st, late, early, pLate, pEarly, forgiven, manualIn: !!c.in.manual, backIn: !!c.in.back, manualOut: !!c.out?.manual, noOut: !c.out, inM, outM, lowAcc: (c.in.acc||0) > 100};
 }
 // From the go-live date, a working day with no check-in, mark or leave counts as absent (today only after 6 PM).
 function autoAbsent(id, d){
@@ -3282,10 +3314,12 @@ function ciFlags(c, v, d){
   if(v?.early) f.push(`<span class="pill warn">Left early</span>`);
   if(v?.pLate) f.push(`<span class="pill ok">Late · permitted</span>`);
   if(v?.pEarly) f.push(`<span class="pill ok">Early · permitted</span>`);
+  if(v?.forgiven) f.push(`<span class="pill ok">Late forgiven</span>`);
   if(v?.backIn) f.push(`<span class="pill mute">Check-in backdated from ${tmIST(c.in.orig)}</span>`);
   if(v?.manualIn || v?.manualOut) f.push(`<span class="pill mute">${v.manualIn && v.manualOut ? "Times" : v.manualIn ? "Check-in" : "Check-out"} added by permission</span>`);
   if(v?.noOut && d < today) f.push(`<span class="pill bad">No check-out</span>`);
   if(v?.lowAcc) f.push(`<span class="pill mute" title="GPS accuracy ±${c.in.acc} m">Rough GPS</span>`);
+  if(c && d) f.push(forgiveCtl(c.empId, d, v));
   return f.join(" ");
 }
 function monthStats(id, ym){
@@ -3357,7 +3391,7 @@ function dayRow(id, d){
     : (recent && c && !c.out && !asked("out")) ? `<button class="dr-ask" data-mpquick="out|${d}">Forgot to check out?</button>`
     : (v && v.late && d >= addDays(today, -PERM_BACK_DAYS) && !asked("late") && !asked("back")) ? `<button class="dr-ask" data-mpquick="late|${d}">Ask late permission</button><button class="dr-ask" data-mpquick="back|${d}">Came in earlier?</button>` : "";
   const permNote = pend.length ? `<span class="dr-perm warn">${pend.map(p => PERM_TYPES[p.type]).join(", ")} · waiting</span>`
-    : (v && (v.pLate || v.pEarly || v.manualIn || v.manualOut || v.backIn)) ? `<span class="dr-perm">${[v.manualIn?"Check-in added":"", v.backIn?"Check-in backdated":"", v.manualOut?"Check-out added":"", v.pLate?"Late permitted":"", v.pEarly?"Early leave permitted":""].filter(Boolean).join(" · ")}</span>` : "";
+    : (v && (v.pLate || v.pEarly || v.manualIn || v.manualOut || v.backIn || v.forgiven)) ? `<span class="dr-perm">${[v.manualIn?"Check-in added":"", v.backIn?"Check-in backdated":"", v.forgiven?"Late forgiven":"", v.manualOut?"Check-out added":"", v.pLate?"Late permitted":"", v.pEarly?"Early leave permitted":""].filter(Boolean).join(" · ")}</span>` : "";
   const tag = off && !st ? "" : (v && v.st==="P" && v.late && !S.att[d]?.marks?.[id]) ? `<span class="tag warn">Late</span>`
     : (v && v.noOut && d < today && !S.att[d]?.marks?.[id]) ? `<span class="tag bad">No check-out</span>`
     : st==="P" ? `<span class="tag ok">Present</span>` : st==="HD" ? `<span class="tag warn">Half day</span>` : st==="A" ? `<span class="tag bad">Absent</span>` : st==="L" ? `<span class="tag leave">Leave</span>` : "";
@@ -4223,7 +4257,9 @@ async function clearSample(btn){
 document.addEventListener("click", async ev => {
   const rs = ev.target.closest("[data-reset]");
   if(rs){ const el = document.getElementById(rs.dataset.reset); if(el && !el.disabled){ el.value = rs.dataset.val; el.dispatchEvent(new Event("input",{bubbles:true})); el.dispatchEvent(new Event("change",{bubbles:true})); } return; }
-  const t = ev.target.closest("[data-act],[data-att],[data-leave],[data-emp],[data-slip],[data-lf],[data-go],[data-regdel],[data-incslide],[data-incopen],[data-uact],[data-holdel],[data-selfie],[data-myslip],[data-mlcancel],[data-umanage],[data-uopen],[data-upermset],[data-mptype],[data-mltab],[data-mpcancel],[data-mpquick],[data-permdec]"); if(!t) return;
+  const t = ev.target.closest("[data-act],[data-att],[data-leave],[data-emp],[data-slip],[data-lf],[data-go],[data-regdel],[data-incslide],[data-incopen],[data-uact],[data-holdel],[data-selfie],[data-myslip],[data-mlcancel],[data-umanage],[data-uopen],[data-upermset],[data-mptype],[data-mltab],[data-mpcancel],[data-mpquick],[data-permdec],[data-forgive],[data-unforgive]"); if(!t) return;
+  if(t.dataset.forgive){ forgiveLate(t); return; }
+  if(t.dataset.unforgive){ unforgive(t); return; }
   if(t.dataset.mptype){ UI.mpType = t.dataset.mptype; UI.mpTime = ""; render(); return; }
   if(t.dataset.mltab){ UI.mlTab = t.dataset.mltab; render(); return; }
   if(t.dataset.mpcancel){ permCancel(t.dataset.mpcancel); return; }
@@ -4504,7 +4540,7 @@ if("serviceWorker" in navigator){
 
 // Version check: whenever the app is opened or brought back to the front, ask GitHub for the latest version number.
 // If it is newer than what is running, reload (straight away if nothing is open, otherwise offer a button).
-window.APP_VERSION = "20261102053213";
+window.APP_VERSION = "20261102055449";
 (function(){
   let busy = false, shown = false;
   function bar(v){ if(shown) return; shown = true; const b = document.createElement("button"); b.className = "upd-bar"; b.textContent = "New version ready — tap to update"; b.onclick = () => go(v); document.body.appendChild(b); }
