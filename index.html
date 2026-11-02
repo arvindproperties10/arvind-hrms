@@ -2881,7 +2881,7 @@ myatt(){
     `<div class="sumstrip"><div><b>${s.P}</b><span>Present</span></div><div><b>${s.HD}</b><span>Half day</span></div><div><b>${s.A}</b><span>Absent</span></div><div><b>${s.late}</b><span>Late</span></div></div>
     ${s.late ? `<p class="hint">${s.late} late mark${s.late===1?"":"s"} this month${s.lateLop ? ` · ${s.lateLop} day's pay deducted` : ` · ${3 - s.late % 3} more = half day's pay cut`}</p>` : ""}
     <div class="panel daypanel"><div class="days">${rows.join("") || `<p class="empty">Nothing for this month yet.</p>`}</div></div>
-    <p class="hint">Shift 10:00 AM – 6:00 PM · late after 10:15 AM · half day if in after 1 PM or out before 2 PM</p>`;
+    <p class="hint">8-hour day: start between 9:30 and 10:15 and check out 8 hours later (9:30 → 5:30, 10:15 → 6:15) · late after 10:15 AM · half day if in after 1 PM or out before 2 PM</p>`;
 },
 myleave(){
   const id = myEmp(); const L = ledger(id);
@@ -2967,7 +2967,7 @@ function goLiveDrawer(){
     <p class="note" style="margin:0">From this date, a working day with no check-in, approved leave or HR mark counts as <b>Absent</b>. Today's absences appear after 6:00 PM. Leave it blank to keep missing days unmarked.</p>
     <div class="field"><label for="goLive">Start date</label><input type="date" id="goLive" value="${esc(gl)}" ${ed?"":"disabled"}></div>
     <div class="sect">Check-in places</div>
-    <p class="note" style="margin:0">${PLACES.map(p => `<b>${esc(p.name)}</b> within ${p.r} m`).join(" · ")}. Shift 10:00 AM – 6:00 PM, late after 10:15 AM, half day if in after 1:00 PM or out before 2:00 PM. Every 3 late marks in a month cost half a day's pay.</p>
+    <p class="note" style="margin:0">${PLACES.map(p => `<b>${esc(p.name)}</b> within ${p.r} m`).join(" · ")}. 8-hour day starting between 9:30 and 10:15 AM (check-out 8 hours after check-in, 5:30 – 6:15 PM), late after 10:15 AM, half day if in after 1:00 PM or out before 2:00 PM. Every 3 late marks in a month cost half a day's pay.</p>
   </div>
   <footer><button class="btn" data-act="close">Close</button>${ed?`<button class="btn primary" data-act="golive-save">Save</button>`:""}</footer>`);
 }
@@ -2978,7 +2978,7 @@ function ciCard(e, d){
   const tag = st==="P" ? (v && v.late && !hr ? `<span class="tag warn">Late</span>` : `<span class="tag ok">Present</span>`) : st==="HD" ? `<span class="tag warn">Half day</span>` : st==="A" ? `<span class="tag bad">Absent</span>` : st==="L" ? `<span class="tag leave">Leave</span>` : `<span class="tag">Not in yet</span>`;
   const line = c ? `<div class="cc-times"><span><small>In</small> ${tmIST(c.in.t)}</span><span><small>Out</small> ${c.out ? tmIST(c.out.t) : "—"}</span>${c.out && v ? `<span><small>Worked</small> ${m2hm(Math.max(0, v.outM - v.inM))}</span>` : ""}</div>
     <div class="cc-sub">${esc(placeLbl(c.in))}${c.in.manual ? " · added by permission" : c.in.back ? ` · backdated from ${tmIST(c.in.orig)}` : c.in.place==="field" ? ` · ${(c.in.dist/1000).toFixed(1)} km from office` : c.in.dist!=null ? ` · ${c.in.dist} m` : ""}${c.in.acc!=null ? ` · GPS ±${c.in.acc} m` : ""}${hr ? " · status set by HR" : ""}</div>` : (hr ? `<div class="cc-sub">Marked by HR</div>` : "");
-  const flags = c ? [v.early ? `<span class="tag warn">Left early</span>` : "", v.noOut && d < today ? `<span class="tag bad">No check-out</span>` : "", v.lowAcc ? `<span class="tag">Rough GPS</span>` : ""].filter(Boolean).join("") : "";
+  const flags = c ? [v.early ? `<span class="tag warn">Short hours</span>` : "", v.noOut && d < today ? `<span class="tag bad">No check-out</span>` : "", v.lowAcc ? `<span class="tag">Rough GPS</span>` : ""].filter(Boolean).join("") : "";
   const acts = c ? `<div class="cc-acts">${forgiveCtl(e.id, d, v)}${c.in.manual ? "" : `<button class="btn small" data-selfie="${d}_${e.id}" data-name="${esc(e.name)}">Selfie</button>`}${c.in.lat!=null ? `<a class="btn small ghost" href="https://www.google.com/maps?q=${c.in.lat},${c.in.lng}" target="_blank" rel="noopener">Map</a>` : ""}</div>` : "";
   return `<div class="cicard"><div class="cc-head"><span class="av">${esc(initials(e.name))}</span><div class="cc-name"><b>${esc(e.name)}</b><small>${esc(e.designation || e.dept || "")}</small></div>${tag}</div>${line}${flags ? `<div class="cc-flags">${flags}</div>` : ""}${acts}</div>`;
 }
@@ -3084,7 +3084,7 @@ const PERM_ORDER = {in:0, back:1, out:2, late:3, early:4, forgive:5};
 const BACK_MAX = 120;   // a check-in can be moved earlier by at most 2 hours
 const PERM_WIN = {
   late:  {min:"10:16", max:"12:00", label:"I'll arrive by", hint:"Up to 2 hours late — arrive by 12:00 PM at the latest."},
-  early: {min:"16:00", max:"17:59", label:"I'll leave at", hint:"Up to 2 hours early — leave no earlier than 4:00 PM."},
+  early: {min:"15:30", max:"18:14", label:"I'll leave at", hint:"Up to 2 hours before your 8 hours are done — and no earlier than 3:30 PM."},
   in:    {min:"07:00", max:"20:00", label:"I actually came in at", hint:"For a day in the last 2 days when you came to work but didn't check in."},
   out:   {min:"10:00", max:"23:59", label:"I actually left at", hint:"For a day in the last 2 days when you checked in but didn't check out."},
   back:  {min:"07:00", max:"20:00", label:"I actually came in at", hint:"You were at work earlier but checked in late. Move your check-in back by up to 2 hours."}
@@ -3101,7 +3101,7 @@ function permsOn(id, d, status = "approved"){ return permList().filter(p => p.em
 const durTxt = m => { const h = Math.floor(m/60), mm = m%60; return h ? `${h} hr${mm ? ` ${mm} min` : ""}` : `${mm} min`; };
 function permDur(p){
   if(p.type==="late") return durTxt(Math.max(0, hm2m(p.time) - hm2m(SHIFT.start))) + " late";
-  if(p.type==="early") return durTxt(Math.max(0, hm2m(SHIFT.end) - hm2m(p.time))) + " early";
+  if(p.type==="early"){ const raw = S.ci[`${p.date}_${p.empId}`]; const req = raw?.in?.t ? reqOutM(istParts(raw.in.t).mins) : hm2m(SHIFT.end); return durTxt(Math.max(0, req - hm2m(p.time))) + " early"; }
   return "";
 }
 function permWhat(p){
@@ -3169,10 +3169,11 @@ async function permSend(btn){
     if(!time || time >= bw.actual){ toast(`Choose a time before your check-in at ${hm12(bw.actual)}.`); return; }
     if(time < bw.min){ toast(`A check-in can be moved back by up to 2 hours — ${hm12(bw.min)} at the earliest.`); return; }
     w = {...w, min:bw.min, max:bw.max}; }
-  if(!time || time < w.min || time > w.max){ toast(t==="late" ? "Late permission is up to 2 hours — arrive by 12:00 PM." : t==="early" ? "Early leave is up to 2 hours — leave no earlier than 4:00 PM." : `Choose a time between ${hm12(w.min)} and ${hm12(w.max)}.`); return; }
+  if(!time || time < w.min || time > w.max){ toast(t==="late" ? "Late permission is up to 2 hours — arrive by 12:00 PM." : t==="early" ? "Early leave is up to 2 hours — leave no earlier than 3:30 PM." : `Choose a time between ${hm12(w.min)} and ${hm12(w.max)}.`); return; }
   if(!reason){ toast(t==="back" ? "A reason is required to backdate a check-in." : "Add a short reason."); $("#mp_reason").focus(); return; }
   const raw = S.ci[`${date}_${id}`];
   if(t==="in" && raw?.in){ toast("You already have a check-in that day."); return; }
+  if(t==="early"){ const raw = S.ci[`${date}_${id}`]; if(raw?.in?.t){ const req = reqOutM(istParts(raw.in.t).mins); if(hm2m(time) >= req){ toast(`Your 8 hours are done at ${hm12(m2t(req))} — no permission needed.`); return; } if(req - hm2m(time) > 120){ toast(`Early leave is up to 2 hours — you checked in at ${hm12(m2t(istParts(raw.in.t).mins))}, so ${hm12(m2t(req - 120))} at the earliest.`); return; } } }
   if(t==="out"){ const c = ciFor(id, date); if(!c?.in){ toast("There's no check-in that day. Ask for a forgotten check-in first."); return; } if(c.out){ toast("You already checked out that day."); return; } if(hm2m(time) <= istParts(c.in.t).mins){ toast("The check-out time must be after you came in."); return; } }
   if(permList().some(p => p.empId===id && p.date===date && p.type===t && p.status!=="rejected")){ toast("You've already asked for this on that day."); return; }
   btn.disabled = true;
@@ -3248,8 +3249,11 @@ const PLACES = [
 const placeName = id => id==="field" ? "Field" : PLACES.find(p=>p.id===id)?.name || id || "—";
 const placeLbl = s => s ? placeName(s.place) + (s.note ? " · " + s.note : "") : "";
 const fieldOk = () => !!S.emps[myEmp()]?.fieldOk;
-const SHIFT = {start:"10:00", grace:"10:15", halfIn:"13:00", halfOut:"14:00", end:"18:00"};
+const SHIFT = {start:"10:00", grace:"10:15", halfIn:"13:00", halfOut:"14:00", end:"18:00", flexFrom:"09:30", hours:8};
+// 8-hour day with a flexible start: the day counts from check-in (no earlier than 9:30, no later than 10:15),
+// so 9:30 in → 5:30 out, 10:00 → 6:00, 10:15 → 6:15. Later arrivals are late and still work till 6:15.
 const hm2m = s => { const [h,m] = s.split(":").map(Number); return h*60+m; };
+const reqOutM = inM => Math.min(Math.max(inM, hm2m(SHIFT.flexFrom)), hm2m(SHIFT.grace)) + SHIFT.hours*60;   // earliest full-day check-out
 const IST_FMT = new Intl.DateTimeFormat("en-CA",{timeZone:"Asia/Kolkata", year:"numeric", month:"2-digit", day:"2-digit", hour:"2-digit", minute:"2-digit", hourCycle:"h23"});
 function istParts(t){ const o = {}; IST_FMT.formatToParts(t instanceof Date ? t : new Date(t)).forEach(p => o[p.type] = p.value); return {date:`${o.year}-${o.month}-${o.day}`, mins:(+o.hour % 24)*60 + (+o.minute)}; }
 const istNow = () => istParts(new Date());
@@ -3280,13 +3284,13 @@ function ciEval(c){
   const inM = istParts(c.in.t).mins, outM = c.out?.t ? istParts(c.out.t).mins : null;
   let st = "P", late = false, early = false;
   if(inM > hm2m(SHIFT.halfIn) || (outM!=null && outM < hm2m(SHIFT.halfOut))) st = "HD";
-  else { late = inM > hm2m(SHIFT.grace); early = outM!=null && outM < hm2m(SHIFT.end); }
+  else { late = inM > hm2m(SHIFT.grace); early = outM!=null && outM < reqOutM(inM); }
   // an approved permission (up to 2 hours) clears the late / left-early mark
   let pLate = false, pEarly = false;
   if(late && c.permLate!=null && inM <= c.permLate){ late = false; pLate = true; }
   if(early && c.permEarly!=null && outM >= c.permEarly){ early = false; pEarly = true; }
   let forgiven = false; if(late && c.forgiven){ late = false; forgiven = true; }
-  return {st, late, early, pLate, pEarly, forgiven, manualIn: !!c.in.manual, backIn: !!c.in.back, manualOut: !!c.out?.manual, noOut: !c.out, inM, outM, lowAcc: (c.in.acc||0) > 100};
+  return {st, late, early, pLate, pEarly, forgiven, reqOut: reqOutM(inM), manualIn: !!c.in.manual, backIn: !!c.in.back, manualOut: !!c.out?.manual, noOut: !c.out, inM, outM, lowAcc: (c.in.acc||0) > 100};
 }
 // From the go-live date, a working day with no check-in, mark or leave counts as absent (today only after 6 PM).
 function autoAbsent(id, d){
@@ -3383,7 +3387,7 @@ function ciFlags(c, v, d){
   const f = [];
   if(v?.late) f.push(`<span class="pill warn">Late</span>`);
   if(v?.st==="HD") f.push(`<span class="pill warn">Half day</span>`);
-  if(v?.early) f.push(`<span class="pill warn">Left early</span>`);
+  if(v?.early) f.push(`<span class="pill warn">Short hours</span>`);
   if(v?.pLate) f.push(`<span class="pill ok">Late · permitted</span>`);
   if(v?.pEarly) f.push(`<span class="pill ok">Early · permitted</span>`);
   if(v?.forgiven) f.push(`<span class="pill ok">Late forgiven</span>`);
@@ -3435,14 +3439,15 @@ function checkinCard(){
       <button class="btn primary ck-go" data-act="ci-save">${CK.kind==="in" ? "Confirm check-in" : "Confirm check-out"}</button>
       <div class="ck-row">${CK.kind==="in" ? `<label class="btn ghost ck-link">Retake photo<input type="file" id="ci_selfie" accept="image/*" capture="user" hidden></label>` : ""}<button class="btn ghost ck-link" data-act="ci-cancel">Cancel</button></div>`; }
   else if(!c){ top = ckState("Not checked in","idle");
-    body = `<div class="ck-center"><p class="ck-time" id="clock">${tmIST(new Date())}</p><p class="ck-sub">Shift 10:00 AM – 6:00 PM · on time until 10:15${fieldOk() ? " · field check-in on" : ""}</p></div>
+    body = `<div class="ck-center"><p class="ck-time" id="clock">${tmIST(new Date())}</p><p class="ck-sub">8-hour day · start between 9:30 and 10:15${fieldOk() ? " · field check-in on" : ""}</p></div>
       <button class="btn primary ck-go" data-act="ci-in">${PIN}<span>Check in</span></button>`; }
   else if(!c.out){ top = ckState("Checked in","live");
     body = `<div class="ck-split"><div><span>In</span><b>${tmIST(c.in.t)}</b><small>${esc(placeLbl(c.in))}</small></div><div><span>Working</span><b>${m2hm(Math.max(0,worked))}</b><small>${tag}</small></div></div>
+      <p class="ck-sub ck-due">${now.mins >= v.reqOut ? "8 hours done — you can check out." : `You can check out from <b>${hm12(m2t(v.reqOut))}</b>`}</p>
       <button class="btn primary ck-go ck-out" data-act="ci-out">Check out</button>`; }
   else { top = ckState("Done for today","done");
     body = `<div class="ck-split three"><div><span>In</span><b>${tmIST(c.in.t)}</b></div><div><span>Out</span><b>${tmIST(c.out.t)}</b></div><div><span>Worked</span><b>${m2hm(Math.max(0,worked))}</b></div></div>
-      <div class="ck-foot">${tag}${v.early ? `<span class="tag warn">Left early</span>` : v.pEarly ? `<span class="tag ok">Early · permitted</span>` : ""}<span class="ck-place">${PIN}${esc(placeLbl(c.in))}</span></div>`; }
+      <div class="ck-foot">${tag}${v.early ? `<span class="tag warn">Short hours</span>` : v.pEarly ? `<span class="tag ok">Early · permitted</span>` : ""}<span class="ck-place">${PIN}${esc(placeLbl(c.in))}</span></div>`; }
   const askLate = v && v.late && CK.step==="idle" && !permList().some(p => p.empId===id && p.date===now.date && (p.type==="late"||p.type==="back") && p.status!=="rejected")
     ? `<div class="ck-row ck-perms"><button class="btn ghost ck-link ck-perm" data-mpquick="late|${now.date}">Ask late permission</button><button class="btn ghost ck-link ck-perm" data-mpquick="back|${now.date}">Came in earlier? Backdate</button></div>` : "";
   body += askLate;
@@ -4641,7 +4646,7 @@ if("serviceWorker" in navigator){
 
 // Version check: whenever the app is opened or brought back to the front, ask GitHub for the latest version number.
 // If it is newer than what is running, reload (straight away if nothing is open, otherwise offer a button).
-window.APP_VERSION = "20261102094847";
+window.APP_VERSION = "20261102195828";
 (function(){
   let busy = false, shown = false;
   function bar(v){ if(shown) return; shown = true; const b = document.createElement("button"); b.className = "upd-bar"; b.textContent = "New version ready — tap to update"; b.onclick = () => go(v); document.body.appendChild(b); }

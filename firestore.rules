@@ -115,7 +115,7 @@ service cloud.firestore {
         && d.time is string && d.time.matches('^[0-2][0-9]:[0-5][0-9]$')
         && d.reason is string && d.reason.size() > 0 && d.reason.size() <= 300
         && (d.type != 'late' || (d.time > '10:15' && d.time <= '12:00'))
-        && (d.type != 'early' || (d.time >= '16:00' && d.time < '18:00'))
+        && (d.type != 'early' || (d.time >= '15:30' && d.time < '18:15'))
         && (d.type != 'in' || (d.time >= '07:00' && d.time <= '20:00' && d.date < istDate()))
         && (d.type != 'out' || (d.time >= '10:00' && d.time <= '23:59' && d.date < istDate()))
         && (d.type != 'back' || (d.time >= '07:00' && d.time <= '20:00' && d.date <= istDate()))
