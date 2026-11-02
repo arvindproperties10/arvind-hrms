@@ -2002,6 +2002,11 @@ body.dark .fg-done{color:#5fd37f}
 .pw-eye{position:absolute;right:6px;top:50%;transform:translateY(-50%);width:36px;height:36px;border:0;background:none;border-radius:10px;color:var(--muted,#6e6e73);display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0}
 .pw-eye:hover,.pw-eye:focus-visible{background:rgba(127,127,127,.12);color:var(--ink)}
 .pw-eye svg{width:20px;height:20px}
+/* date picker always on top: above the bottom tab bar, drawers and pop-ups */
+.dp{z-index:260!important}
+@media (max-width:760px){ .dp.sheet{bottom:calc(14px + env(safe-area-inset-bottom,0px))!important;box-shadow:0 -10px 40px rgba(0,0,0,.28),0 0 0 100vmax rgba(10,20,40,.28)!important} }
+.dp{background:rgba(255,255,255,.98)!important;-webkit-backdrop-filter:blur(20px)!important;backdrop-filter:blur(20px)!important}
+body.dark .dp{background:rgba(30,32,40,.98)!important}
 </style>
 </head>
 <body>
@@ -4564,7 +4569,7 @@ if("serviceWorker" in navigator){
 
 // Version check: whenever the app is opened or brought back to the front, ask GitHub for the latest version number.
 // If it is newer than what is running, reload (straight away if nothing is open, otherwise offer a button).
-window.APP_VERSION = "20261102071849";
+window.APP_VERSION = "20261102092310";
 (function(){
   let busy = false, shown = false;
   function bar(v){ if(shown) return; shown = true; const b = document.createElement("button"); b.className = "upd-bar"; b.textContent = "New version ready — tap to update"; b.onclick = () => go(v); document.body.appendChild(b); }
