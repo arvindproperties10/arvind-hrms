@@ -2115,7 +2115,7 @@ function deny(path){
   const sec = pathSection(path);
   if(sec==="self") return null;
   if(path.startsWith("perms") && (isOwnerV || canEditView("attendance"))) return null;
-  if(sec==="leave" && !isStaffU() && myEmp() && (path.startsWith("leaves") || path.startsWith("perms"))) return null;
+  if(sec==="leave" && myEmp() && (path.startsWith("leaves") || path.startsWith("perms"))) return null;   // anyone linked to an employee record can ask for their own leave / permission
   if(sec==="attendance" && path.startsWith("config/app") && (isOwnerV || canEditView("attendance"))) return null;
   if(sec==="access" ? isOwnerV : (canEditView(sec) || (sec==="leave" && canApprove()))) return null;
   return Promise.reject({code:"invalid_argument", message:"You have view-only access to this section."});
@@ -4564,7 +4564,7 @@ if("serviceWorker" in navigator){
 
 // Version check: whenever the app is opened or brought back to the front, ask GitHub for the latest version number.
 // If it is newer than what is running, reload (straight away if nothing is open, otherwise offer a button).
-window.APP_VERSION = "20261102070701";
+window.APP_VERSION = "20261102071849";
 (function(){
   let busy = false, shown = false;
   function bar(v){ if(shown) return; shown = true; const b = document.createElement("button"); b.className = "upd-bar"; b.textContent = "New version ready — tap to update"; b.onclick = () => go(v); document.body.appendChild(b); }
