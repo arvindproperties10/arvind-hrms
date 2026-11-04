@@ -2418,6 +2418,7 @@ function enhanceDates(root){
 function dpOpen(inp, anchor){
   if(!inp || inp.disabled) return;
   DP.inp = inp; DP.anchor = anchor || inp; DP.ym = (inp.value || inp.max && inp.max < today ? (inp.value||inp.max) : today).slice(0,7);
+  if(inp.id==="f_dob" && !inp.value) DP.ym = "1995-01";
   let el = document.getElementById("dp"); if(!el){ el = document.createElement("div"); el.id = "dp"; el.className = "dp"; el.setAttribute("role","dialog"); el.setAttribute("aria-label","Choose date"); document.body.appendChild(el); }
   dpRender(); dpPlace(); el.hidden = false;
   setTimeout(()=>{ const f = el.querySelector(".dp-day.sel") || el.querySelector(".dp-day.today") || el.querySelector(".dp-day:not(:disabled)"); if(f) f.focus(); }, 0);
@@ -2444,7 +2445,7 @@ function dpRender(){
     cells += `<button type="button" class="${cls}" data-dpd="${ds}" ${dis?"disabled":""} title="${HOL[ds]?esc(HOL[ds].name):dow===WEEKLY_OFF?"Weekly off":""}" aria-label="${fmtDay(ds)}${HOL[ds]?" · "+esc(HOL[ds].name):""}">${d}</button>`;
   }
   const months = Array.from({length:12},(_,i)=>new Date(2000,i,1).toLocaleDateString("en-IN",{month:"long"}));
-  const yNow = +today.slice(0,4), yMin = Math.min(yNow-40, y), yMax = Math.max(yNow+3, y);
+  const yNow = +today.slice(0,4), yMin = Math.min(1900, y), yMax = Math.max(yNow+3, y);
   const nextDis = max && `${y}-${pad(m)}` >= max.slice(0,7), prevDis = min && `${y}-${pad(m)}` <= min.slice(0,7);
   el.innerHTML = `<div class="dp-head">
       <button type="button" class="dp-nav" data-dpnav="-1" aria-label="Previous month" ${prevDis?"disabled":""}>‹</button>
@@ -4057,7 +4058,7 @@ function empDrawer(id){
       ${fld("email","Email","email")}
       ${sel("location","Work location",LOCS)}
       ${fld("joined","Date of joining","date")}
-      ${fld("dob","Date of birth","date")}
+      ${fld("dob","Date of birth","date",e.dob,"")}
       ${sel("status","Status",["Active","On notice","Exited"],e.status||"Active")}
       ${fld("exitDate","Last working day","date")}
       <label class="ceo-flag full" style="max-width:none"><input type="checkbox" id="f_waive" ${e.incWaive?"checked":""} ${ro}> <span><b>Waive the 3-month wait for incentives</b><small>${incWaitTxt(e)}</small></span></label>
@@ -4725,7 +4726,7 @@ if("serviceWorker" in navigator){
 
 // Version check: whenever the app is opened or brought back to the front, ask GitHub for the latest version number.
 // If it is newer than what is running, reload (straight away if nothing is open, otherwise offer a button).
-window.APP_VERSION = "20261104062602";
+window.APP_VERSION = "20261104062749";
 (function(){
   let busy = false, shown = false;
   function bar(v){ if(shown) return; shown = true; const b = document.createElement("button"); b.className = "upd-bar"; b.textContent = "New version ready — tap to update"; b.onclick = () => go(v); document.body.appendChild(b); }
