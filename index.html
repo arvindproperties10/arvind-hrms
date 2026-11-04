@@ -2046,6 +2046,13 @@ body.dark .loc-modal{background:rgba(30,32,40,.98)!important}
 body .push-card{flex-direction:row!important;align-items:center!important;text-align:left!important;padding:14px 16px!important;gap:10px 12px!important}
 body .push-card .push-ic{font-size:24px}
 body .push-card .push-acts{width:100%;justify-content:flex-end;margin:0}
+/* Overview: clickable tiles and "View ›" links */
+.kpi-link{cursor:pointer;transition:transform .12s ease, box-shadow .12s ease}
+.kpi-link:active{transform:scale(.97)}
+.kpi-link:hover{box-shadow:0 0 0 2px rgba(0,113,227,.25) inset}
+.kpi-link .k::after{content:" ›";opacity:.5}
+.h-row{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.h-go{border:0;background:none;color:var(--accent,#0071e3);font:600 13px/1 inherit;cursor:pointer;padding:6px 0;white-space:nowrap;flex:none}
 </style>
 </head>
 <body>
@@ -3696,10 +3703,10 @@ dashboard(){
   const ann = act.filter(e=>e.joined && e.joined.slice(5,7)===d.slice(5,7) && e.joined.slice(0,4)<d.slice(0,4)).map(e=>`<div class="req"><div>${who(e)}</div><span class="pill sample">${Number(d.slice(0,4))-Number(e.joined.slice(0,4))} yr · ${fmtDs(e.joined)}</span></div>`).join("");
   return head("Overview", dayName + (off?` · <span class="pill sample">Weekly off</span>`:""), canWrite?`<a class="btn primary" href="#attendance">Mark today's attendance</a>`:"") +
   `<div class="kpis">
-    <div class="kpi"><span class="k">Active staff</span><span class="v">${act.length}</span><span class="s">${DEPTS.filter(x=>act.some(e=>e.dept===x)).length} roles</span></div>
-    <div class="kpi"><span class="k">Present today</span><span class="v">${off?"—":p}</span><span class="s">${off?(HOL[d]?esc(HOL[d].name||"Company holiday"):"Office closed"):(u?`${u} not marked yet`:"All marked")}</span></div>
-    <div class="kpi"><span class="k">On leave</span><span class="v">${l}</span><span class="s">${a} absent</span></div>
-    <div class="kpi"><span class="k">Requests</span><span class="v">${pend.length + pendingPerms().length}</span><span class="s">${pend.length + pendingPerms().length ? `${pend.length} leave · ${pendingPerms().length} permission` : "Nothing pending"}</span></div>
+    <div class="kpi kpi-link" data-nav="employees" role="link" tabindex="0"><span class="k">Active staff</span><span class="v">${act.length}</span><span class="s">${DEPTS.filter(x=>act.some(e=>e.dept===x)).length} roles</span></div>
+    <div class="kpi kpi-link" data-nav="attendance" role="link" tabindex="0"><span class="k">Present today</span><span class="v">${off?"—":p}</span><span class="s">${off?(HOL[d]?esc(HOL[d].name||"Company holiday"):"Office closed"):(u?`${u} not marked yet`:"All marked")}</span></div>
+    <div class="kpi kpi-link" data-nav="attendance" role="link" tabindex="0"><span class="k">On leave</span><span class="v">${l}</span><span class="s">${a} absent</span></div>
+    <div class="kpi kpi-link" data-nav="leave:pending" role="link" tabindex="0"><span class="k">Requests</span><span class="v">${pend.length + pendingPerms().length}</span><span class="s">${pend.length + pendingPerms().length ? `${pend.length} leave · ${pendingPerms().length} permission` : "Nothing pending"}</span></div>
   </div>
   ${isAdmin ? (() => { const cur = d.slice(0,7), prev = shiftYm(cur,-1);
     const items = [
@@ -3709,13 +3716,13 @@ dashboard(){
       [`${monthName(cur)} incentives`, incDue(cur), incDone(cur), "Finalized", `incentives:${cur}`]];
     return `<div class="panel"><h2>Payroll calendar</h2><div class="sub">Salary is paid by the ${cfg().payDay}th and incentives on the ${cfg().incDay}th of the following month. Overdue alerts start from November 2026.</div>${items.map(([l,due,done,dt,go])=>`<div class="req"><div><b>${l}</b><div class="meta">Due ${fmtD(due)}</div></div><div class="acts">${duePill(done,due,dt)}<button class="btn small" data-go="${go}">Open</button></div></div>`).join("")}</div>`; })() : ""}
   <div class="grid2">
-    <div class="panel"><h2>Attendance, last 14 working days</h2><div class="sub">Share of active staff present each day. Tuesdays are skipped.</div>${bars}</div>
-    <div class="panel"><h2>Today by role</h2><div class="legend"><span><i style="background:var(--ok)"></i>Present</span><span><i style="background:var(--leave)"></i>Leave</span><span><i style="background:var(--bad)"></i>Absent</span><span><i style="background:var(--sunk)"></i>Not marked</span></div>${depts||`<p class="empty">No staff yet.</p>`}</div>
+    <div class="panel"><h2 class="h-row">Attendance, last 14 working days<button type="button" class="h-go" data-nav="attendance">View ›</button></h2><div class="sub">Share of active staff present each day. Tuesdays are skipped.</div>${bars}</div>
+    <div class="panel"><h2 class="h-row">Today by role<button type="button" class="h-go" data-nav="attendance">View ›</button></h2><div class="legend"><span><i style="background:var(--ok)"></i>Present</span><span><i style="background:var(--leave)"></i>Leave</span><span><i style="background:var(--bad)"></i>Absent</span><span><i style="background:var(--sunk)"></i>Not marked</span></div>${depts||`<p class="empty">No staff yet.</p>`}</div>
   </div>
   <div class="grid2">
-    <div class="panel"><h2>Pending leave requests</h2>${pend.length? pend.sort((a,b)=>a.from.localeCompare(b.from)).slice(0,5).map(reqRow).join("") : `<p class="empty">No requests waiting.</p>`}</div>
-    <div class="panel"><h2>Birthdays this month</h2>${act.filter(e=>e.dob && e.dob.slice(5,7)===d.slice(5,7)).sort((a,b)=>a.dob.slice(8).localeCompare(b.dob.slice(8))).map(e=>`<div class="req"><div>${who(e)}</div><span class="pill ${e.dob.slice(5)===d.slice(5)?"ok":"sample"}">🎂 ${bdayTxt(e.dob.slice(5))}${e.dob.slice(5)===d.slice(5)?" · today":""}</span></div>`).join("") || `<p class="empty">${act.some(e=>e.dob) ? "None this month." : "Add dates of birth on the employee records to see birthdays here."}</p>`}</div>
-    <div class="panel"><h2>Work anniversaries this month</h2>${ann || `<p class="empty">None this month.</p>`}</div>
+    <div class="panel"><h2 class="h-row">Pending leave requests<button type="button" class="h-go" data-nav="leave:pending">View ›</button></h2>${pend.length? pend.sort((a,b)=>a.from.localeCompare(b.from)).slice(0,5).map(reqRow).join("") : `<p class="empty">No requests waiting.</p>`}</div>
+    <div class="panel"><h2 class="h-row">Birthdays this month<button type="button" class="h-go" data-nav="team">View ›</button></h2>${act.filter(e=>e.dob && e.dob.slice(5,7)===d.slice(5,7)).sort((a,b)=>a.dob.slice(8).localeCompare(b.dob.slice(8))).map(e=>`<div class="req"><div>${who(e)}</div><span class="pill ${e.dob.slice(5)===d.slice(5)?"ok":"sample"}">🎂 ${bdayTxt(e.dob.slice(5))}${e.dob.slice(5)===d.slice(5)?" · today":""}</span></div>`).join("") || `<p class="empty">${act.some(e=>e.dob) ? "None this month." : "Add dates of birth on the employee records to see birthdays here."}</p>`}</div>
+    <div class="panel"><h2 class="h-row">Work anniversaries this month<button type="button" class="h-go" data-nav="employees">View ›</button></h2>${ann || `<p class="empty">None this month.</p>`}</div>
   </div>`;
 },
 
@@ -4469,7 +4476,7 @@ async function clearSample(btn){
 document.addEventListener("click", async ev => {
   const rs = ev.target.closest("[data-reset]");
   if(rs){ const el = document.getElementById(rs.dataset.reset); if(el && !el.disabled){ el.value = rs.dataset.val; el.dispatchEvent(new Event("input",{bubbles:true})); el.dispatchEvent(new Event("change",{bubbles:true})); } return; }
-  const t = ev.target.closest("[data-act],[data-att],[data-leave],[data-emp],[data-slip],[data-lf],[data-go],[data-regdel],[data-incslide],[data-incopen],[data-uact],[data-holdel],[data-selfie],[data-myslip],[data-mlcancel],[data-umanage],[data-uopen],[data-upermset],[data-mptype],[data-mltab],[data-mpcancel],[data-mpquick],[data-permdec],[data-forgive],[data-unforgive],[data-mltype]"); if(!t) return;
+  const t = ev.target.closest("[data-act],[data-att],[data-leave],[data-emp],[data-slip],[data-lf],[data-go],[data-regdel],[data-incslide],[data-incopen],[data-uact],[data-holdel],[data-selfie],[data-myslip],[data-mlcancel],[data-umanage],[data-uopen],[data-upermset],[data-mptype],[data-mltab],[data-mpcancel],[data-mpquick],[data-permdec],[data-forgive],[data-unforgive],[data-mltype],[data-nav]"); if(!t) return;
   if(t.dataset.mltype){ UI.mlType = t.dataset.mltype; render(); return; }
   if(t.dataset.forgive){ forgiveLate(t); return; }
   if(t.dataset.unforgive){ unforgive(t); return; }
@@ -4489,6 +4496,8 @@ document.addEventListener("click", async ev => {
   if(t.dataset.incslide){ if(t.dataset.incslide!==UI.incSlide){ UI.incDir = t.dataset.dir==="back" ? "in-back" : "in-fwd"; UI.incSlide = t.dataset.incslide; render(); } return; }
   if(t.dataset.incopen){ const act=document.activeElement; if(act && /^inc[vsan]_/.test(act.id)) await saveInc(act.id, act.value); incModal(t.dataset.incopen); return; }
   if(t.dataset.regdel){ delReg(t, t.dataset.regdel); return; }
+  if(t.dataset.nav){ const [v, x] = t.dataset.nav.split(":"); if(v==="attendance") UI.attDate = today; if(v==="leave" && x) UI.leaveFilter = x; if(v==="employees"){ UI.empStatus = "Active"; UI.empQ = ""; UI.empDept = ""; UI.empTeam = ""; }
+    if(location.hash.slice(1)===v) render(); else location.hash = v; window.scrollTo(0,0); const m = document.querySelector("main"); if(m) m.scrollTop = 0; return; }
   if(t.dataset.go){ const [v, ym] = t.dataset.go.split(":"); if(v==="payroll") UI.payMonth = ym; else UI.incMonth = ym; if(location.hash.slice(1)===v) render(); else location.hash = v; return; }
   if(t.dataset.att){ markAtt(UI.attDate, t.dataset.att, t.dataset.v); return; }
   if(t.dataset.leave){ if(!canApprove()) return; t.disabled=true; try{ await db.collection("leaves").doc(t.dataset.leave).update({status:t.dataset.s, decidedOn:today, decidedBy:actorName()}); toast(t.dataset.s==="approved"?"Leave approved":"Leave rejected"); }catch(e){ t.disabled=false; fail(e); } return; }
@@ -4777,7 +4786,7 @@ if("serviceWorker" in navigator){
 
 // Version check: whenever the app is opened or brought back to the front, ask GitHub for the latest version number.
 // If it is newer than what is running, reload (straight away if nothing is open, otherwise offer a button).
-window.APP_VERSION = "20261104093246";
+window.APP_VERSION = "20261104103311";
 (function(){
   let busy = false, shown = false;
   function bar(v){ if(shown) return; shown = true; const b = document.createElement("button"); b.className = "upd-bar"; b.textContent = "New version ready — tap to update"; b.onclick = () => go(v); document.body.appendChild(b); }
