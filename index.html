@@ -2224,10 +2224,8 @@ function ledger(id){
     for(let d=1; d<=dim; d++){
       const ds = `${ym}-${pad(d)}`; if(isOff(ds) || (e.joined && ds < e.joined) || (e.exitDate && ds > e.exitDate)) continue;
       if(statusOn(id, ds) !== "L") continue;
-      if(!S.att[ds]?.marks?.[id] && isCompLeave(leaveOn(id, ds))){
-        if(coDates.filter(x => x <= ds).length - coUsed >= 1){ coUsed++; if(ym <= nowYm) coUsedNow++; else coBooked++; } else { unpaid.add(ds); if(ym <= nowYm) unpaidNow++; }
-        continue;
-      }
+      // every leave day uses an available comp off first, then paid leave, then it's unpaid
+      if(coDates.filter(x => x <= ds).length - coUsed >= 1){ coUsed++; if(ym <= nowYm) coUsedNow++; else coBooked++; continue; }
       if(bal >= 1){ bal--; if(ym <= nowYm) usedNow++; else booked++; } else { unpaid.add(ds); if(ym <= nowYm) unpaidNow++; }
     }
   }
@@ -2237,7 +2235,7 @@ function ledger(id){
 // Split a requested range into paid and unpaid days given the current balance.
 function leaveSplit(id, from, to){
   const L = ledger(id); const days = workDays(from,to).filter(d => statusOn(id,d)!=="L");
-  let avail = L.balance - L.booked; const fromYm = from.slice(0,7), nowYm = today.slice(0,7);
+  let avail = L.balance - L.booked + L.co.free; const fromYm = from.slice(0,7), nowYm = today.slice(0,7);
   for(let ym = shiftYm(nowYm,1); ym <= fromYm; ym = shiftYm(ym,1)) avail++; // months accrued before the leave starts
   const paid = Math.max(0, Math.min(days.length, Math.floor(avail)));
   return {days:days.length, paid, unpaid:days.length - paid, avail:Math.max(0,avail)};
@@ -2924,11 +2922,11 @@ myleave(){
     `<div class="sumstrip three"><div><b>${L.balance}</b><span>Available</span></div><div><b>${L.accrued}</b><span>Earned</span></div><div><b>${L.used}</b><span>Used${L.booked?` · ${L.booked} booked`:""}</span></div></div>
     <p class="hint">${L.waiting ? `Paid leave starts in <b>${monthName(L.eligYm)}</b>, after your first 3 months. Leave before then is unpaid.` : "You earn 1 paid leave every month. Unused days carry forward."}</p>
     <div class="sumstrip co-strip"><div><b>${L.co.free}</b><span>Comp offs available</span></div><div><b>${L.co.earned}</b><span>Earned</span></div><div><b>${L.co.used + L.co.booked}</b><span>Used</span></div></div>
-    <p class="hint">Check in on the app on a weekly off or company holiday to earn 1 comp off.</p>
+    <p class="hint">Check in on the app on a weekly off or company holiday to earn 1 comp off. When you take leave, <b>comp offs are used first</b>, then paid leave.</p>
     <h2 class="sect-h">Apply</h2>
-    <div class="panel lv-form"><div class="mp-types lv-types" role="group" aria-label="Type of leave"><button class="mp-type" data-mltype="PL" aria-pressed="${(UI.mlType||"PL")==="PL"}">Paid leave</button><button class="mp-type" data-mltype="CO" aria-pressed="${UI.mlType==="CO"}">Comp off${L.co.free ? ` · ${L.co.free}` : ""}</button></div><div class="lv-dates"><div class="field"><label for="ml_from">From</label><input type="date" id="ml_from" min="${today}" value="${today}"></div><div class="field"><label for="ml_to">To</label><input type="date" id="ml_to" min="${today}" value="${today}"></div></div>
+    <div class="panel lv-form"><div class="lv-dates"><div class="field"><label for="ml_from">From</label><input type="date" id="ml_from" min="${today}" value="${today}"></div><div class="field"><label for="ml_to">To</label><input type="date" id="ml_to" min="${today}" value="${today}"></div></div>
       <div class="field"><label for="ml_reason">Reason <span class="opt">optional</span></label><textarea id="ml_reason" rows="2" placeholder="e.g. Family function"></textarea></div>
-      <button class="btn primary ck-go" data-act="ml-apply">Send request</button><p class="ck-sub">${UI.mlType==="CO" ? "Uses your comp offs. Days beyond them are unpaid." : "Days beyond your balance are unpaid."} The CEO approves requests.</p></div>
+      <button class="btn primary ck-go" data-act="ml-apply">Send request</button><p class="ck-sub">${L.co.free ? `Your ${L.co.free} comp off${L.co.free===1?"":"s"} will be used first, then paid leave. ` : ""}Days beyond your balance are unpaid. The CEO approves requests.</p></div>
     <h2 class="sect-h">My requests</h2><div class="panel daypanel">${mine.length ? mine.map(row).join("") : `<p class="empty">No leave requests yet.</p>`}</div>`;
 },
 myslips(){
@@ -3632,10 +3630,9 @@ async function saveGoLive(){
 
 // ---------- employee leave ----------
 async function myLeaveApply(btn){
-  const id = myEmp(); const from = $("#ml_from").value, to = $("#ml_to").value, reason = $("#ml_reason").value.trim(); const type = UI.mlType==="CO" ? "CO" : "PL";
+  const id = myEmp(); const from = $("#ml_from").value, to = $("#ml_to").value, reason = $("#ml_reason").value.trim(); const type = "PL";   // comp offs are used automatically before paid leave
   if(!from || !to || from > to){ toast("Choose a valid date range."); return; }
   const days = workDays(from, to).length; if(!days){ toast("Those dates fall on the weekly off or holidays."); return; }
-  if(type==="CO"){ const f = ledger(id).co.free; if(f < 1){ toast("You have no comp offs yet. Check in on a weekly off or holiday to earn one."); return; } if(days > f){ toast(`You have ${f} comp off${f===1?"":"s"} — choose ${f} day${f===1?"":"s"} or fewer, or use paid leave.`); return; } }
   btn.disabled = true;
   try{ const ref = db.collection("leaves").doc(); await ref.set({id:ref.id, empId:id, type, from, to, days, reason, status:"pending", appliedOn:today, appliedBy:ME.name||S.emps[id]?.name||"", self:true});
     toast(type==="CO" ? "Comp off request sent" : "Leave request sent"); $("#ml_reason").value = ""; }catch(e){ fail(e); }
@@ -4148,7 +4145,6 @@ function leaveDrawer(){
   openDrawer(`<header><h3>Apply for leave</h3><button class="btn ghost" data-act="close" aria-label="Close">✕</button></header>
   <div class="body">
     <div class="field"><label for="l_emp">Employee</label><select id="l_emp">${act.map(e=>`<option value="${e.id}">${esc(e.name)} · ${esc(e.code)}</option>`).join("")}</select></div>
-    <div class="field"><label for="l_type">Type</label><select id="l_type"><option value="PL">Paid leave</option><option value="CO">Comp off</option></select></div>
     <div class="formgrid"><div class="field"><label for="l_from">From</label>${withReset(`<input type="date" id="l_from" value="${today}">`, "l_from", "", "Clear")}</div><div class="field"><label for="l_to">To</label>${withReset(`<input type="date" id="l_to" value="${today}">`, "l_to", "", "Clear")}</div></div>
     <div class="field"><label for="l_reason">Reason</label><textarea id="l_reason" placeholder="Optional"></textarea></div>
     <div id="leaveInfo"></div>
@@ -4163,15 +4159,12 @@ function leaveInfo(){
   const L = ledger(id);
   if(!a || !b){ box.innerHTML = `<p class="note">Choose the start and end dates.</p>`; return; }
   if(a>b){ box.innerHTML = `<p class="note">The end date is before the start date.</p>`; return; }
-  if($("#l_type")?.value==="CO"){ const n = workDays(a,b).length, f = L.co.free;
-    box.innerHTML = `<div class="bal"><div><span>Comp offs earned</span><b>${L.co.earned}</b></div><div><span>Used</span><b>${L.co.used + L.co.booked}</b></div><div><span>Available</span><b>${f}</b></div></div>
-    <p class="note" style="margin:8px 0 0">${n} working day${n===1?"":"s"} requested. ${n > f ? `<b>${n - f} more than the comp offs available</b> — those days would be unpaid.` : "All covered by comp offs."}</p>`; return; }
   const sp = leaveSplit(id, a, b);
-  box.innerHTML = `${L.waiting ? `<p class="note" style="margin:0 0 8px"><b>In the 3-month wait</b> — paid leave starts in ${monthName(L.eligYm)}. Leave before then is unpaid.</p>` : ""}<div class="bal"><div><span>Earned</span><b>${L.accrued}</b></div><div><span>Used</span><b>${L.used}</b></div><div><span>Balance</span><b>${L.balance}</b></div></div>
-  <p class="note" style="margin:8px 0 0">${sp.days} working day${sp.days===1?"":"s"} requested. ${sp.unpaid ? `${sp.paid} paid from the balance and <b>${sp.unpaid} unpaid</b> (loss of pay).` : "All covered by the paid-leave balance."}</p>`;
+  box.innerHTML = `${L.waiting ? `<p class="note" style="margin:0 0 8px"><b>In the 3-month wait</b> — paid leave starts in ${monthName(L.eligYm)}. Leave before then is unpaid.</p>` : ""}<div class="bal">${L.co.free ? `<div><span>Comp offs</span><b>${L.co.free}</b></div>` : ""}<div><span>Earned</span><b>${L.accrued}</b></div><div><span>Used</span><b>${L.used}</b></div><div><span>Balance</span><b>${L.balance}</b></div></div>
+  <p class="note" style="margin:8px 0 0">${sp.days} working day${sp.days===1?"":"s"} requested. ${sp.unpaid ? `${sp.paid} paid from the balance and <b>${sp.unpaid} unpaid</b> (loss of pay).` : `All covered${L.co.free ? " — comp offs first, then paid leave" : " by the paid-leave balance"}.`}</p>`;
 }
 async function saveLeave(){
-  const empId=$("#l_emp").value, type=$("#l_type")?.value || "PL", from=$("#l_from").value, to=$("#l_to").value, reason=$("#l_reason").value.trim();
+  const empId=$("#l_emp").value, type="PL", from=$("#l_from").value, to=$("#l_to").value, reason=$("#l_reason").value.trim();
   if(!empId || !from || !to || from>to){ toast("Choose an employee and a valid date range."); return; }
   const days = workDays(from,to).length; if(!days){ toast("Those dates fall on the weekly off."); return; }
   try{ await db.collection("leaves").add({empId, type, from, to, days, reason, status:"pending", appliedOn:today, appliedBy:actorName()}); closeDrawer(); toast("Leave request submitted"); }catch(e){ fail(e); }
@@ -4777,7 +4770,7 @@ if("serviceWorker" in navigator){
 
 // Version check: whenever the app is opened or brought back to the front, ask GitHub for the latest version number.
 // If it is newer than what is running, reload (straight away if nothing is open, otherwise offer a button).
-window.APP_VERSION = "20261104073643";
+window.APP_VERSION = "20261104082044";
 (function(){
   let busy = false, shown = false;
   function bar(v){ if(shown) return; shown = true; const b = document.createElement("button"); b.className = "upd-bar"; b.textContent = "New version ready — tap to update"; b.onclick = () => go(v); document.body.appendChild(b); }
