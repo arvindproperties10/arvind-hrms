@@ -20,7 +20,7 @@ self.addEventListener("fetch", e => {
 self.addEventListener("push", e => {
   let p = {}; try { p = e.data ? e.data.json() : {}; } catch (_) { p = {}; }
   const d = p.data || p, n = p.notification || {};
-  const title = d.title || n.title || "Arvind Properties HRMS";
+  const title = d.title || n.title || "Srigandha Properties HRMS";
   e.waitUntil(self.registration.showNotification(title, {
     body: d.body || n.body || "", icon: "icons/icon-192.png", badge: "icons/icon-192.png",
     tag: d.tag || undefined, renotify: !!d.tag, data: { url: d.url || "./" }

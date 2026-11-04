@@ -1,4 +1,4 @@
-// Firebase connection for Arvind Properties HRMS.
+// Firebase connection for Srigandha Properties HRMS.
 // Exposes window.FB with a small database adapter that keeps the same shape the app already uses
 // (db.collection(path).doc(id).set/update/get/onSnapshot, db.doc(path), where/orderBy/limit).
 import { initializeApp, deleteApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";

@@ -1,4 +1,4 @@
-// Arvind Properties HRMS — notification job (runs every 10 minutes on GitHub Actions).
+// Srigandha Properties HRMS — notification job (runs every 10 minutes on GitHub Actions).
 //  • approvers: a new leave / permission request is waiting
 //  • employees: their request was approved or rejected
 //  • employees: not checked in by 10:00 on a working day (once a day)
@@ -130,7 +130,7 @@ if (now.mins >= 9 * 60 && now.mins < 23 * 60) {
   for (const [uid, toks] of Object.entries(TOKENS)) for (const t of toks) {
     const k = `wl_${t.slice(-24)}`; if (was(k)) continue; mark(k);
     if (firstRun) continue;
-    outbox.push({ uids: [uid], only: t, title: "Notifications are on ✅", body: "You'll get reminders and updates from Arvind Properties HRMS here.", tag: "welcome", url: APP_URL });
+    outbox.push({ uids: [uid], only: t, title: "Notifications are on ✅", body: "You'll get reminders and updates from Srigandha Properties HRMS here.", tag: "welcome", url: APP_URL });
   }
 }
 

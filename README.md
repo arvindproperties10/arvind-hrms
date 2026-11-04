@@ -1,6 +1,6 @@
-# Arvind Properties HRMS
+# Srigandha Properties HRMS
 
-Attendance with GPS + selfie check-in, leave, payroll, payslips and incentives for Arvind Properties staff.
+Attendance with GPS + selfie check-in, leave, payroll, payslips and incentives for Srigandha Properties staff.
 Runs as a website on GitHub Pages and installs on phones like an app. Data and logins live in Firebase (project `arvind-hrms`).
 
 ## Who sees what

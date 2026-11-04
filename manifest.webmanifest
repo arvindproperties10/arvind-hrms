@@ -1,8 +1,8 @@
 {
   "id": "./index.html",
-  "name": "Arvind Properties HRMS",
-  "short_name": "AP HRMS",
-  "description": "Check in, attendance, leave, payslips and incentives for Arvind Properties staff.",
+  "name": "Srigandha Properties HRMS",
+  "short_name": "SP HRMS",
+  "description": "Check in, attendance, leave, payslips and incentives for Srigandha Properties staff.",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
