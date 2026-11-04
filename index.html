@@ -2069,7 +2069,7 @@ const DEPTS = [...TELE_ROLES, ...SALES_ROLES, "Reception","Housekeeping","Admini
 const DEPT_OLD = {"Tele Calling":"Tele-Calling Executive","Tele-Calling":"Tele-Calling Executive","Sales Executives":"Sales","Receptionist":"Reception","HR":"Administration","Tele-Calling Executive Grade 2":G1};
 const isTele = d => TELE_ROLES.includes(d), isSalesR = d => SALES_ROLES.includes(d);
 const normDept = d => DEPT_OLD[d] || d;
-const LOCS = ["Head Office","Site Office"];
+const LOCS = ["Head Office","Site Office","Vruksha"];
 const PUNCH_LOCS = ["Head Office","Site Office","Site visit","Client meeting","Field work"];
 const NEEDS_PLACE = new Set(["Site visit","Client meeting","Field work"]);
 const LEAVE_START = "2026-11";   // 1 paid leave accrues each month from here; unused days carry forward
@@ -3249,7 +3249,8 @@ function birthdayNote(){
 const PLACES = [
   {id:"ho",   name:"Head Office", lat:12.97397,  lng:77.51017,  r:150},
   {id:"so",   name:"Site Office", lat:13.050315, lng:77.393156, r:300},
-  {id:"home", name:"Home Office", lat:12.979020, lng:77.504793, r:150}
+  {id:"home", name:"Home Office", lat:12.979020, lng:77.504793, r:150},
+  {id:"vruksha", name:"Vruksha", lat:13.107688, lng:77.404609, r:300}
 ];
 const placeName = id => id==="field" ? "Field" : PLACES.find(p=>p.id===id)?.name || id || "—";
 const placeLbl = s => s ? placeName(s.place) + (s.note ? " · " + s.note : "") : "";
@@ -3378,7 +3379,7 @@ async function ckLocate(kind){
     if(n.d > n.p.r && fieldOk()){ n = {p:{id:"field", name:"Field", r:0}, d:n.d}; CK.field = true; }
     if(n.d > n.p.r && !CK.field){
       CK.step = "idle";
-      CK.err = `You're about ${n.d>=1000 ? (n.d/1000).toFixed(1)+" km" : Math.round(n.d)+" m"} from ${n.p.name}. You can check ${kind} only within ${n.p.r} m of Head Office, Site Office or Home Office.` + (pos.acc > 100 ? ` Your phone's location is rough right now (±${Math.round(pos.acc)} m), so moving near a window may help.` : "");
+      CK.err = `You're about ${n.d>=1000 ? (n.d/1000).toFixed(1)+" km" : Math.round(n.d)+" m"} from ${n.p.name}. You can check ${kind} only within ${n.p.r} m of ${n.p.name} or at another check-in place (Head Office, Site Office, Home Office, Vruksha).` + (pos.acc > 100 ? ` Your phone's location is rough right now (±${Math.round(pos.acc)} m), so moving near a window may help.` : "");
       render(); return;
     }
     CK.pos = pos; CK.near = n; CK.step = kind==="in" ? "selfie" : "confirm"; render();
@@ -4686,7 +4687,7 @@ if("serviceWorker" in navigator){
 
 // Version check: whenever the app is opened or brought back to the front, ask GitHub for the latest version number.
 // If it is newer than what is running, reload (straight away if nothing is open, otherwise offer a button).
-window.APP_VERSION = "20261104052232";
+window.APP_VERSION = "20261104053158";
 (function(){
   let busy = false, shown = false;
   function bar(v){ if(shown) return; shown = true; const b = document.createElement("button"); b.className = "upd-bar"; b.textContent = "New version ready — tap to update"; b.onclick = () => go(v); document.body.appendChild(b); }
