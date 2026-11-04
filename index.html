@@ -2212,7 +2212,7 @@ function ledger(id){
   let start = LEAVE_START; if(e.joined && e.joined.slice(0,7) > start) start = e.joined.slice(0,7);
   if(isStaffU()) loadOffDayCi();
   const eligYm = start;   // paid leave accrues from the joining month (the 3-month wait applies to incentives, not leave)
-  const coDates = compEarned(id); let coUsed = 0, coUsedNow = 0, coBooked = 0;
+  const coDates = compEarned(id); let coUsedNow = 0, coBooked = 0; const coUsedM = {};   // comp offs are used within the month they're earned (no carry forward)
   const nowYm = today.slice(0,7); let end = nowYm;
   for(const l of Object.values(S.leaves)) if(l.empId===id && l.status==="approved" && l.to && l.to.slice(0,7) > end) end = l.to.slice(0,7);
   for(const d of Object.keys(S.att)) if(d.slice(0,7) > end && S.att[d]?.marks?.[id]==="L") end = d.slice(0,7);
@@ -2225,12 +2225,13 @@ function ledger(id){
       const ds = `${ym}-${pad(d)}`; if(isOff(ds) || (e.joined && ds < e.joined) || (e.exitDate && ds > e.exitDate)) continue;
       if(statusOn(id, ds) !== "L") continue;
       // every leave day uses an available comp off first, then paid leave, then it's unpaid
-      if(coDates.filter(x => x <= ds).length - coUsed >= 1){ coUsed++; if(ym <= nowYm) coUsedNow++; else coBooked++; continue; }
+      if(coDates.filter(x => x <= ds && x.slice(0,7)===ym).length - (coUsedM[ym]||0) >= 1){ coUsedM[ym] = (coUsedM[ym]||0) + 1; if(ds <= today) coUsedNow++; else coBooked++; continue; }
       if(bal >= 1){ bal--; if(ym <= nowYm) usedNow++; else booked++; } else { unpaid.add(ds); if(ym <= nowYm) unpaidNow++; }
     }
   }
   return LEDGER[id] = {start, eligYm, waiting: eligYm > nowYm, accrued:accruedNow, used:usedNow, balance:accruedNow-usedNow, booked, unpaid, unpaidNow,
-    co:{earned:coDates.length, used:coUsedNow, booked:coBooked, balance:coDates.length - coUsedNow, free:coDates.length - coUsedNow - coBooked, dates:coDates}};
+    co:(() => { const mine = coDates.filter(x => x.slice(0,7)===nowYm).length, used = coUsedM[nowYm]||0;   // this month only
+      return {earned:mine, used:Math.min(used, coUsedNow), booked:Math.max(0, used - Math.min(used, coUsedNow)), balance:mine - used, free:mine - used, dates:coDates, lapses:new Date(+nowYm.slice(0,4), +nowYm.slice(5,7), 0).getDate()}; })()};
 }
 // Split a requested range into paid and unpaid days given the current balance.
 function leaveSplit(id, from, to){
@@ -2922,7 +2923,7 @@ myleave(){
     `<div class="sumstrip three"><div><b>${L.balance}</b><span>Available</span></div><div><b>${L.accrued}</b><span>Earned</span></div><div><b>${L.used}</b><span>Used${L.booked?` · ${L.booked} booked`:""}</span></div></div>
     <p class="hint">${L.waiting ? `Paid leave starts in <b>${monthName(L.eligYm)}</b>, after your first 3 months. Leave before then is unpaid.` : "You earn 1 paid leave every month. Unused days carry forward."}</p>
     <div class="sumstrip co-strip"><div><b>${L.co.free}</b><span>Comp offs available</span></div><div><b>${L.co.earned}</b><span>Earned</span></div><div><b>${L.co.used + L.co.booked}</b><span>Used</span></div></div>
-    <p class="hint">Check in on the app on a weekly off or company holiday to earn 1 comp off. When you take leave, <b>comp offs are used first</b>, then paid leave.</p>
+    <p class="hint">Check in on the app on a weekly off or company holiday to earn 1 comp off. Comp offs must be used <b>in the same month</b> — unused ones lapse on ${L.co.lapses} ${monthName(today.slice(0,7)).split(" ")[0]}. When you take leave, comp offs are used first, then paid leave.</p>
     <h2 class="sect-h">Apply</h2>
     <div class="panel lv-form"><div class="lv-dates"><div class="field"><label for="ml_from">From</label><input type="date" id="ml_from" min="${today}" value="${today}"></div><div class="field"><label for="ml_to">To</label><input type="date" id="ml_to" min="${today}" value="${today}"></div></div>
       <div class="field"><label for="ml_reason">Reason <span class="opt">optional</span></label><textarea id="ml_reason" rows="2" placeholder="e.g. Family function"></textarea></div>
@@ -4770,7 +4771,7 @@ if("serviceWorker" in navigator){
 
 // Version check: whenever the app is opened or brought back to the front, ask GitHub for the latest version number.
 // If it is newer than what is running, reload (straight away if nothing is open, otherwise offer a button).
-window.APP_VERSION = "20261104082044";
+window.APP_VERSION = "20261104082747";
 (function(){
   let busy = false, shown = false;
   function bar(v){ if(shown) return; shown = true; const b = document.createElement("button"); b.className = "upd-bar"; b.textContent = "New version ready — tap to update"; b.onclick = () => go(v); document.body.appendChild(b); }
