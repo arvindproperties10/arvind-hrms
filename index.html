@@ -2179,7 +2179,7 @@ const empList = () => Object.entries(S.emps).map(([id,e])=>({id,...e})).sort((a,
 const activeOn = (e, d) => e.status !== "Exited" && (!e.joined || e.joined <= d) && (!e.exitDate || e.exitDate >= d);
 const activeEmps = (d=today) => empList().filter(e => activeOn(e,d));
 function leaveOn(id, d){ return Object.values(S.leaves).find(l => l.empId===id && l.status==="approved" && l.from<=d && l.to>=d); }
-function statusOn(id, d){ const m = S.att[d]?.marks?.[id]; if(m) return m; if(leaveOn(id,d)) return "L"; const c = ciEval(ciFor(id, d)); if(c) return c.st; if(autoAbsent(id, d)) return "A"; return null; }
+function statusOn(id, d){ const m = S.att[d]?.marks?.[id]; if(m) return m; if(leaveOn(id,d)) return "L"; const c = ciEval(ciFor(id, d)); if(c) return (c.noOut && d < today) ? "HD" : c.st; if(autoAbsent(id, d)) return "A"; return null; }
 // Paid-leave ledger: +1 at the start of every month from LEAVE_START (or the joining month), leave days use the balance in date order,
 // and any leave day with no balance left is unpaid (loss of pay).
 let LEDGER = {};
@@ -2886,7 +2886,7 @@ myatt(){
     `<div class="sumstrip"><div><b>${s.P}</b><span>Present</span></div><div><b>${s.HD}</b><span>Half day</span></div><div><b>${s.A}</b><span>Absent</span></div><div><b>${s.late}</b><span>Late</span></div></div>
     ${s.late ? `<p class="hint">${s.late} late mark${s.late===1?"":"s"} this month${s.lateLop ? ` · ${s.lateLop} day's pay deducted` : ` · ${3 - s.late % 3} more = half day's pay cut`}</p>` : ""}
     <div class="panel daypanel"><div class="days">${rows.join("") || `<p class="empty">Nothing for this month yet.</p>`}</div></div>
-    <p class="hint">8-hour day: start between 9:30 and 10:15 and check out 8 hours later (9:30 → 5:30, 10:15 → 6:15) · late after 10:15 AM · half day if in after 1 PM or out before 2 PM</p>`;
+    <p class="hint">8-hour day: start between 9:30 and 10:15 and check out 8 hours later (9:30 → 5:30, 10:15 → 6:15) · late after 10:15 AM · half day if in after 1 PM, out before 2 PM, or no check-out (ask for a forgot check-out permission within 2 days)</p>`;
 },
 myleave(){
   const id = myEmp(); const L = ledger(id);
@@ -2972,7 +2972,7 @@ function goLiveDrawer(){
     <p class="note" style="margin:0">From this date, a working day with no check-in, approved leave or HR mark counts as <b>Absent</b>. Today's absences appear after 6:00 PM. Leave it blank to keep missing days unmarked.</p>
     <div class="field"><label for="goLive">Start date</label><input type="date" id="goLive" value="${esc(gl)}" ${ed?"":"disabled"}></div>
     <div class="sect">Check-in places</div>
-    <p class="note" style="margin:0">${PLACES.map(p => `<b>${esc(p.name)}</b> within ${p.r} m`).join(" · ")}. 8-hour day starting between 9:30 and 10:15 AM (check-out 8 hours after check-in, 5:30 – 6:15 PM), late after 10:15 AM, half day if in after 1:00 PM or out before 2:00 PM. Every 3 late marks in a month cost half a day's pay.</p>
+    <p class="note" style="margin:0">${PLACES.map(p => `<b>${esc(p.name)}</b> within ${p.r} m`).join(" · ")}. 8-hour day starting between 9:30 and 10:15 AM (check-out 8 hours after check-in, 5:30 – 6:15 PM), late after 10:15 AM, no check-out counts as a half day until a forgot check-out permission is approved, half day if in after 1:00 PM or out before 2:00 PM. Every 3 late marks in a month cost half a day's pay.</p>
   </div>
   <footer><button class="btn" data-act="close">Close</button>${ed?`<button class="btn primary" data-act="golive-save">Save</button>`:""}</footer>`);
 }
@@ -3313,7 +3313,7 @@ function latesIn(id, ym){
   let n = 0;
   for(const d of days){
     if(S.att[d]?.marks?.[id] || leaveOn(id, d)) continue;
-    const v = ciEval(ciFor(id, d)); if(v && v.st==="P" && v.late) n++;
+    const v = ciEval(ciFor(id, d)); if(v && v.st==="P" && v.late && !(v.noOut && d < today)) n++;   // a no-check-out day is already a half day
   }
   return n;
 }
@@ -3508,8 +3508,8 @@ function dayRow(id, d){
     : (v && v.late && d >= addDays(today, -PERM_BACK_DAYS) && !asked("late") && !asked("back")) ? `<button class="dr-ask" data-mpquick="late|${d}">Ask late permission</button><button class="dr-ask" data-mpquick="back|${d}">Came in earlier?</button>` : "";
   const permNote = pend.length ? `<span class="dr-perm warn">${pend.map(p => PERM_TYPES[p.type]).join(", ")} · waiting</span>`
     : (v && (v.pLate || v.pEarly || v.manualIn || v.manualOut || v.backIn || v.forgiven)) ? `<span class="dr-perm">${[v.manualIn?"Check-in added":"", v.backIn?"Check-in backdated":"", v.forgiven?"Late forgiven":"", v.manualOut?"Check-out added":"", v.pLate?"Late permitted":"", v.pEarly?"Early leave permitted":""].filter(Boolean).join(" · ")}</span>` : "";
-  const tag = off && !st ? "" : (v && v.st==="P" && v.late && !S.att[d]?.marks?.[id]) ? `<span class="tag warn">Late</span>`
-    : (v && v.noOut && d < today && !S.att[d]?.marks?.[id]) ? `<span class="tag bad">No check-out</span>`
+  const tag = off && !st ? "" : (v && v.noOut && d < today && !S.att[d]?.marks?.[id]) ? `<span class="tag bad">No check-out · half day</span>`
+    : (v && v.st==="P" && v.late && !S.att[d]?.marks?.[id]) ? `<span class="tag warn">Late</span>`
     : st==="P" ? `<span class="tag ok">Present</span>` : st==="HD" ? `<span class="tag warn">Half day</span>` : st==="A" ? `<span class="tag bad">Absent</span>` : st==="L" ? `<span class="tag leave">Leave</span>` : "";
   return `<div class="dayrow${off?" off":""}">${chip}<div class="dr-mid"><div class="dr-times">${main}</div>${sub?`<div class="dr-sub">${sub}</div>`:""}${permNote||quick ? `<div class="dr-extra">${permNote}${quick}</div>` : ""}</div><div class="dr-st">${tag}</div></div>`;
 }
@@ -4687,7 +4687,7 @@ if("serviceWorker" in navigator){
 
 // Version check: whenever the app is opened or brought back to the front, ask GitHub for the latest version number.
 // If it is newer than what is running, reload (straight away if nothing is open, otherwise offer a button).
-window.APP_VERSION = "20261104053158";
+window.APP_VERSION = "20261104053641";
 (function(){
   let busy = false, shown = false;
   function bar(v){ if(shown) return; shown = true; const b = document.createElement("button"); b.className = "upd-bar"; b.textContent = "New version ready — tap to update"; b.onclick = () => go(v); document.body.appendChild(b); }
