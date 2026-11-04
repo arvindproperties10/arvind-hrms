@@ -2213,7 +2213,7 @@ function ledger(id){
   if(isStaffU()) loadOffDayCi();
   const eligYm = start;   // paid leave accrues from the joining month (the 3-month wait applies to incentives, not leave)
   const coDates = compEarned(id); let coUsedNow = 0, coBooked = 0;
-  const credits = coDates.map(d => ({d, exp:compExpiry(d), used:false}));   // each comp off lasts to the end of its month, or the end of its week if later
+  const credits = coDates.map(d => ({d, from:d.slice(0,8) + "01", exp:compExpiry(d), used:false}));   // covers leave from the 1st of its month (even before it was earned) to its expiry   // each comp off lasts to the end of its month, or the end of its week if later
   const nowYm = today.slice(0,7); let end = nowYm;
   for(const l of Object.values(S.leaves)) if(l.empId===id && l.status==="approved" && l.to && l.to.slice(0,7) > end) end = l.to.slice(0,7);
   for(const d of Object.keys(S.att)) if(d.slice(0,7) > end && S.att[d]?.marks?.[id]==="L") end = d.slice(0,7);
@@ -2226,7 +2226,7 @@ function ledger(id){
       const ds = `${ym}-${pad(d)}`; if(isOff(ds) || (e.joined && ds < e.joined) || (e.exitDate && ds > e.exitDate)) continue;
       if(statusOn(id, ds) !== "L") continue;
       // every leave day uses an available comp off first, then paid leave, then it's unpaid
-      { const cr = credits.filter(c => !c.used && c.d <= ds && ds <= c.exp).sort((a,b) => a.exp.localeCompare(b.exp))[0];
+      { const cr = credits.filter(c => !c.used && c.from <= ds && ds <= c.exp).sort((a,b) => a.exp.localeCompare(b.exp))[0];
         if(cr){ cr.used = true; if(ds <= today) coUsedNow++; else coBooked++; continue; } }
       if(bal >= 1){ bal--; if(ym <= nowYm) usedNow++; else booked++; } else { unpaid.add(ds); if(ym <= nowYm) unpaidNow++; }
     }
@@ -2926,7 +2926,7 @@ myleave(){
     `<div class="sumstrip three"><div><b>${L.balance}</b><span>Available</span></div><div><b>${L.accrued}</b><span>Earned</span></div><div><b>${L.used}</b><span>Used${L.booked?` · ${L.booked} booked`:""}</span></div></div>
     <p class="hint">${L.waiting ? `Paid leave starts in <b>${monthName(L.eligYm)}</b>, after your first 3 months. Leave before then is unpaid.` : "You earn 1 paid leave every month. Unused days carry forward."}</p>
     <div class="sumstrip co-strip"><div><b>${L.co.free}</b><span>Comp offs available</span></div><div><b>${L.co.earned}</b><span>Earned</span></div><div><b>${L.co.used + L.co.booked}</b><span>Used</span></div></div>
-    <p class="hint">Check in on the app on a weekly off or company holiday to earn 1 comp off. Comp offs must be used <b>in the same month</b> (one earned in the last week can be used until that Sunday)${L.co.next ? ` — use by <b>${fmtDs(L.co.next)}</b>` : ""}. When you take leave, comp offs are used first, then paid leave.</p>
+    <p class="hint">Check in on the app on a weekly off or company holiday to earn 1 comp off. A comp off covers any leave in the same month — even leave taken before you earned it — and one earned in the last week can be used until that Sunday${L.co.next ? ` — use by <b>${fmtDs(L.co.next)}</b>` : ""}. When you take leave, comp offs are used first, then paid leave.</p>
     <h2 class="sect-h">Apply</h2>
     <div class="panel lv-form"><div class="lv-dates"><div class="field"><label for="ml_from">From</label><input type="date" id="ml_from" min="${today}" value="${today}"></div><div class="field"><label for="ml_to">To</label><input type="date" id="ml_to" min="${today}" value="${today}"></div></div>
       <div class="field"><label for="ml_reason">Reason <span class="opt">optional</span></label><textarea id="ml_reason" rows="2" placeholder="e.g. Family function"></textarea></div>
@@ -4777,7 +4777,7 @@ if("serviceWorker" in navigator){
 
 // Version check: whenever the app is opened or brought back to the front, ask GitHub for the latest version number.
 // If it is newer than what is running, reload (straight away if nothing is open, otherwise offer a button).
-window.APP_VERSION = "20261104083045";
+window.APP_VERSION = "20261104093246";
 (function(){
   let busy = false, shown = false;
   function bar(v){ if(shown) return; shown = true; const b = document.createElement("button"); b.className = "upd-bar"; b.textContent = "New version ready — tap to update"; b.onclick = () => go(v); document.body.appendChild(b); }
