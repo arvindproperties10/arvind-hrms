@@ -2023,6 +2023,19 @@ body.dark .ps-bday{color:#ffb340}
 .ck-cam video{width:100%;height:100%;object-fit:cover;transform:scaleX(-1);display:block}
 .ck-alt{font-size:13px}
 .ck-err span{display:block;margin-top:4px;font-size:13px;line-height:1.45}
+/* location pop-up */
+.loc-modal .body{text-align:center;gap:10px}
+.loc-modal h3{margin:4px 0 0;font-size:19px}
+.loc-modal p{margin:0;font-size:14.5px;line-height:1.5}
+.loc-modal ol{text-align:left;margin:4px 0;padding-left:22px;font-size:14.5px;line-height:1.5}
+.loc-modal li{margin:6px 0}
+.loc-ic{width:64px;height:64px;margin:4px auto 0;border-radius:50%;display:flex;align-items:center;justify-content:center;background:rgba(0,113,227,.12);color:var(--accent,#0071e3)}
+.loc-ic svg{width:30px;height:30px}
+.loc-small{font-size:12.5px!important;color:var(--muted)}
+.loc-modal{background:rgba(255,255,255,.98)!important;-webkit-backdrop-filter:blur(20px)!important;backdrop-filter:blur(20px)!important}
+.loc-modal::before,.loc-modal::after{display:none!important}
+.loc-modal .body,.loc-modal header{background:transparent!important}
+body.dark .loc-modal{background:rgba(30,32,40,.98)!important}
 </style>
 </head>
 <body>
@@ -3325,7 +3338,7 @@ function getPos(){
   return new Promise((res, rej) => {
     if(!navigator.geolocation) return rej({msg:"This phone or browser can't share its location."});
     navigator.geolocation.getCurrentPosition(p => res({lat:p.coords.latitude, lng:p.coords.longitude, acc:p.coords.accuracy, at:Date.now()}),
-      e => rej({msg: e.code===1 ? "Location access is blocked. Allow location for this app in your phone or browser settings, then try again."
+      e => rej({code:e.code, msg: e.code===1 ? "Location access is blocked. Allow location for this app in your phone or browser settings, then try again."
                   : e.code===3 ? "Couldn't get your location in time. Move near a window or step outside, then try again."
                   : "Couldn't get your location. Turn on location (GPS) and try again."}),
       {enableHighAccuracy:true, timeout:25000, maximumAge:0});
@@ -3383,7 +3396,31 @@ async function ckLocate(kind){
       render(); return;
     }
     CK.pos = pos; CK.near = n; CK.step = kind==="in" ? "selfie" : "confirm"; render();
-  }catch(e){ CK.step = "idle"; CK.err = e.msg || "Couldn't get your location."; render(); }
+  }catch(e){ CK.step = "idle"; CK.err = e.msg || "Couldn't get your location."; render(); if(e.code===1) locHelp("blocked", kind); else if(e.code===2) locHelp("off", kind); }
+}
+// ---- location permission: explain before the phone asks, and show how to fix it when it's blocked or off ----
+async function locState(){ try{ const r = await navigator.permissions?.query({name:"geolocation"}); return r ? r.state : "unknown"; }catch(_){ return "unknown"; } }
+async function locStart(kind){
+  const st = await locState();
+  if(st==="denied"){ locHelp("blocked", kind); return; }
+  if(st==="prompt"){ locHelp("ask", kind); return; }
+  ckLocate(kind);
+}
+function locHelp(mode, kind){
+  const app = matchMedia("(display-mode: standalone)").matches;
+  const PINI = `<div class="loc-ic">${PIN}</div>`;
+  const body = mode==="ask"
+    ? `${PINI}<h3>Allow location to check ${kind}</h3><p>Your phone will now ask to share your location. Tap <b>Allow</b> (or <b>While using the app</b>).</p><p class="loc-small">Location is taken only when you tap Check in or Check out — never at any other time.</p>
+       <button class="btn primary ck-go" data-act="loc-go" data-kind="${kind}">Continue</button>`
+    : mode==="off"
+    ? `${PINI}<h3>Turn on your phone's location</h3><ol><li>Swipe down from the top of the screen.</li><li>Tap <b>Location</b> (it may be called GPS) so it turns on.</li><li>Come back here and tap <b>Try again</b>.</li></ol>
+       <button class="btn primary ck-go" data-act="loc-go" data-kind="${kind}">Try again</button>`
+    : `${PINI}<h3>Location is blocked</h3><p>The app needs your location to check you ${kind} at the office. Allow it once and it'll work every day.</p>
+       ${app ? `<ol><li>Open <b>Chrome</b> → tap <b>⋮</b> → <b>Settings</b> → <b>Site settings</b> → <b>Location</b>.</li><li>Under <b>Blocked</b>, tap <b>arvindproperties10.github.io</b> → <b>Allow</b>.</li><li>Also check phone <b>Settings → Apps → Chrome → Permissions → Location</b> is <b>Allow only while using the app</b>.</li></ol>`
+             : `<ol><li>Tap the <b>ⓘ</b> or lock icon at the left of the web address.</li><li>Tap <b>Permissions</b> (or <b>Site settings</b>) → <b>Location</b> → <b>Allow</b>.</li><li>If it's still blocked: phone <b>Settings → Apps → Chrome → Permissions → Location → Allow only while using the app</b>.</li></ol>`}
+       <p class="loc-small">Also make sure the phone's <b>Location</b> is switched on (swipe down from the top).</p>
+       <button class="btn primary ck-go" data-act="loc-go" data-kind="${kind}">I've allowed it — try again</button>`;
+  $("#overlay").innerHTML = `<div class="scrim" data-act="close"></div><div class="modal sm loc-modal" role="dialog" aria-modal="true"><header><h3>Location</h3><button class="btn ghost" data-act="close" aria-label="Close">✕</button></header><div class="body">${body}</div></div>`;
 }
 async function ckPhoto(file){
   if(!file) return;
@@ -4443,8 +4480,9 @@ document.addEventListener("click", async ev => {
   else if(a==="pw-save") savePw(t);
   else if(a==="claim") claimOwner(t);
   else if(a==="consent-ok") giveConsent();
-  else if(a==="ci-in") ckLocate("in");
-  else if(a==="ci-out") ckLocate("out");
+  else if(a==="ci-in") locStart("in");
+  else if(a==="ci-out") locStart("out");
+  else if(a==="loc-go"){ const k = t.dataset.kind || "in"; closeDrawer(); ckLocate(k); }
   else if(a==="ci-save") ckSave(t);
   else if(a==="ci-cancel"){ ckReset(); render(); }
   else if(a==="cam-open") camOpen();
@@ -4687,7 +4725,7 @@ if("serviceWorker" in navigator){
 
 // Version check: whenever the app is opened or brought back to the front, ask GitHub for the latest version number.
 // If it is newer than what is running, reload (straight away if nothing is open, otherwise offer a button).
-window.APP_VERSION = "20261104053641";
+window.APP_VERSION = "20261104062602";
 (function(){
   let busy = false, shown = false;
   function bar(v){ if(shown) return; shown = true; const b = document.createElement("button"); b.className = "upd-bar"; b.textContent = "New version ready — tap to update"; b.onclick = () => go(v); document.body.appendChild(b); }
