@@ -124,11 +124,21 @@ if (now.mins >= 9 * 60 && now.mins < 23 * 60) {
   }
 }
 
+// ---- welcome: confirms to each newly connected phone that notifications work ----
+{
+  await people();
+  for (const [uid, toks] of Object.entries(TOKENS)) for (const t of toks) {
+    const k = `wl_${t.slice(-24)}`; if (was(k)) continue; mark(k);
+    if (firstRun) continue;
+    outbox.push({ uids: [uid], only: t, title: "Notifications are on ✅", body: "You'll get reminders and updates from Arvind Properties HRMS here.", tag: "welcome", url: APP_URL });
+  }
+}
+
 // ---- send ----
 let ok = 0, bad = 0; const dead = new Set();
 if (outbox.length) await people();
 for (const m of outbox) {
-  const tokens = m.uids.flatMap(uid => TOKENS[uid] || []);
+  const tokens = m.only ? [m.only] : m.uids.flatMap(uid => TOKENS[uid] || []);
   if (!tokens.length) continue;
   if (DRY) { console.log("[dry run]", m.title, "→", tokens.length, "phone(s)"); continue; }
   const r = await fcm.sendEachForMulticast({ tokens, data: { title: m.title, body: m.body, tag: m.tag, url: m.url }, webpush: { headers: { Urgency: "high", TTL: "21600" } } });
