@@ -1,0 +1,25 @@
+name: Notifications
+# Every 10 minutes: tells approvers about new requests, tells employees about decisions,
+# and sends check-in / check-out reminders. Needs the FIREBASE_SA repository secret.
+on:
+  schedule:
+    - cron: "*/10 * * * *"
+  workflow_dispatch: {}
+concurrency:
+  group: notify
+  cancel-in-progress: false
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: notify/package-lock.json
+      - run: npm ci --prefix notify
+      - run: node notify/notify.mjs
+        env:
+          FIREBASE_SA: ${{ secrets.FIREBASE_SA }}
