@@ -136,6 +136,13 @@ service cloud.firestore {
       allow delete: if canEdit('leave') || (canEdit('attendance') && resource.data.type == 'forgive')
         || (mine(resource.data) && resource.data.status == 'pending' && resource.data.type != 'forgive');
     }
+    // phone notification addresses: each signed-in person can save or remove their own; only the server job reads them
+    match /pushTokens/{token} {
+      allow create, update: if active() && request.resource.data.uid == request.auth.uid
+        && request.resource.data.keys().hasOnly(['uid', 'at', 'ua']);
+      allow delete: if signedIn() && resource.data.uid == request.auth.uid;
+      allow read: if false;
+    }
     match /data/hr/salaries/{id} {
       allow read: if canRead('payroll');
       allow write: if canEdit('payroll');

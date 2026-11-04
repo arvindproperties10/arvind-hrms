@@ -1,0 +1,9 @@
+{
+  "name": "arvind-hrms-notify",
+  "private": true,
+  "type": "module",
+  "description": "Scheduled job: approval alerts and check-in / check-out reminders for the Arvind Properties HRMS",
+  "dependencies": {
+    "firebase-admin": "12.7.0"
+  }
+}

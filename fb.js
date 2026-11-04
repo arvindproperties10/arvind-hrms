@@ -140,8 +140,29 @@ async function changePassword(current, next) {
   await updatePassword(u, next);
 }
 
+// ---- push notifications (Firebase Cloud Messaging) ----
+// The phone's notification address ("token") is saved in pushTokens/{token}; the scheduled GitHub job sends to it.
+const MSG_URL = "https://www.gstatic.com/firebasejs/10.12.2/firebase-messaging.js";
+async function pushSupported() {
+  if (!("Notification" in window) || !("serviceWorker" in navigator) || !("PushManager" in window)) return false;
+  try { const m = await import(MSG_URL); return await m.isSupported(); } catch (_) { return false; }
+}
+async function pushEnable(swReg) {
+  const m = await import(MSG_URL);
+  if (!(await m.isSupported())) throw { code: "unsupported" };
+  const token = await m.getToken(m.getMessaging(app), { serviceWorkerRegistration: swReg });
+  if (!token) throw { code: "no-token" };
+  const u = auth.currentUser; if (!u) throw { code: "signed-out" };
+  await setDoc(doc(fs, "pushTokens", token), { uid: u.uid, at: serverTimestamp(), ua: navigator.userAgent.slice(0, 160) });
+  return token;
+}
+async function pushDisable(token) {
+  try { const m = await import(MSG_URL); await m.deleteToken(m.getMessaging(app)); } catch (_) {}
+  if (token) { try { await deleteDoc(doc(fs, "pushTokens", token)); } catch (_) {} }
+}
+
 window.FB = {
-  db, auth, loginEmail, createLogin, login, changePassword, signUp, ownerExists,
+  db, auth, loginEmail, createLogin, login, changePassword, signUp, ownerExists, pushSupported, pushEnable, pushDisable,
   logout: () => signOut(auth),
   onAuth: cb => onAuthStateChanged(auth, cb),
   config: firebaseConfig
