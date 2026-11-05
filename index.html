@@ -2053,6 +2053,14 @@ body .push-card .push-acts{width:100%;justify-content:flex-end;margin:0}
 .kpi-link .k::after{content:" ›";opacity:.5}
 .h-row{display:flex;align-items:center;justify-content:space-between;gap:8px}
 .h-go{border:0;background:none;color:var(--accent,#0071e3);font:600 13px/1 inherit;cursor:pointer;padding:6px 0;white-space:nowrap;flex:none}
+/* floating date bar on phones */
+.dbfloat{position:fixed;left:50%;transform:translateX(-50%);z-index:90;display:flex;align-items:center;gap:4px;padding:5px;border-radius:999px;
+  background:rgba(255,255,255,.82);-webkit-backdrop-filter:blur(20px) saturate(180%);backdrop-filter:blur(20px) saturate(180%);border:1px solid rgba(255,255,255,.8);box-shadow:0 10px 28px -12px rgba(16,42,94,.45)}
+.dbfloat[hidden]{display:none!important}
+.dbfloat .db-arrow{width:38px;height:38px;border-radius:50%;border:0;background:rgba(0,113,227,.10);color:var(--accent,#0071e3);font-size:20px;line-height:1;cursor:pointer}
+.dbfloat .db-arrow:disabled{opacity:.35}
+.dbfloat .dbf-day{border:0;background:none;font:600 14.5px/1 inherit;color:var(--ink);padding:0 10px;cursor:pointer;white-space:nowrap}
+body.dark .dbfloat{background:rgba(30,32,40,.85);border-color:rgba(255,255,255,.1)}
 </style>
 </head>
 <body>
@@ -2440,9 +2448,9 @@ function dpOpen(inp, anchor){
   if(inp.id==="f_dob" && !inp.value) DP.ym = "1995-01";
   let el = document.getElementById("dp"); if(!el){ el = document.createElement("div"); el.id = "dp"; el.className = "dp"; el.setAttribute("role","dialog"); el.setAttribute("aria-label","Choose date"); document.body.appendChild(el); }
   dpRender(); dpPlace(); el.hidden = false;
-  setTimeout(()=>{ const f = el.querySelector(".dp-day.sel") || el.querySelector(".dp-day.today") || el.querySelector(".dp-day:not(:disabled)"); if(f) f.focus(); }, 0);
+  setTimeout(()=>{ const f = el.querySelector(".dp-day.sel") || el.querySelector(".dp-day.today") || el.querySelector(".dp-day:not(:disabled)"); if(f) f.focus({preventScroll:true}); }, 0);
 }
-function dpClose(){ const el = document.getElementById("dp"); if(el) el.hidden = true; const a = DP.anchor; DP.inp = null; if(a && a.focus) try{ a.focus({preventScroll:true}); }catch(_){} }
+function dpClose(){ const el = document.getElementById("dp"); if(el) el.hidden = true; const a = DP.anchor; DP.inp = null; if(a && a.focus) try{ const tgt = a.tagName==="LABEL" ? (a.querySelector("input") || null) : a; if(tgt && document.contains(tgt)){ const m = document.getElementById("main"), y = m ? m.scrollTop : 0, wy = window.scrollY; tgt.focus({preventScroll:true}); if(m) m.scrollTop = y; if(window.scrollY !== wy) window.scrollTo(0, wy); } }catch(_){} }
 function dpPlace(){
   const el = document.getElementById("dp"), r = DP.anchor.getBoundingClientRect(), W = el.offsetWidth || 300, H = el.offsetHeight || 340;
   if(innerWidth < 520){ el.classList.add("sheet"); el.style.left = el.style.top = ""; return; }
@@ -2450,6 +2458,28 @@ function dpPlace(){
   let left = Math.min(Math.max(12, r.left), innerWidth - W - 12), top = r.bottom + 8;
   if(top + H > innerHeight - 12) top = Math.max(12, r.top - H - 8);
   el.style.left = left + "px"; el.style.top = top + "px";
+}
+// Floating date bar (Attendance / Check-ins on phones): mirrors the page's date bar while it's scrolled out of view.
+function dbFloatSync(){
+  let f = document.getElementById("dbFloat");
+  const bar = document.querySelector("#main .head .datebar");
+  if(!bar || !matchMedia("(max-width:760px)").matches){ if(f) f.hidden = true; return; }
+  if(!f){ f = document.createElement("div"); f.id = "dbFloat"; f.className = "dbfloat"; f.hidden = true; document.body.appendChild(f);
+    f.addEventListener("click", e => { const b = e.target.closest("button"); if(!b) return; e.preventDefault(); e.stopPropagation();
+      if(b.dataset.dbf === "open"){ const lb = document.querySelector("#main .head .datebar .db-label"); if(lb) dpOpen(lb.querySelector("input"), f); return; }
+      const real = document.querySelector(`#main .head .datebar [data-act="${b.dataset.dbf}"]`); if(real && !real.disabled) real.click(); }, true);
+    const onScroll = () => dbFloatShow(); document.getElementById("main").addEventListener("scroll", onScroll, {passive:true}); window.addEventListener("scroll", onScroll, {passive:true}); }
+  const prev = bar.querySelector('[data-act$="-prev"]'), next = bar.querySelector('[data-act$="-next"]'), txt = bar.querySelector(".db-label span")?.textContent || "";
+  f.innerHTML = `<button type="button" class="db-arrow" data-dbf="${prev?.dataset.act||""}" aria-label="Previous working day">‹</button><button type="button" class="dbf-day" data-dbf="open">${esc(txt)}</button><button type="button" class="db-arrow" data-dbf="${next?.dataset.act||""}" aria-label="Next working day" ${next?.disabled?"disabled":""}>›</button>`;
+  dbFloatShow();
+}
+function dbFloatShow(){
+  const f = document.getElementById("dbFloat"); if(!f) return;
+  const bar = document.querySelector("#main .head .datebar");
+  if(!bar || !matchMedia("(max-width:760px)").matches){ f.hidden = true; return; }
+  const top = document.querySelector(".mtop")?.getBoundingClientRect().bottom || 70;
+  f.style.top = (top + 8) + "px";
+  f.hidden = bar.getBoundingClientRect().bottom > top;
 }
 function dpRender(){
   const el = document.getElementById("dp"), inp = DP.inp; if(!el || !inp) return;
@@ -2526,9 +2556,11 @@ function draw(){
   lockRO(main, view); enhanceNumbers(main); enhanceDates(main); enhanceSort(main); camAttach();
   main.classList.toggle("fit", !!main.querySelector(":scope > .fill") && !matchMedia("(max-width:760px)").matches);
   refreshIncModal(); UI.incDir = ""; if(flash) setTimeout(()=>{ flash=""; }, 0);
+  dbFloatSync();
   if(keepY){ const inner = [...main.querySelectorAll(".scrollbox,.tablewrap,.slide,.days,.daypanel")]; keepY.inner.forEach(([t,l], i) => { if(inner[i]){ inner[i].scrollTop = t; inner[i].scrollLeft = l; } }); main.scrollTop = keepY.main; if(window.scrollY !== keepY.win) window.scrollTo(0, keepY.win); }
   else { main.scrollTop = 0; window.scrollTo(0, 0); }
-  if(keepFocus){ const el=document.getElementById(keepFocus); if(el && main.contains(el)){ el.focus({preventScroll:true}); try{ if(selStart!=null) el.setSelectionRange(selStart,selStart); }catch(_){} } }
+  if(keepFocus){ const el=document.getElementById(keepFocus); if(el && main.contains(el) && el.type!=="date"){ el.focus({preventScroll:true}); try{ if(selStart!=null) el.setSelectionRange(selStart,selStart); }catch(_){} } }
+  if(keepY){ main.scrollTop = keepY.main; if(window.scrollY !== keepY.win) window.scrollTo(0, keepY.win); }   // focusing can scroll on phones; put the page back
 }
 
 // ---------- table sorting ----------
@@ -4790,7 +4822,7 @@ if("serviceWorker" in navigator){
 
 // Version check: whenever the app is opened or brought back to the front, ask GitHub for the latest version number.
 // If it is newer than what is running, reload (straight away if nothing is open, otherwise offer a button).
-window.APP_VERSION = "20261105053026";
+window.APP_VERSION = "20261105053925";
 (function(){
   let busy = false, shown = false;
   function bar(v){ if(shown) return; shown = true; const b = document.createElement("button"); b.className = "upd-bar"; b.textContent = "New version ready — tap to update"; b.onclick = () => go(v); document.body.appendChild(b); }
