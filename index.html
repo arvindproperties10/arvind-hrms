@@ -2232,52 +2232,53 @@ function ledger(id){
   if(isStaffU()) loadOffDayCi();
   const eligYm = start;   // paid leave accrues from the joining month (the 3-month wait applies to incentives, not leave)
   const coDates = compEarned(id); let coUsedNow = 0, coBooked = 0;
+  // each comp off covers leave from the 1st of its month (even before it was earned) to its expiry; it can be used in halves
   const credits = coDates.map(d => ({d, from:d.slice(0,8) + "01", exp:compExpiry(d), left:1, used:false}));
-  const coCover = new Set(), halfCover = new Set(), halfUnpaid = new Set(), preUsed = {}, optUsed = {};
-  const takeCo = (ds, amt) => { const cr = credits.filter(c => c.left >= amt && c.from <= ds && ds <= c.exp).sort((a,b) => a.exp.localeCompare(b.exp))[0]; if(!cr) return false; cr.left -= amt; cr.used = cr.left < 1; cr.on = cr.on ? cr.on : ds; return true; };   // absent days covered by a comp off; paid leave used in October   // covers leave from the 1st of its month (even before it was earned) to its expiry   // each comp off lasts to the end of its month, or the end of its week if later
+  const takeCo = (ds, need) => { let got = 0;
+    for(const c of credits.filter(c => c.left > 0 && c.from <= ds && ds <= c.exp).sort((a,b) => a.exp.localeCompare(b.exp))){
+      const t = Math.min(c.left, need - got); if(t <= 0) break; c.left -= t; c.used = c.left < 1; c.on = c.on || ds; got += t; }
+    return got; };
+  const cover = {}, unpaidAmt = {}, coCover = new Set(), halfCover = new Set(), halfUnpaid = new Set(), preUsed = {}, optUsed = {};
   const nowYm = today.slice(0,7); let end = nowYm;
   for(const l of Object.values(S.leaves)) if(l.empId===id && l.status==="approved" && l.to && l.to.slice(0,7) > end) end = l.to.slice(0,7);
   for(const d of Object.keys(S.att)) if(d.slice(0,7) > end && S.att[d]?.marks?.[id]==="L") end = d.slice(0,7);
   if(UI.payMonth > end) end = UI.payMonth;
   const unpaid = new Set(); let bal = 0, accruedNow = 0, usedNow = 0, unpaidNow = 0, booked = 0;
-  // October 2026 (before the carried-forward balance starts): comp offs first, then 1 paid leave for that month only (no carry forward), then unpaid
+  // one day off: need 1 (leave / absent) or ½ (half day). Returns what wasn't covered.
+  function settle(ds, st0, take){
+    const need = st0 === "HD" ? .5 : 1; let rem = need;
+    const co = takeCo(ds, rem); rem -= co; if(ds <= today) coUsedNow += co; else coBooked += co;
+    if(rem > 0) rem -= take(rem, st0);
+    cover[ds] = need - rem;
+    if(st0 === "A"){ if(cover[ds] > 0) coCover.add(ds); return; }   // absences: only comp offs / optional holiday cover them; the rest is loss of pay
+    if(st0 === "HD"){ if(rem <= 0) halfCover.add(ds); else halfUnpaid.add(ds); }
+    if(rem > 0){ unpaidAmt[ds] = rem; if(st0 === "L") unpaid.add(ds); if(ds.slice(0,7) <= nowYm) unpaidNow += rem; }
+  }
+  const halves = (avail, want) => Math.min(want, Math.floor(avail * 2) / 2);
+  // October 2026 (before the carried-forward balance starts): comp offs, then its 1 paid leave for that month only, then unpaid
   for(let ym = COMP_FROM.slice(0,7); ym < LEAVE_START; ym = shiftYm(ym,1)){
     if(e.joined && e.joined.slice(0,7) > ym) continue;
     let monthPL = 1, optHol = OPT_HOLIDAYS[ym] || 0;
     const [y0,m0] = ym.split("-").map(Number), dim0 = new Date(y0,m0,0).getDate();
     for(let d=1; d<=dim0; d++){ const ds = `${ym}-${pad(d)}`; if(isOff(ds) || (e.joined && ds < e.joined) || (e.exitDate && ds > e.exitDate)) continue;
       const st0 = statusOn(id, ds); if(st0 !== "L" && st0 !== "A" && st0 !== "HD") continue;
-      if(st0 === "HD"){
-        if(takeCo(ds, .5) || (optHol >= .5 && (optHol -= .5, optUsed[ym] = optUsed[ym] || ds, true)) || (monthPL >= .5 && (monthPL -= .5, preUsed[ym] = (preUsed[ym]||0) + .5, true))) halfCover.add(ds);
-        else { halfUnpaid.add(ds); unpaidNow += .5; }
-        continue;
-      }
-      if(takeCo(ds, 1)){ if(st0 === "A") coCover.add(ds); continue; }
-      if(optHol >= 1){ optHol--; optUsed[ym] = ds; if(st0 === "A") coCover.add(ds); continue; }   // optional holiday: one paid day off
-      if(st0 === "A") continue;
-      if(monthPL >= 1){ monthPL--; preUsed[ym] = (preUsed[ym]||0) + 1; } else { unpaid.add(ds); unpaidNow++; }
+      settle(ds, st0, (want, st) => { let got = 0;
+        const o = halves(optHol, want); if(o > 0){ optHol -= o; got += o; optUsed[ym] = optUsed[ym] || ds; }
+        if(st !== "A"){ const p = halves(monthPL, want - got); if(p > 0){ monthPL -= p; got += p; preUsed[ym] = (preUsed[ym]||0) + p; } }
+        return got; });
     }
   }
+  // November onwards: 1 paid leave a month, carried forward
   for(let ym = start; ym <= end; ym = shiftYm(ym,1)){
     if(ym >= eligYm){ bal += 1; if(ym <= nowYm) accruedNow++; }
     const [y,m] = ym.split("-").map(Number); const dim = new Date(y,m,0).getDate();
     for(let d=1; d<=dim; d++){
       const ds = `${ym}-${pad(d)}`; if(isOff(ds) || (e.joined && ds < e.joined) || (e.exitDate && ds > e.exitDate)) continue;
       const st0 = statusOn(id, ds); if(st0 !== "L" && st0 !== "A" && st0 !== "HD") continue;
-      // a half day uses half a day: comp off first, then paid leave; otherwise it's half a day's loss of pay
-      if(st0 === "HD"){
-        if(takeCo(ds, .5)){ halfCover.add(ds); if(ds <= today) coUsedNow += .5; else coBooked += .5; }
-        else if(bal >= .5){ bal -= .5; halfCover.add(ds); if(ym <= nowYm) usedNow += .5; else booked += .5; }
-        else { halfUnpaid.add(ds); if(ym <= nowYm) unpaidNow += .5; }
-        continue;
-      }
-      // leave and absent days use an available comp off first; leave then uses paid leave, then it's unpaid
-      if(takeCo(ds, 1)){ if(st0 === "A") coCover.add(ds); if(ds <= today) coUsedNow++; else coBooked++; continue; }
-      if(st0 === "A") continue;
-      if(bal >= 1){ bal--; if(ym <= nowYm) usedNow++; else booked++; } else { unpaid.add(ds); if(ym <= nowYm) unpaidNow++; }
+      settle(ds, st0, (want, st) => { if(st === "A") return 0; const p = halves(bal, want); if(p > 0){ bal -= p; if(ym <= nowYm) usedNow += p; else booked += p; } return p; });
     }
   }
-  return LEDGER[id] = {start, eligYm, waiting: eligYm > nowYm, coCover, halfCover, halfUnpaid, preUsed, optUsed, accrued:accruedNow, used:usedNow, balance:accruedNow-usedNow, booked, unpaid, unpaidNow,
+  return LEDGER[id] = {start, eligYm, waiting: eligYm > nowYm, cover, unpaidAmt, coCover, halfCover, halfUnpaid, preUsed, optUsed, accrued:accruedNow, used:usedNow, balance:accruedNow-usedNow, booked, unpaid, unpaidNow,
     co:(() => { const live = credits.filter(c => c.exp >= today);   // comp offs still usable today
       const free = live.filter(c => c.left > 0); const next = free.map(c => c.exp).sort()[0] || ""; const left = free.reduce((n, c) => n + c.left, 0);
       return {earned:live.length, used:live.reduce((n, c) => n + (1 - c.left), 0), booked:0, balance:left, free:left, dates:coDates, next, credits}; })()};
@@ -2307,7 +2308,7 @@ function payFor(id, ym){
     if(e.joined && ds < e.joined) continue; if(e.exitDate && ds > e.exitDate) continue;
     eligible++;
     const st = statusOn(id, ds);
-    if(st==="A"){ if(ledger(id).coCover.has(ds)) leave++; else lop+=1; } else if(st==="HD"){ present+=.5; if(ledger(id).halfCover.has(ds)) leave+=.5; else lop+=.5; } else if(st==="P") present++; else if(st==="L"){ if(ledger(id).unpaid.has(ds)){ lop+=1; leaveLop++; } else leave++; } else if(ds<=today) unmarked++;
+    if(st==="A"){ const cv = ledger(id).cover[ds]||0; leave+=cv; lop+=1-cv; } else if(st==="HD"){ present+=.5; const cv = ledger(id).cover[ds]||0; leave+=cv; lop+=.5-cv; } else if(st==="P") present++; else if(st==="L"){ const u = ledger(id).unpaidAmt[ds]||0; lop+=u; leaveLop+=u; leave+=1-u; } else if(ds<=today) unmarked++;
   }
   const lates = latesIn(id, ym), lateLop = lateLopDays(lates); lop += lateLop;
   const paid = Math.max(0, eligible - lop);
@@ -4855,7 +4856,7 @@ if("serviceWorker" in navigator){
 
 // Version check: whenever the app is opened or brought back to the front, ask GitHub for the latest version number.
 // If it is newer than what is running, reload (straight away if nothing is open, otherwise offer a button).
-window.APP_VERSION = "20261105102538";
+window.APP_VERSION = "20261105103256";
 (function(){
   let busy = false, shown = false;
   function bar(v){ if(shown) return; shown = true; const b = document.createElement("button"); b.className = "upd-bar"; b.textContent = "New version ready — tap to update"; b.onclick = () => go(v); document.body.appendChild(b); }
