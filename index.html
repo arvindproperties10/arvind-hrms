@@ -2519,12 +2519,16 @@ function draw(){
   const main = $("#main");
   const keepFocus = document.activeElement && document.activeElement.id ? document.activeElement.id : null;
   const selStart = keepFocus && document.activeElement.selectionStart;
-  main.innerHTML = banners() + (VIEWS[view] || VIEWS.dashboard)(); { const pm = document.getElementById("pushMenu"); if(pm) pm.innerHTML = ME ? pushMenu() : ""; }
+  const sameView = main.dataset.view === view;
+  const keepY = sameView ? {win:window.scrollY, main:main.scrollTop, inner:[...main.querySelectorAll(".scrollbox,.tablewrap,.slide,.days,.daypanel")].map(el => [el.scrollTop, el.scrollLeft])} : null;
+  main.innerHTML = banners() + (VIEWS[view] || VIEWS.dashboard)(); main.dataset.view = view; { const pm = document.getElementById("pushMenu"); if(pm) pm.innerHTML = ME ? pushMenu() : ""; }
   if(!canEditView(view)){ const hd = main.querySelector(".head"); if(hd) hd.insertAdjacentHTML("afterend", `<div class="banner info"><span><span class="pill mute">View only</span>&nbsp; You can look at this section but not change it.</span></div>`); }
   lockRO(main, view); enhanceNumbers(main); enhanceDates(main); enhanceSort(main); camAttach();
   main.classList.toggle("fit", !!main.querySelector(":scope > .fill") && !matchMedia("(max-width:760px)").matches);
   refreshIncModal(); UI.incDir = ""; if(flash) setTimeout(()=>{ flash=""; }, 0);
-  if(keepFocus){ const el=document.getElementById(keepFocus); if(el && main.contains(el)){ el.focus(); try{ if(selStart!=null) el.setSelectionRange(selStart,selStart); }catch(_){} } }
+  if(keepY){ const inner = [...main.querySelectorAll(".scrollbox,.tablewrap,.slide,.days,.daypanel")]; keepY.inner.forEach(([t,l], i) => { if(inner[i]){ inner[i].scrollTop = t; inner[i].scrollLeft = l; } }); main.scrollTop = keepY.main; if(window.scrollY !== keepY.win) window.scrollTo(0, keepY.win); }
+  else { main.scrollTop = 0; window.scrollTo(0, 0); }
+  if(keepFocus){ const el=document.getElementById(keepFocus); if(el && main.contains(el)){ el.focus({preventScroll:true}); try{ if(selStart!=null) el.setSelectionRange(selStart,selStart); }catch(_){} } }
 }
 
 // ---------- table sorting ----------
@@ -4786,7 +4790,7 @@ if("serviceWorker" in navigator){
 
 // Version check: whenever the app is opened or brought back to the front, ask GitHub for the latest version number.
 // If it is newer than what is running, reload (straight away if nothing is open, otherwise offer a button).
-window.APP_VERSION = "20261105052819";
+window.APP_VERSION = "20261105053026";
 (function(){
   let busy = false, shown = false;
   function bar(v){ if(shown) return; shown = true; const b = document.createElement("button"); b.className = "upd-bar"; b.textContent = "New version ready — tap to update"; b.onclick = () => go(v); document.body.appendChild(b); }
