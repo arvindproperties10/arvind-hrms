@@ -3306,7 +3306,7 @@ if(window.__NOW) window.__T = () => ({latesIn, statusOn, ciEval, ciFor, S, UI, t
 // 1 comp off is earned for each weekly off or company holiday on which the employee actually checked in on the app
 // (HR marks and permission-added check-ins don't count). Comp offs are used by applying for leave of type "Comp off".
 const COMP_FROM = "2026-10-01";
-const OPT_HOLIDAYS = {"2026-10": 1};   // optional holidays given for a month: one paid day off, used on the first leave / absent day not covered by a comp off   // comp offs count from October 2026
+const OPT_HOLIDAYS = {};   // extra optional holidays per month (none: October's optional holiday is its 1 paid leave)
 const INC_WAIT_MONTHS = 3;    // new joiners earn no incentives for their first 3 months unless HR waives it
 const incFromYm = e => e.joined ? shiftYm(e.joined.slice(0,7), INC_WAIT_MONTHS) : "";
 const incEligible = (e, ym) => !e || !e.joined || e.incWaive || ym >= incFromYm(e);
@@ -4853,7 +4853,7 @@ if("serviceWorker" in navigator){
 
 // Version check: whenever the app is opened or brought back to the front, ask GitHub for the latest version number.
 // If it is newer than what is running, reload (straight away if nothing is open, otherwise offer a button).
-window.APP_VERSION = "20261105080640";
+window.APP_VERSION = "20261105080956";
 (function(){
   let busy = false, shown = false;
   function bar(v){ if(shown) return; shown = true; const b = document.createElement("button"); b.className = "upd-bar"; b.textContent = "New version ready — tap to update"; b.onclick = () => go(v); document.body.appendChild(b); }
