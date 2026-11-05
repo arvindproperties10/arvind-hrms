@@ -2233,7 +2233,7 @@ function ledger(id){
   const eligYm = start;   // paid leave accrues from the joining month (the 3-month wait applies to incentives, not leave)
   const coDates = compEarned(id); let coUsedNow = 0, coBooked = 0;
   const credits = coDates.map(d => ({d, from:d.slice(0,8) + "01", exp:compExpiry(d), left:1, used:false}));
-  const coCover = new Set(), halfCover = new Set(), preUsed = {}, optUsed = {};
+  const coCover = new Set(), halfCover = new Set(), halfUnpaid = new Set(), preUsed = {}, optUsed = {};
   const takeCo = (ds, amt) => { const cr = credits.filter(c => c.left >= amt && c.from <= ds && ds <= c.exp).sort((a,b) => a.exp.localeCompare(b.exp))[0]; if(!cr) return false; cr.left -= amt; cr.used = cr.left < 1; cr.on = cr.on ? cr.on : ds; return true; };   // absent days covered by a comp off; paid leave used in October   // covers leave from the 1st of its month (even before it was earned) to its expiry   // each comp off lasts to the end of its month, or the end of its week if later
   const nowYm = today.slice(0,7); let end = nowYm;
   for(const l of Object.values(S.leaves)) if(l.empId===id && l.status==="approved" && l.to && l.to.slice(0,7) > end) end = l.to.slice(0,7);
@@ -2249,12 +2249,13 @@ function ledger(id){
       const st0 = statusOn(id, ds); if(st0 !== "L" && st0 !== "A" && st0 !== "HD") continue;
       if(st0 === "HD"){
         if(takeCo(ds, .5) || (optHol >= .5 && (optHol -= .5, optUsed[ym] = optUsed[ym] || ds, true)) || (monthPL >= .5 && (monthPL -= .5, preUsed[ym] = (preUsed[ym]||0) + .5, true))) halfCover.add(ds);
+        else { halfUnpaid.add(ds); unpaidNow += .5; }
         continue;
       }
       if(takeCo(ds, 1)){ if(st0 === "A") coCover.add(ds); continue; }
       if(optHol >= 1){ optHol--; optUsed[ym] = ds; if(st0 === "A") coCover.add(ds); continue; }   // optional holiday: one paid day off
       if(st0 === "A") continue;
-      if(monthPL >= 1){ monthPL--; preUsed[ym] = (preUsed[ym]||0) + 1; } else unpaid.add(ds);
+      if(monthPL >= 1){ monthPL--; preUsed[ym] = (preUsed[ym]||0) + 1; } else { unpaid.add(ds); unpaidNow++; }
     }
   }
   for(let ym = start; ym <= end; ym = shiftYm(ym,1)){
@@ -2267,6 +2268,7 @@ function ledger(id){
       if(st0 === "HD"){
         if(takeCo(ds, .5)){ halfCover.add(ds); if(ds <= today) coUsedNow += .5; else coBooked += .5; }
         else if(bal >= .5){ bal -= .5; halfCover.add(ds); if(ym <= nowYm) usedNow += .5; else booked += .5; }
+        else { halfUnpaid.add(ds); if(ym <= nowYm) unpaidNow += .5; }
         continue;
       }
       // leave and absent days use an available comp off first; leave then uses paid leave, then it's unpaid
@@ -2275,7 +2277,7 @@ function ledger(id){
       if(bal >= 1){ bal--; if(ym <= nowYm) usedNow++; else booked++; } else { unpaid.add(ds); if(ym <= nowYm) unpaidNow++; }
     }
   }
-  return LEDGER[id] = {start, eligYm, waiting: eligYm > nowYm, coCover, halfCover, preUsed, optUsed, accrued:accruedNow, used:usedNow, balance:accruedNow-usedNow, booked, unpaid, unpaidNow,
+  return LEDGER[id] = {start, eligYm, waiting: eligYm > nowYm, coCover, halfCover, halfUnpaid, preUsed, optUsed, accrued:accruedNow, used:usedNow, balance:accruedNow-usedNow, booked, unpaid, unpaidNow,
     co:(() => { const live = credits.filter(c => c.exp >= today);   // comp offs still usable today
       const free = live.filter(c => c.left > 0); const next = free.map(c => c.exp).sort()[0] || ""; const left = free.reduce((n, c) => n + c.left, 0);
       return {earned:live.length, used:live.reduce((n, c) => n + (1 - c.left), 0), booked:0, balance:left, free:left, dates:coDates, next, credits}; })()};
@@ -4853,7 +4855,7 @@ if("serviceWorker" in navigator){
 
 // Version check: whenever the app is opened or brought back to the front, ask GitHub for the latest version number.
 // If it is newer than what is running, reload (straight away if nothing is open, otherwise offer a button).
-window.APP_VERSION = "20261105080956";
+window.APP_VERSION = "20261105102538";
 (function(){
   let busy = false, shown = false;
   function bar(v){ if(shown) return; shown = true; const b = document.createElement("button"); b.className = "upd-bar"; b.textContent = "New version ready — tap to update"; b.onclick = () => go(v); document.body.appendChild(b); }
