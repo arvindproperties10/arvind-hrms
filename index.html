@@ -2247,6 +2247,7 @@ function fail(e){ console.error(e); const c=e&&e.code; toast(c==="invalid_argume
 const empList = () => Object.entries(S.emps).map(([id,e])=>({id,...e})).sort((a,b)=>(a.code||"").localeCompare(b.code||""));
 const activeOn = (e, d) => e.status !== "Exited" && (!e.joined || e.joined <= d) && (!e.exitDate || e.exitDate >= d);
 const activeEmps = (d=today) => empList().filter(e => activeOn(e,d));
+const realEmps = (d=today) => activeEmps(d).filter(e => !e.test);   // test accounts left out of counts and incentives
 function leaveOn(id, d){ return Object.values(S.leaves).find(l => l.empId===id && l.status==="approved" && l.from<=d && l.to>=d); }
 function statusOn(id, d){ const m = S.att[d]?.marks?.[id]; if(m) return m; if(leaveOn(id,d)) return "L"; const c = ciEval(ciFor(id, d)); if(c) return (c.noOut && d < today) ? "HD" : c.st; if(autoAbsent(id, d)) return "A"; return null; }
 // Paid-leave ledger: +1 at the start of every month from LEAVE_START (or the joining month), leave days use the balance in date order,
@@ -2350,7 +2351,7 @@ function payList(ym){
   ensureMonth(ym);
   if(runFinal(ym)) return Object.entries(S.runs[ym].rows||{}).map(([id,r]) => ({e:{id, ...(S.emps[id]||{}), name:S.emps[id]?.name||r.name, code:S.emps[id]?.code||r.code, dept:normDept(r.dept), designation:r.designation}, p:r})).sort((a,b)=>(a.e.code||"").localeCompare(b.e.code||""));
   const [y,m] = ym.split("-").map(Number); const first=`${ym}-01`, last=`${ym}-${pad(new Date(y,m,0).getDate())}`;
-  return empList().filter(e => (!e.joined||e.joined<=last) && (!e.exitDate||e.exitDate>=first) && !(e.status==="Exited" && !e.exitDate)).map(e => ({e, p:payFor(e.id, ym)}));
+  return empList().filter(e => !e.test && (!e.joined||e.joined<=last) && (!e.exitDate||e.exitDate>=first) && !(e.status==="Exited" && !e.exitDate)).map(e => ({e, p:payFor(e.id, ym)}));
 }
 
 // ---------- writes ----------
@@ -2405,18 +2406,24 @@ function resetData(){
   USERS = {}; APP = {}; DIR_LOADED = false; CI_LOADED.clear(); CI_FROM = ""; loaded.emp = false; LEDGER = {}; OFF_CI.clear();
 }
 const intoMap = (target, s, key = d => d.id) => { s.docs.forEach(d => target[key(d)] = d.data()); };
+const TEST_IDS = new Set();
+const isTestEmp = id => TEST_IDS.has(id);
+// someone other than the owner: drop a test employee's requests, check-ins and marks from what's loaded
+function hideTest(){ if(isOwnerV || !TEST_IDS.size) return;
+  for(const m of [S.leaves, S.perms, S.ci]) for(const [k,v] of Object.entries(m||{})) if(v && TEST_IDS.has(v.empId)) delete m[k];
+  for(const a of Object.values(S.att||{})) if(a?.marks) for(const t of TEST_IDS) delete a.marks[t]; }
 function subscribe(){
   sub(db.collection("holidays").onSnapshot(sn => { for(const k of Object.keys(HOL)) delete HOL[k]; sn.docs.forEach(d=>{ const v=d.data(); if(v && v.date) HOL[v.date]=v; }); render(); }, quiet));
   sub(db.doc("config/app").onSnapshot(d => { APP = d.exists ? d.data() : {}; render(); }, quiet));
   const me = ME.empId || "";
   if(isStaffU()){
-    sub(db.collection("employees").onSnapshot(s => { S.emps={}; s.docs.forEach(d=>{ const x=d.data(); if(x.dept) x.dept=normDept(x.dept); S.emps[d.id]=x; }); loaded.emp=true; queueDirSync(); render(); }, quiet));
+    sub(db.collection("employees").onSnapshot(s => { S.emps={}; TEST_IDS.clear(); s.docs.forEach(d=>{ const x=d.data(); if(x.test) TEST_IDS.add(d.id); if(x.test && !isOwnerV) return; if(x.dept) x.dept=normDept(x.dept); S.emps[d.id]=x; }); loaded.emp=true; hideTest(); queueDirSync(); render(); }, quiet));
     sub(db.collection("attendance").onSnapshot(s => { S.att={}; intoMap(S.att, s); render(); }, quiet));
-    sub(db.collection("leaves").onSnapshot(s => { S.leaves={}; intoMap(S.leaves, s); render(); }, quiet));
-    sub(db.collection("perms").where("date", ">=", shiftYm(today.slice(0,7), -2) + "-01").onSnapshot(s => { S.perms={}; intoMap(S.perms, s); render(); }, quiet));
+    sub(db.collection("leaves").onSnapshot(s => { S.leaves={}; intoMap(S.leaves, s); hideTest(); render(); }, quiet));
+    sub(db.collection("perms").where("date", ">=", shiftYm(today.slice(0,7), -2) + "-01").onSnapshot(s => { S.perms={}; intoMap(S.perms, s); hideTest(); render(); }, quiet));
     sub(db.doc("data/hr/config/payroll").onSnapshot(d => { S.cfgDoc = d.exists ? d.data() : {}; render(); }, quiet));
     CI_FROM = shiftYm(today.slice(0,7), -1) + "-01";
-    sub(db.collection("checkins").where("date", ">=", CI_FROM).onSnapshot(s => { for(const k of Object.keys(S.ci)) if(k >= CI_FROM) delete S.ci[k]; intoMap(S.ci, s); render(); }, quiet));
+    sub(db.collection("checkins").where("date", ">=", CI_FROM).onSnapshot(s => { for(const k of Object.keys(S.ci)) if(k >= CI_FROM) delete S.ci[k]; intoMap(S.ci, s); hideTest(); render(); }, quiet));
     if(canSee("payroll")){
       sub(db.collection("data/hr/salaries").onSnapshot(s => { S.sal={}; intoMap(S.sal, s); render(); }, quiet));
       sub(db.collection("data/hr/payruns").onSnapshot(s => { S.runs={}; intoMap(S.runs, s); render(); }, quiet));
@@ -2455,7 +2462,7 @@ function dirEntry(id, e){ const tl = S.emps[e.reportsTo]; return {name:e.name||"
 function queueDirSync(){ clearTimeout(dirTimer); dirTimer = setTimeout(syncDirectory, 1500); }
 async function syncDirectory(){
   if(!db || !loaded.emp || !DIR_LOADED || !canEditView("employees")) return;
-  const want = {}; for(const [id,e] of Object.entries(S.emps)) if(e.status!=="Exited" && e.name) want[id] = dirEntry(id, e);
+  const want = {}; for(const [id,e] of Object.entries(S.emps)) if(!e.test && e.status!=="Exited" && e.name) want[id] = dirEntry(id, e);
   const ops = [];
   const pick = x => x ? {name:x.name||"", code:x.code||"", designation:x.designation||"", dept:x.dept||"", team:x.team||"", location:x.location||"", companyPhone:x.companyPhone||"", bday:x.bday||""} : null;
   for(const [id,d] of Object.entries(want)) if(JSON.stringify(d) !== JSON.stringify(pick(S.dir[id]))) ops.push({op:"set", path:"directory/"+id, data:d});
@@ -3207,7 +3214,7 @@ function dateBar(id, value, act){
   </div>`;
 }
 function head(title, sub, tools=""){ return `<div class="head"><div><h1>${title}</h1>${sub?`<p>${sub}</p>`:""}</div><div class="tools">${tools}</div></div>`; }
-function who(e, extra){ return `<div class="who"><span class="av">${esc(initials(e.name))}</span><div><b>${esc(e.name)} ${e.sample?'<span class="pill sample">Sample</span>':""}</b><small>${esc(extra ?? e.designation ?? "")}</small></div></div>`; }
+function who(e, extra){ return `<div class="who"><span class="av">${esc(initials(e.name))}</span><div><b>${esc(e.name)} ${e.sample?'<span class="pill sample">Sample</span>':""}${e.test?'<span class="pill sample">Test</span>':""}</b><small>${esc(extra ?? e.designation ?? "")}</small></div></div>`; }
 function statusPill(st){ return st==="P"?`<span class="pill ok">Present</span>`:st==="HD"?`<span class="pill warn">Half day</span>`:st==="A"?`<span class="pill bad">Absent</span>`:st==="L"?`<span class="pill leave">On leave</span>`:`<span class="pill mute">Not marked</span>`; }
 
 // ---------- permissions: late arrival, early leave, forgot check-in / check-out ----------
@@ -3831,7 +3838,7 @@ setInterval(() => { try{ if(ME && Object.keys(S.emps||{}).length) bdayCheck(); }
 const VIEWS = {
 access(){ return accessView(); },
 dashboard(){
-  const d = today; const act = activeEmps(d);
+  const d = today; const act = realEmps(d);
   const dayName = parse(d).toLocaleDateString("en-IN",{weekday:"long", day:"numeric", month:"long"});
   if(connected && loaded.emp && !act.length) return head("Overview", dayName) + `<div class="panel"><h2>No employees yet</h2><p class="empty">Add your first employee to start tracking attendance, leave and payroll.</p><div>${canWrite?`<button class="btn primary" data-act="new-emp">Add employee</button>`:""}</div></div>`;
   let p=0,l=0,a=0,u=0; act.forEach(e=>{ const s=statusOn(e.id,d); if(s==="P"||s==="HD") p++; else if(s==="L") l++; else if(s==="A") a++; else u++; });
@@ -3839,7 +3846,7 @@ dashboard(){
   const off = isOff(d);
   // last 14 working days with marks
   const days=[]; for(let i=0, dt=parse(d); days.length<14 && i<40; i++, dt.setDate(dt.getDate()-1)){ const s=iso(dt); if(!isOff(s)) days.unshift(s); }
-  const pts = days.map(s => { const list=activeEmps(s); const marked=list.filter(e=>statusOn(e.id,s)); const pr=list.reduce((t,e)=>{const st=statusOn(e.id,s); return t+(st==="P"?1:st==="HD"?.5:0);},0); return {s, pct: marked.length? Math.round(pr/list.length*100) : null}; });
+  const pts = days.map(s => { const list=realEmps(s); const marked=list.filter(e=>statusOn(e.id,s)); const pr=list.reduce((t,e)=>{const st=statusOn(e.id,s); return t+(st==="P"?1:st==="HD"?.5:0);},0); return {s, pct: marked.length? Math.round(pr/list.length*100) : null}; });
   const bars = `<div class="bars">${[100,50].map(v=>`<div class="gl" style="bottom:${v}%"><span>${v}%</span></div>`).join("")}${pts.map((x,i)=>`<div class="bar ${i===pts.length-1?"last":""}" style="height:${x.pct??0}%" title="${fmtDs(x.s)}: ${x.pct==null?"not marked":x.pct+"% present"}"></div>`).join("")}</div><div class="barlabels">${pts.map(x=>`<span>${parse(x.s).getDate()}</span>`).join("")}</div>`;
   const depts = DEPTS.map(dep => { const es=act.filter(e=>e.dept===dep); if(!es.length) return ""; const c={P:0,L:0,A:0,U:0}; es.forEach(e=>{const s=statusOn(e.id,d); if(s==="P"||s==="HD")c.P++; else if(s==="L")c.L++; else if(s==="A")c.A++; else c.U++;}); const w=k=>c[k]/es.length*100; return `<div class="deptrow"><span class="nm">${esc(dep)}</span><span class="n">${es.length}</span><div class="stack"><i style="width:${w("P")}%;background:var(--ok)"></i><i style="width:${w("L")}%;background:var(--leave)"></i><i style="width:${w("A")}%;background:var(--bad)"></i></div></div>`; }).join("");
   const ann = act.filter(e=>e.joined && e.joined.slice(5,7)===d.slice(5,7) && e.joined.slice(0,4)<d.slice(0,4)).map(e=>`<div class="req"><div>${who(e)}</div><span class="pill sample">${Number(d.slice(0,4))-Number(e.joined.slice(0,4))} yr · ${fmtDs(e.joined)}</span></div>`).join("");
@@ -4039,7 +4046,7 @@ function incModalHtml(id){
 
 function regPanel(ym, done){
   const rows = regOfMonth(ym); const tot = rows.reduce((t,r)=>t+(+r.sqft||0),0);
-  const tcs = activeEmps().filter(e=>isTele(e.dept)), ses = activeEmps().filter(e=>isSalesR(e.dept)).sort(byRank);
+  const tcs = realEmps().filter(e=>isTele(e.dept)), ses = realEmps().filter(e=>isSalesR(e.dept)).sort(byRank);
   const opt = (list, v) => `<option value="">Not assigned</option>${list.map(e=>`<option value="${e.id}" ${v===e.id?"selected":""}>${esc(e.name)}</option>`).join("")}`;
   const ro = done ? "disabled" : "";
   const unassigned = rows.filter(r=>!r.tc && !r.se).length;
@@ -4084,7 +4091,7 @@ function parseCsv(t){
 }
 function matchEmp(name, dept){
   const n = String(name||"").trim().toLowerCase(); if(!n) return "";
-  const pool = activeEmps().filter(e => !dept || (typeof dept==="function" ? dept(e.dept) : e.dept===dept));
+  const pool = realEmps().filter(e => !dept || (typeof dept==="function" ? dept(e.dept) : e.dept===dept));
   const hit = pool.find(e=>e.name.toLowerCase()===n) || pool.find(e=>e.name.toLowerCase().split(/\s+/)[0]===n.split(/\s+/)[0]);
   return hit ? hit.id : "";
 }
@@ -4263,6 +4270,7 @@ function empDrawer(id){
       ${sel("status","Status",["Active","On notice","Exited"],e.status||"Active")}
       ${fld("exitDate","Last working day","date")}
       <label class="ceo-flag full" style="max-width:none"><input type="checkbox" id="f_waive" ${e.incWaive?"checked":""} ${ro}> <span><b>Waive the 3-month wait for incentives</b><small>${incWaitTxt(e)}</small></span></label>
+      ${isOwnerV ? `<label class="ceo-flag full" style="max-width:none"><input type="checkbox" id="f_test" ${e.test?"checked":""}> <span><b>Test account</b><small>Only you (the administrator) can see this employee. Kept out of payroll, incentives, the team directory and everyone else's screens. Use it to try the app as an employee.</small></span></label>` : ""}
       <label class="ceo-flag full" style="max-width:none"><input type="checkbox" id="f_field" ${e.fieldOk?"checked":""} ${ro}> <span><b>Field check-in</b><small>Can check in and out from anywhere, such as client sites. Location and selfie are still recorded, and they note where they are.</small></span></label>
       <label class="ceo-flag full" style="max-width:none"><input type="checkbox" id="f_incElig" ${e.noIncentive?"":"checked"} ${NO_INCENTIVE.has(e.dept)?"disabled":""} ${ro}> <span><b>Eligible for incentives</b><small>${NO_INCENTIVE.has(e.dept)?`${esc(e.dept)} staff don't earn incentives.`:"Untick to leave this person out of the Incentives screen and exports."}</small></span></label>
     </div>
@@ -4289,7 +4297,7 @@ async function saveEmp(){
   if(!id0 && S.emps[id]) id = "emp-" + Date.now().toString(36);
   const status=v("status"); let exitDate=v("exitDate");
   if(status==="Exited" && !exitDate) exitDate = today;
-  const doc = {...(id0?S.emps[id0]:{}), name, code, designation:v("designation"), dept:v("dept"), reportsTo:v("reportsTo"), reportingTo:v("reportingTo"), location:v("location"), phone:v("phone"), companyPhone:v("companyPhone"), email:v("email"), joined:v("joined"), dob:v("dob"), status, exitDate, noIncentive: !($("#f_incElig")?.checked ?? true), fieldOk: !!$("#f_field")?.checked, incWaive: !!$("#f_waive")?.checked, updatedAt:new Date().toISOString()};
+  const doc = {...(id0?S.emps[id0]:{}), name, code, designation:v("designation"), dept:v("dept"), reportsTo:v("reportsTo"), reportingTo:v("reportingTo"), location:v("location"), phone:v("phone"), companyPhone:v("companyPhone"), email:v("email"), joined:v("joined"), dob:v("dob"), status, exitDate, noIncentive: !($("#f_incElig")?.checked ?? true), fieldOk: !!$("#f_field")?.checked, test: isOwnerV ? !!$("#f_test")?.checked : !!(id0 && S.emps[id0]?.test), incWaive: !!$("#f_waive")?.checked, updatedAt:new Date().toISOString()};
   const btn = document.querySelector('[data-act="save-emp"]'); btn.disabled = true;
   try{
     await db.collection("employees").doc(id).set(doc);
@@ -4562,7 +4570,7 @@ function ratesDrawer(){
     <div class="formgrid">${INC_ROLES.map((r,i)=>`<div class="field"><label for="r_s${i}">${r==="Others"?"Administration, Accounts":r==="Tele Calling"?"Tele callers (other grades)":r}</label><input id="r_s${i}" type="number" min="0" step="0.5" value="${R0.sqft[r]}"></div>`).join("")}<div class="field"><label for="r_g1">Tele-Calling Executive Grade 1</label><input id="r_g1" type="number" min="0" step="0.5" value="${R0.sqftG1}"></div></div>
     <div class="sect">Individual sq ft rates</div>
     <p class="note" style="margin:0">Leave blank to use the role's rate above.</p>
-    <div class="formgrid">${activeEmps().filter(e=>!isTele(e.dept) && !NO_INCENTIVE.has(e.dept)).sort((a,b)=>DEPTS.indexOf(a.dept)-DEPTS.indexOf(b.dept)||byRank(a,b)).map(e=>`<div class="field"><label for="re_${e.id}">${esc(e.name)} · ₹ per sq ft</label><input id="re_${e.id}" type="number" min="0" step="0.5" value="${e.id in R0.sqftEmp ? R0.sqftEmp[e.id] : ""}" placeholder="${R0.sqft[roleKey(e)]} (role rate)"></div>`).join("")}</div>
+    <div class="formgrid">${realEmps().filter(e=>!isTele(e.dept) && !NO_INCENTIVE.has(e.dept)).sort((a,b)=>DEPTS.indexOf(a.dept)-DEPTS.indexOf(b.dept)||byRank(a,b)).map(e=>`<div class="field"><label for="re_${e.id}">${esc(e.name)} · ₹ per sq ft</label><input id="re_${e.id}" type="number" min="0" step="0.5" value="${e.id in R0.sqftEmp ? R0.sqftEmp[e.id] : ""}" placeholder="${R0.sqft[roleKey(e)]} (role rate)"></div>`).join("")}</div>
     <div class="sect">Top performer bonus · one per team each month</div>
     <div class="formgrid"><div class="field"><label for="r_top">Team top performer bonus (₹)</label><input id="r_top" type="number" min="0" step="500" value="${R0.topBonus}"></div>
     <div class="field"><label for="r_overall">Overall top tele caller bonus (₹)</label><input id="r_overall" type="number" min="0" step="500" value="${R0.overallBonus}"><span class="note">Extra, across both teams.</span></div>
@@ -4930,7 +4938,7 @@ if("serviceWorker" in navigator){
 
 // Version check: whenever the app is opened or brought back to the front, ask GitHub for the latest version number.
 // If it is newer than what is running, reload (straight away if nothing is open, otherwise offer a button).
-window.APP_VERSION = "20261106104548";
+window.APP_VERSION = "20261106105442";
 (function(){
   let busy = false, shown = false;
   function bar(v){ if(shown) return; shown = true; const b = document.createElement("button"); b.className = "upd-bar"; b.textContent = "New version ready — tap to update"; b.onclick = () => go(v); document.body.appendChild(b); }

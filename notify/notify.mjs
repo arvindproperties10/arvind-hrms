@@ -89,7 +89,8 @@ if (fresh.length || decided.length) {
   for (const x of fresh) {
     const who = empName(E, x.empId, x.name);
     const what = x.kind === "leave" ? `${x.type === "CO" ? "comp off" : "leave"} for ${x.days || 1} day${(x.days || 1) === 1 ? "" : "s"} from ${x.from}` : `${PERM_NAME[x.type] || "permission"} on ${x.date}`;
-    queue(approvers(), `New request from ${who}`, `${who} asked for ${what}. Tap to review.`, x.k, APP_URL + "#leave");
+    const toWhom = E[x.empId]?.test ? USERS.filter(u => u.role === "owner") : approvers();   // test accounts: only the owner hears about them
+    queue(toWhom, `New request from ${who}`, `${who} asked for ${what}. Tap to review.`, x.k, APP_URL + "#leave");
     mark(x.k);
   }
   for (const x of decided) {
