@@ -146,4 +146,8 @@ for (const m of outbox) {
 }
 for (const t of dead) await db.doc("pushTokens/" + t).delete().catch(() => {});
 await stateRef.set({ sent, lastRun: FieldValue.serverTimestamp(), lastIST: `${today} ${hm12(now.mins)}` });
+await people();
+{ const withPh = USERS.filter(u => (TOKENS[u.uid] || []).length), emp = withPh.filter(u => u.empId).length;   // counts only: this log is public
+  const orphan = Object.keys(TOKENS).filter(uid => !USERS.some(u => u.uid === uid)).length;
+  console.log(`phones registered: ${Object.values(TOKENS).flat().length} · logins with a phone: ${withPh.length} (${emp} linked to an employee) of ${USERS.length}${orphan ? ` · ${orphan} phone(s) on logins that are off or missing` : ""}`); }
 console.log(`${today} ${hm12(now.mins)} · ${outbox.length} message(s) · ${ok} delivered · ${bad} failed · ${dead.size} old phone(s) removed${firstRun ? " · first run (existing requests skipped)" : ""}`);
