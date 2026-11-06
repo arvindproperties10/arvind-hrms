@@ -4,7 +4,12 @@ name: Notifications
 on:
   schedule:
     - cron: "*/10 * * * *"
-  workflow_dispatch: {}
+  workflow_dispatch:
+    inputs:
+      test_to:
+        description: "Send one test notification to this login id only (leave empty for a normal run)"
+        required: false
+        default: ""
 concurrency:
   group: notify
   cancel-in-progress: false
@@ -23,3 +28,4 @@ jobs:
       - run: node notify/notify.mjs
         env:
           FIREBASE_SA: ${{ secrets.FIREBASE_SA }}
+          TEST_TO: ${{ github.event.inputs.test_to }}

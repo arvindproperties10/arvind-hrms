@@ -27,6 +27,17 @@ const WEEKLY_OFF = 2, FLEX_FROM = 9 * 60 + 30, GRACE = 10 * 60 + 15, HOURS = 8 *
 const reqOut = inM => Math.min(Math.max(inM, FLEX_FROM), GRACE) + HOURS;
 const PERM_NAME = { late: "late arrival", early: "early leave", in: "forgot check-in", out: "forgot check-out", back: "backdated check-in" };
 
+// ---- test mode (run by hand with a login's id): one test message to that login's phones, nothing else ----
+if (process.env.TEST_TO) {
+  const t = await db.collection("pushTokens").where("uid", "==", process.env.TEST_TO).get();
+  const tokens = t.docs.map(d => d.id);
+  if (!tokens.length) { console.log("test: this login has no phone with notifications turned on"); process.exit(0); }
+  const r = await fcm.sendEachForMulticast({ tokens, data: { title: "Test: notifications are working ✅", body: "This is a test from Srigandha Properties HRMS. Reminders and approvals will arrive like this.", tag: "test", url: APP_URL }, webpush: { headers: { Urgency: "high", TTL: "3600" } } });
+  r.responses.forEach((x, i) => { if (!x.success) console.log("test: phone", i + 1, "failed:", x.error?.code || "unknown"); });
+  console.log(`test: sent to ${tokens.length} phone(s) · ${r.successCount} delivered · ${r.failureCount} failed`);
+  process.exit(0);
+}
+
 const now = ist(process.env.TEST_NOW ? new Date(process.env.TEST_NOW) : new Date()), today = now.date;   // TEST_NOW is only for testing
 
 // ---- what has already been sent (one small document) ----
