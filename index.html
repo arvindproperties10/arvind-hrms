@@ -2224,7 +2224,7 @@ html.lg.lg-off body .tabbar,html.lg.lg-off body .mtop,html.lg.lg-off body .drawe
 html.lg-off body main > .lg-in{animation:none!important}
 
 /* 9 — page switches (View Transitions): chrome swaps in place, only the page content moves */
-html.lg main#main{view-transition-name:page}
+/* (view transitions not used for tab switches: they pause the screen while the page builds) */
 ::view-transition-old(root),::view-transition-new(root){animation:none}
 ::view-transition-group(page){animation-duration:.56s}
 ::view-transition-old(page){animation:vtOut .12s cubic-bezier(.4,0,1,1) both}
@@ -2232,6 +2232,20 @@ html.lg main#main{view-transition-name:page}
 @keyframes vtOut{to{opacity:0;transform:scale(.985)}}
 @keyframes vtIn{from{opacity:0;transform:translateY(16px) scale(.99)}to{opacity:1;transform:none}}
 @media (prefers-reduced-motion:reduce){::view-transition-group(*),::view-transition-old(*),::view-transition-new(*){animation:none!important}}
+
+/* 10 — tab bar motion: colour and icon ease between tabs; the droplet moves by script (GPU transform only) */
+@media (max-width:760px){
+  html.lg body .lg-pill{transition:opacity .2s!important;transform-origin:50% 50%;backface-visibility:hidden}
+  html.lg body .tabbar a,html.lg body .tabbar button{transition:color .3s cubic-bezier(.2,.8,.2,1),transform .35s cubic-bezier(.2,1.5,.4,1)!important}
+  html.lg body .tabbar button[aria-current="page"]{color:var(--accent)!important}
+  html.lg body .tabbar a svg,html.lg body .tabbar button svg{transition:transform .5s cubic-bezier(.2,1.6,.4,1)!important}
+  html.lg body .tabbar [aria-current="page"] svg{transform:scale(1.08)}
+  html.lg body .tabbar svg.lg-pop{animation:lgPop .5s cubic-bezier(.2,1.6,.4,1)}
+  html.lg body .tabbar a span,html.lg body .tabbar button span{transition:font-weight .2s}
+}
+@keyframes lgPop{0%{transform:scale(.82)}55%{transform:scale(1.16)}100%{transform:scale(1.08)}}
+/* taps keep working while a page cross-fade is running */
+::view-transition{pointer-events:none}
 </style>
 </head>
 <body>
@@ -2830,10 +2844,20 @@ function renderTabbar(){
   document.body.classList.toggle("has-tabbar", emp || staff);
   if(!emp && !staff){ tb.hidden = true; return; }
   tb.hidden = false;
-  if(emp){ tb.innerHTML = TABS.filter(([v]) => canSee(v)).map(t => tabLink(t, view===t[0] || (t[0]==="myslips" && view==="myinc"))).join(""); return; }
+  if(emp){ setTabs(tb, TABS.filter(([v]) => canSee(v)).map(t => [t, view===t[0] || (t[0]==="myslips" && view==="myinc")])); return; }
   const picks = STAFF_TABS.filter(([v]) => canSee(v)).slice(0, 4);
   const inMore = !picks.some(([v]) => v===view);
-  tb.innerHTML = picks.map(t => tabLink(t, view===t[0])).join("") + `<button type="button" data-act="tab-more" ${inMore?'aria-current="page" style="color:var(--accent);background:rgba(0,113,227,.10)"':""}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">${MORE_IC}</svg><span>More</span></button>`;
+  setTabs(tb, picks.map(t => [t, view===t[0]]), inMore);
+}
+function setTabs(tb, items, moreCur){
+  const sig = items.map(([t]) => t[0]).join(",") + (moreCur === undefined ? "" : "|more");
+  if(tb.dataset.sig !== sig){
+    tb.innerHTML = items.map(([t,c]) => tabLink(t,c)).join("") + (moreCur === undefined ? "" : `<button type="button" data-act="tab-more" ${moreCur?'aria-current="page"':""}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">${MORE_IC}</svg><span>More</span></button>`);
+    tb.dataset.sig = sig; return;
+  }
+  const mark = (el, on) => { if(!el) return; if(on){ if(el.getAttribute("aria-current") !== "page") el.setAttribute("aria-current","page"); } else if(el.hasAttribute("aria-current")) el.removeAttribute("aria-current"); };
+  items.forEach(([t,c]) => mark(tb.querySelector(`a[data-v="${t[0]}"]`), c));
+  if(moreCur !== undefined) mark(tb.querySelector('[data-act="tab-more"]'), moreCur);
 }
 function renderShell(){
   renderTabbar();
@@ -4939,10 +4963,7 @@ addEventListener("resize", () => { if(!isPhone()) setNav(false); });
 function route(){
   const h=(location.hash||"").slice(1), next = VALID.includes(h)?h:(ME && !isStaffU() ? "checkin" : "dashboard");
   const apply = () => { view = next; ckReset(); closeDrawer(); if(raf){ cancelAnimationFrame(raf); raf = 0; } LEDGER = {}; draw(); const mn=document.getElementById("main"); if(mn) mn.scrollTop=0; window.scrollTo(0,0); };
-  const de = document.documentElement, changing = next !== view;
-  if(changing && document.startViewTransition && !needLogin() && de.dataset.glass !== "off" && !matchMedia("(prefers-reduced-motion: reduce)").matches){
-    de.classList.add("vt-nav"); try{ const t = document.startViewTransition(apply); t.finished.finally(() => de.classList.remove("vt-nav")); }catch(_){ de.classList.remove("vt-nav"); apply(); }
-  } else apply();
+  apply();   // drawn at once; the entrance animation and the tab droplet run on the GPU, so nothing freezes
 }
 window.addEventListener("hashchange", route);
 document.getElementById("tabbar").addEventListener("click", ev => { const a=ev.target.closest("a"); if(!a) return; ev.preventDefault(); if(location.hash!=="#"+a.dataset.v) location.hash=a.dataset.v; else route(); });
@@ -5127,27 +5148,40 @@ if("serviceWorker" in navigator){
   function refractAll(){ const tb = document.getElementById("tabbar"); if(tb && !tb.hidden) refract(tb, "lg-tabbar"); }
   let rz = 0; addEventListener("resize", () => { clearTimeout(rz); rz = setTimeout(() => { lensed.clear(); refractAll(); placePill(true); }, 150); });
 
-  // ---- 2. the tab bar droplet: persists across redraws, glides with a spring, stretches while it travels ----
+  // ---- 2. the tab bar droplet: one continuous, GPU-only motion that stretches mid-flight and settles with a soft spring ----
   const pill = document.createElement("span"); pill.className = "lg-pill"; pill.setAttribute("aria-hidden","true");
-  let lastX = null;
+  // a real damped spring (damping 0.74 → about 3% overshoot), sampled into a CSS linear() curve
+  const SPRING = (function(){ const z = .74, w = 1, wd = w * Math.sqrt(1 - z*z), T = 9.5, pts = [];
+    for(let k = 0; k <= 48; k++){ const t = T * k / 48, x = 1 - Math.exp(-z*w*t) * (Math.cos(wd*t) + z*w/wd * Math.sin(wd*t)); pts.push(+(k === 48 ? 1 : x).toFixed(4)); }
+    const lin = `linear(${pts.join(", ")})`; try{ return CSS.supports("transition-timing-function", lin) ? lin : "cubic-bezier(.3,1.12,.45,1)"; }catch(_){ return "cubic-bezier(.3,1.12,.45,1)"; } })();
+  let curX = null, anim = null, lastCur = null;
   function placePill(instant){
     const tb = document.getElementById("tabbar"); if(!tb || tb.hidden) return;
     if(pill.parentNode !== tb) tb.insertBefore(pill, tb.firstChild);
-    const cur = tb.querySelector('[aria-current="page"]'); if(!cur){ pill.classList.remove("on"); return; }
+    const cur = tb.querySelector('[aria-current="page"]'); if(!cur){ pill.classList.remove("on"); curX = null; return; }
     const x = cur.offsetLeft, w = cur.offsetWidth;
-    if(instant || lastX === null || reduceMotion){ pill.style.transition = "none"; pill.style.transform = `translateX(${x}px)`; pill.style.width = w + "px"; void pill.offsetWidth; pill.style.transition = ""; }
-    else if(x !== lastX){
-      // stretch toward the destination, then settle (the "liquid" part)
-      const span = Math.abs(x - lastX) + w, left = Math.min(x, lastX);
-      pill.classList.add("squish"); pill.style.transform = `translateX(${left}px)`; pill.style.width = span + "px";
-      setTimeout(() => { pill.classList.remove("squish"); pill.style.transform = `translateX(${x}px)`; pill.style.width = w + "px"; }, 170);
-    } else { pill.style.width = w + "px"; }
-    lastX = x; pill.classList.add("on");
+    if(pill.style.width !== w + "px") pill.style.width = w + "px";
+    if(cur !== lastCur){ if(lastCur && !instant && !reduceMotion){ const ic = cur.querySelector("svg"); if(ic){ ic.classList.remove("lg-pop"); void ic.offsetWidth; ic.classList.add("lg-pop"); ic.addEventListener("animationend", () => ic.classList.remove("lg-pop"), {once:true}); } } lastCur = cur; }
+    if(instant || curX === null || reduceMotion){ if(anim){ anim.cancel(); anim = null; } pill.style.transform = `translateX(${x}px)`; curX = x; pill.classList.add("on"); return; }
+    if(x === curX) return;
+    let from = curX;
+    if(anim && anim.playState === "running"){ from = new DOMMatrixReadOnly(getComputedStyle(pill).transform).m41; anim.cancel(); }   // re-target mid-flight, no jump
+    const d = x - from, sx = Math.min(1.45, 1 + Math.abs(d) / w * .22);
+    pill.style.transform = `translateX(${x}px)`; curX = x;
+    anim = pill.animate([
+      {transform:`translateX(${from}px) scale(1,1)`},
+      {transform:`translateX(${from + d * .5}px) scale(${sx},.9)`, offset:.32},
+      {transform:`translateX(${x}px) scale(1,1)`}
+    ], {duration: Math.min(640, 460 + Math.abs(d) * .5), easing: SPRING});
+    anim.onfinish = () => { anim = null; };
   }
   let tbObs = null;
   function watchTabbar(){ const tb = document.getElementById("tabbar"); if(!tb || tbObs) return;
-    tbObs = new MutationObserver(ms => { if(ms.every(m => [...m.addedNodes, ...m.removedNodes].every(n => n === pill))) return; requestAnimationFrame(() => { placePill(false); refractAll(); }); });
-    tbObs.observe(tb, {childList:true, attributes:true, attributeFilter:["hidden"]}); placePill(true); refractAll(); }
+    tbObs = new MutationObserver(ms => { if(ms.every(m => m.type === "childList" && [...m.addedNodes, ...m.removedNodes].every(n => n === pill))) return; placePill(false); if(ms.some(m => m.type === "childList" || m.attributeName === "hidden")) refractAll(); });
+    tbObs.observe(tb, {childList:true, subtree:true, attributes:true, attributeFilter:["hidden","aria-current"]}); placePill(true); refractAll(); }
+  // answer the tap instantly: move the droplet on touch, before the page has even changed
+  document.addEventListener("pointerdown", e => { const a = e.target.closest("#tabbar a, #tabbar [data-act='tab-more']"); if(!a || a.getAttribute("aria-current") === "page") return;
+    const tb = a.parentNode; tb.querySelectorAll('[aria-current="page"]').forEach(x => x !== a && x.removeAttribute("aria-current")); a.setAttribute("aria-current","page"); }, true);
 
   // ---- 3. specular light follows the phone's tilt (no permission needed on Android) ----
   let target = 135, shown = 135, raf = 0;
@@ -5195,7 +5229,7 @@ if("serviceWorker" in navigator){
 
 // Version check: whenever the app is opened or brought back to the front, ask GitHub for the latest version number.
 // If it is newer than what is running, reload (straight away if nothing is open, otherwise offer a button).
-window.APP_VERSION = "20261106161319";
+window.APP_VERSION = "20261106161705";
 (function(){
   let busy = false, shown = false;
   function bar(v){ if(shown) return; shown = true; const b = document.createElement("button"); b.className = "upd-bar"; b.textContent = "New version ready — tap to update"; b.onclick = () => go(v); document.body.appendChild(b); }
