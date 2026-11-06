@@ -2077,6 +2077,21 @@ body.dark .dbfloat{background:rgba(30,32,40,.85);border-color:rgba(255,255,255,.
 .leaflet-tooltip.ck-maptip{font:600 11.5px/1.2 inherit;padding:3px 7px;border-radius:8px;box-shadow:0 1px 4px rgba(0,0,0,.2)}
 .ck-map .leaflet-control-attribution{font-size:9px}
 .ck-dir{margin-left:auto;font-weight:600;color:#0a84ff;text-decoration:none}
+/* birthday greeting */
+.bday-modal{overflow:hidden;background:rgba(255,255,255,.98)!important;-webkit-backdrop-filter:blur(20px)!important;backdrop-filter:blur(20px)!important}
+.bday-modal::before,.bday-modal::after{display:none!important}
+.bday-modal .body{position:relative;z-index:1;text-align:center;gap:10px;padding-top:26px}
+.bday-cake{font-size:64px;line-height:1;animation:bdayPop .7s cubic-bezier(.2,1.6,.4,1) both}
+.bday-modal h3{margin:4px 0 0;font-size:23px}
+.bday-modal p{margin:0;font-size:15px;line-height:1.5}
+.bday-from{opacity:.75;font-size:13.5px!important;margin-top:4px!important}
+.bday-modal .ck-go{margin-top:8px}
+.bday-confetti{position:absolute;inset:0;pointer-events:none;z-index:0}
+.bday-confetti i{position:absolute;top:-14px;left:var(--x);width:8px;height:13px;border-radius:2px;background:var(--c);transform:rotate(var(--r));animation:bdayFall 3.2s ease-in var(--d) 2 both}
+@keyframes bdayFall{0%{transform:translateY(0) rotate(var(--r));opacity:1}100%{transform:translateY(520px) rotate(calc(var(--r) + 540deg));opacity:0}}
+@keyframes bdayPop{0%{transform:scale(.3);opacity:0}100%{transform:scale(1);opacity:1}}
+@media (prefers-reduced-motion:reduce){.bday-confetti{display:none}.bday-cake{animation:none}}
+body.dark .bday-modal{background:rgba(28,28,30,.98)!important}
 </style>
 </head>
 <body>
@@ -3794,6 +3809,25 @@ function drawFarMap(el){
 }
 new MutationObserver(() => { const el = document.getElementById("ck_map"); if(el && !el.dataset.init) drawFarMap(el); }).observe(document.documentElement, {childList:true, subtree:true});
 
+// ---- birthday greeting: shown to the employee on their birthday, once that day, when they open the app ----
+function bdayCheck(){
+  const id = myEmp(), e = id && S.emps[id]; if(!e?.dob) return;
+  const d = iso(new Date()); if(e.dob.slice(5) !== d.slice(5)) return;
+  const key = `apBday_${id}_${d.slice(0,4)}`; if(lsGet(key)) return;
+  if($("#overlay").innerHTML.trim() || document.querySelector(".drawer.open, .inst-wrap")) return;   // don't cover something already open
+  lsSet(key, "1");
+  const first = esc((e.name || "").trim().split(/\s+/)[0] || "there");
+  const bits = Array.from({length:26}, (_, i) => `<i style="--x:${(i*37)%100}%;--d:${(i%7)*.35}s;--c:${["#f5b301","#0a84ff","#ff375f","#30d158","#bf5af2"][i%5]};--r:${(i*53)%360}deg"></i>`).join("");
+  $("#overlay").innerHTML = `<div class="scrim" data-act="close"></div><div class="modal sm bday-modal" role="dialog" aria-modal="true" aria-label="Happy birthday">
+    <div class="bday-confetti" aria-hidden="true">${bits}</div>
+    <div class="body"><div class="bday-cake" aria-hidden="true">🎂</div>
+      <h3>Happy Birthday, ${first}!</h3>
+      <p>Wishing you a wonderful year ahead, full of happiness, good health and success.</p>
+      <p class="bday-from">With warm wishes from everyone at<br><b>Srigandha Properties</b></p>
+      <button class="btn primary ck-go" data-act="close">Thank you 🎉</button></div></div>`;
+}
+setInterval(() => { try{ if(ME && Object.keys(S.emps||{}).length) bdayCheck(); }catch(_){} }, 1500);
+
 const VIEWS = {
 access(){ return accessView(); },
 dashboard(){
@@ -4896,7 +4930,7 @@ if("serviceWorker" in navigator){
 
 // Version check: whenever the app is opened or brought back to the front, ask GitHub for the latest version number.
 // If it is newer than what is running, reload (straight away if nothing is open, otherwise offer a button).
-window.APP_VERSION = "20261106075632";
+window.APP_VERSION = "20261106104548";
 (function(){
   let busy = false, shown = false;
   function bar(v){ if(shown) return; shown = true; const b = document.createElement("button"); b.className = "upd-bar"; b.textContent = "New version ready — tap to update"; b.onclick = () => go(v); document.body.appendChild(b); }
