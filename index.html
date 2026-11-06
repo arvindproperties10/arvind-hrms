@@ -2113,12 +2113,12 @@ html.lg{--lg-a:135deg;
   --lg-blur:blur(14px) saturate(185%) brightness(1.04);
   --tile-a:rgba(255,255,255,.72);--tile-b:rgba(255,255,255,.50);--tile-line:rgba(255,255,255,.75)}
 html.lg-lite{--lg-fill:rgba(255,255,255,.58);--lg-blur:blur(12px) saturate(170%)}
-html.lg-full{--lg-fill:rgba(255,255,255,.22);--lg-blur:blur(3px) saturate(190%) brightness(1.05)}
+html.lg-full{--lg-fill:rgba(255,255,255,.60);--lg-blur:blur(11px) saturate(190%) brightness(1.05)}
 html.lg body.dark{--lg-rim:inset 0 0 0 1px rgba(255,255,255,.12),inset 1px 1.5px 0 -.5px rgba(255,255,255,.28),inset -1px -1px 0 -.5px rgba(255,255,255,.08);
   --lg-fill:rgba(30,32,40,.55);--lg-ink-shadow:0 12px 32px -12px rgba(0,0,0,.7);
   --tile-a:rgba(46,50,62,.70);--tile-b:rgba(26,28,36,.58);--tile-line:rgba(255,255,255,.09)}
 html.lg-lite body.dark{--lg-fill:rgba(30,32,40,.70)}
-html.lg-full body.dark{--lg-fill:rgba(24,26,34,.38)}
+html.lg-full body.dark{--lg-fill:rgba(24,26,34,.62)}
 
 /* 1 — no live blur anywhere by default (this alone removes ~50 stacked blur layers) */
 html.lg *,html.lg *::before,html.lg *::after{-webkit-backdrop-filter:none!important;backdrop-filter:none!important}
@@ -2224,27 +2224,27 @@ html.lg.lg-off body .tabbar,html.lg.lg-off body .mtop,html.lg.lg-off body .drawe
 html.lg-off body main > .lg-in{animation:none!important}
 
 /* 9 — page switches (View Transitions): chrome swaps in place, only the page content moves */
-/* (view transitions not used for tab switches: they pause the screen while the page builds) */
-::view-transition-old(root),::view-transition-new(root){animation:none}
-::view-transition-group(page){animation-duration:.56s}
-::view-transition-old(page){animation:vtOut .12s cubic-bezier(.4,0,1,1) both}
-::view-transition-new(page){animation:vtIn .46s cubic-bezier(.16,1,.3,1) .1s both}
-@keyframes vtOut{to{opacity:0;transform:scale(.985)}}
-@keyframes vtIn{from{opacity:0;transform:translateY(16px) scale(.99)}to{opacity:1;transform:none}}
+/* the page stays in the same layer as the bars, so the bars are always in front; the whole screen cross-fades (bars are identical in both, so they hold still) */
+::view-transition-old(root){animation:vtOut .2s cubic-bezier(.4,0,1,1) both}
+::view-transition-new(root){animation:vtIn .34s cubic-bezier(.2,.8,.2,1) both}
+@keyframes vtOut{to{opacity:0}}
+@keyframes vtIn{from{opacity:0}to{opacity:1}}
 @media (prefers-reduced-motion:reduce){::view-transition-group(*),::view-transition-old(*),::view-transition-new(*){animation:none!important}}
 
-/* 10 — tab bar motion: colour and icon ease between tabs; the droplet moves by script (GPU transform only) */
+
+/* 10 — page transition carries the tab droplet: it glides old → new tab while the page cross-fades (icons stay above it) */
 @media (max-width:760px){
-  html.lg body .lg-pill{transition:opacity .2s!important;transform-origin:50% 50%;backface-visibility:hidden}
-  html.lg body .tabbar a,html.lg body .tabbar button{transition:color .3s cubic-bezier(.2,.8,.2,1),transform .35s cubic-bezier(.2,1.5,.4,1)!important}
-  html.lg body .tabbar button[aria-current="page"]{color:var(--accent)!important}
-  html.lg body .tabbar a svg,html.lg body .tabbar button svg{transition:transform .5s cubic-bezier(.2,1.6,.4,1)!important}
-  html.lg body .tabbar [aria-current="page"] svg{transform:scale(1.08)}
-  html.lg body .tabbar svg.lg-pop{animation:lgPop .5s cubic-bezier(.2,1.6,.4,1)}
-  html.lg body .tabbar a span,html.lg body .tabbar button span{transition:font-weight .2s}
+  html.lg body .tabbar > .lg-pill{view-transition-name:lg-pill}
+  html.lg body .tabbar > :nth-child(2){view-transition-name:lg-t1}
+  html.lg body .tabbar > :nth-child(3){view-transition-name:lg-t2}
+  html.lg body .tabbar > :nth-child(4){view-transition-name:lg-t3}
+  html.lg body .tabbar > :nth-child(5){view-transition-name:lg-t4}
+  html.lg body .tabbar > :nth-child(6){view-transition-name:lg-t5}
+  html.lg body .tabbar > :nth-child(7){view-transition-name:lg-t6}
 }
-@keyframes lgPop{0%{transform:scale(.82)}55%{transform:scale(1.16)}100%{transform:scale(1.08)}}
-/* taps keep working while a page cross-fade is running */
+::view-transition-group(lg-pill){animation-duration:.5s;animation-timing-function:cubic-bezier(.3,1.18,.4,1)}
+::view-transition-group(lg-t1),::view-transition-group(lg-t2),::view-transition-group(lg-t3),::view-transition-group(lg-t4),::view-transition-group(lg-t5),::view-transition-group(lg-t6){animation-duration:.3s}
+/* taps keep working while a transition runs */
 ::view-transition{pointer-events:none}
 </style>
 </head>
@@ -2844,20 +2844,10 @@ function renderTabbar(){
   document.body.classList.toggle("has-tabbar", emp || staff);
   if(!emp && !staff){ tb.hidden = true; return; }
   tb.hidden = false;
-  if(emp){ setTabs(tb, TABS.filter(([v]) => canSee(v)).map(t => [t, view===t[0] || (t[0]==="myslips" && view==="myinc")])); return; }
+  if(emp){ tb.innerHTML = TABS.filter(([v]) => canSee(v)).map(t => tabLink(t, view===t[0] || (t[0]==="myslips" && view==="myinc"))).join(""); return; }
   const picks = STAFF_TABS.filter(([v]) => canSee(v)).slice(0, 4);
   const inMore = !picks.some(([v]) => v===view);
-  setTabs(tb, picks.map(t => [t, view===t[0]]), inMore);
-}
-function setTabs(tb, items, moreCur){
-  const sig = items.map(([t]) => t[0]).join(",") + (moreCur === undefined ? "" : "|more");
-  if(tb.dataset.sig !== sig){
-    tb.innerHTML = items.map(([t,c]) => tabLink(t,c)).join("") + (moreCur === undefined ? "" : `<button type="button" data-act="tab-more" ${moreCur?'aria-current="page"':""}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">${MORE_IC}</svg><span>More</span></button>`);
-    tb.dataset.sig = sig; return;
-  }
-  const mark = (el, on) => { if(!el) return; if(on){ if(el.getAttribute("aria-current") !== "page") el.setAttribute("aria-current","page"); } else if(el.hasAttribute("aria-current")) el.removeAttribute("aria-current"); };
-  items.forEach(([t,c]) => mark(tb.querySelector(`a[data-v="${t[0]}"]`), c));
-  if(moreCur !== undefined) mark(tb.querySelector('[data-act="tab-more"]'), moreCur);
+  tb.innerHTML = picks.map(t => tabLink(t, view===t[0])).join("") + `<button type="button" data-act="tab-more" ${inMore?'aria-current="page" style="color:var(--accent);background:rgba(0,113,227,.10)"':""}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">${MORE_IC}</svg><span>More</span></button>`;
 }
 function renderShell(){
   renderTabbar();
@@ -4963,7 +4953,10 @@ addEventListener("resize", () => { if(!isPhone()) setNav(false); });
 function route(){
   const h=(location.hash||"").slice(1), next = VALID.includes(h)?h:(ME && !isStaffU() ? "checkin" : "dashboard");
   const apply = () => { view = next; ckReset(); closeDrawer(); if(raf){ cancelAnimationFrame(raf); raf = 0; } LEDGER = {}; draw(); const mn=document.getElementById("main"); if(mn) mn.scrollTop=0; window.scrollTo(0,0); };
-  apply();   // drawn at once; the entrance animation and the tab droplet run on the GPU, so nothing freezes
+  const de = document.documentElement, changing = next !== view;
+  if(changing && document.startViewTransition && !needLogin() && de.dataset.glass !== "off" && !matchMedia("(prefers-reduced-motion: reduce)").matches){
+    de.classList.add("vt-nav"); try{ const t = document.startViewTransition(apply); t.finished.finally(() => de.classList.remove("vt-nav")); }catch(_){ de.classList.remove("vt-nav"); apply(); }
+  } else apply();
 }
 window.addEventListener("hashchange", route);
 document.getElementById("tabbar").addEventListener("click", ev => { const a=ev.target.closest("a"); if(!a) return; ev.preventDefault(); if(location.hash!=="#"+a.dataset.v) location.hash=a.dataset.v; else route(); });
@@ -5142,46 +5135,39 @@ if("serviceWorker" in navigator){
     const im = document.createElementNS(NS, "feImage"); im.setAttribute("href", dispMap(w, h, r, band)); im.setAttribute("x","0"); im.setAttribute("y","0"); im.setAttribute("width", w); im.setAttribute("height", h); im.setAttribute("preserveAspectRatio","none"); im.setAttribute("result","map");
     const dm = document.createElementNS(NS, "feDisplacementMap"); dm.setAttribute("in","SourceGraphic"); dm.setAttribute("in2","map"); dm.setAttribute("scale", String(Math.round(Math.min(48, h * .7)))); dm.setAttribute("xChannelSelector","R"); dm.setAttribute("yChannelSelector","G");
     f.appendChild(im); f.appendChild(dm); svgDefs().appendChild(f);
-    const v = `url(#${id}) blur(2.5px) saturate(190%) brightness(1.05)`;
+    const v = `url(#${id}) blur(11px) saturate(190%) brightness(1.05)`;
+    el.dataset.lens = v; if(root.classList.contains("vt-nav")) return;
     el.style.setProperty("backdrop-filter", v, "important"); el.style.setProperty("-webkit-backdrop-filter", v, "important");
   }
+  // the browser drops lens filters inside a page transition, so swap to plain frosted glass for those half-seconds
+  new MutationObserver(() => { const tb = document.getElementById("tabbar"); if(!tb || tier() !== "full") return;
+    const v = root.classList.contains("vt-nav") ? "blur(12px) saturate(190%) brightness(1.05)" : (tb.dataset.lens || "");
+    if(v){ tb.style.setProperty("backdrop-filter", v, "important"); tb.style.setProperty("-webkit-backdrop-filter", v, "important"); }
+  }).observe(root, {attributes:true, attributeFilter:["class"]});
   function refractAll(){ const tb = document.getElementById("tabbar"); if(tb && !tb.hidden) refract(tb, "lg-tabbar"); }
   let rz = 0; addEventListener("resize", () => { clearTimeout(rz); rz = setTimeout(() => { lensed.clear(); refractAll(); placePill(true); }, 150); });
 
-  // ---- 2. the tab bar droplet: one continuous, GPU-only motion that stretches mid-flight and settles with a soft spring ----
+  // ---- 2. the tab bar droplet: persists across redraws, glides with a spring, stretches while it travels ----
   const pill = document.createElement("span"); pill.className = "lg-pill"; pill.setAttribute("aria-hidden","true");
-  // a real damped spring (damping 0.74 → about 3% overshoot), sampled into a CSS linear() curve
-  const SPRING = (function(){ const z = .74, w = 1, wd = w * Math.sqrt(1 - z*z), T = 9.5, pts = [];
-    for(let k = 0; k <= 48; k++){ const t = T * k / 48, x = 1 - Math.exp(-z*w*t) * (Math.cos(wd*t) + z*w/wd * Math.sin(wd*t)); pts.push(+(k === 48 ? 1 : x).toFixed(4)); }
-    const lin = `linear(${pts.join(", ")})`; try{ return CSS.supports("transition-timing-function", lin) ? lin : "cubic-bezier(.3,1.12,.45,1)"; }catch(_){ return "cubic-bezier(.3,1.12,.45,1)"; } })();
-  let curX = null, anim = null, lastCur = null;
+  let lastX = null;
   function placePill(instant){
     const tb = document.getElementById("tabbar"); if(!tb || tb.hidden) return;
     if(pill.parentNode !== tb) tb.insertBefore(pill, tb.firstChild);
-    const cur = tb.querySelector('[aria-current="page"]'); if(!cur){ pill.classList.remove("on"); curX = null; return; }
+    const cur = tb.querySelector('[aria-current="page"]'); if(!cur){ pill.classList.remove("on"); return; }
     const x = cur.offsetLeft, w = cur.offsetWidth;
-    if(pill.style.width !== w + "px") pill.style.width = w + "px";
-    if(cur !== lastCur){ if(lastCur && !instant && !reduceMotion){ const ic = cur.querySelector("svg"); if(ic){ ic.classList.remove("lg-pop"); void ic.offsetWidth; ic.classList.add("lg-pop"); ic.addEventListener("animationend", () => ic.classList.remove("lg-pop"), {once:true}); } } lastCur = cur; }
-    if(instant || curX === null || reduceMotion){ if(anim){ anim.cancel(); anim = null; } pill.style.transform = `translateX(${x}px)`; curX = x; pill.classList.add("on"); return; }
-    if(x === curX) return;
-    let from = curX;
-    if(anim && anim.playState === "running"){ from = new DOMMatrixReadOnly(getComputedStyle(pill).transform).m41; anim.cancel(); }   // re-target mid-flight, no jump
-    const d = x - from, sx = Math.min(1.45, 1 + Math.abs(d) / w * .22);
-    pill.style.transform = `translateX(${x}px)`; curX = x;
-    anim = pill.animate([
-      {transform:`translateX(${from}px) scale(1,1)`},
-      {transform:`translateX(${from + d * .5}px) scale(${sx},.9)`, offset:.32},
-      {transform:`translateX(${x}px) scale(1,1)`}
-    ], {duration: Math.min(640, 460 + Math.abs(d) * .5), easing: SPRING});
-    anim.onfinish = () => { anim = null; };
+    if(instant || lastX === null || reduceMotion || root.classList.contains("vt-nav")){ /* in a page transition, the transition glides the droplet */ pill.style.transition = "none"; pill.style.transform = `translateX(${x}px)`; pill.style.width = w + "px"; void pill.offsetWidth; pill.style.transition = ""; }
+    else if(x !== lastX){
+      // stretch toward the destination, then settle (the "liquid" part)
+      const span = Math.abs(x - lastX) + w, left = Math.min(x, lastX);
+      pill.classList.add("squish"); pill.style.transform = `translateX(${left}px)`; pill.style.width = span + "px";
+      setTimeout(() => { pill.classList.remove("squish"); pill.style.transform = `translateX(${x}px)`; pill.style.width = w + "px"; }, 170);
+    } else { pill.style.width = w + "px"; }
+    lastX = x; pill.classList.add("on");
   }
   let tbObs = null;
   function watchTabbar(){ const tb = document.getElementById("tabbar"); if(!tb || tbObs) return;
-    tbObs = new MutationObserver(ms => { if(ms.every(m => m.type === "childList" && [...m.addedNodes, ...m.removedNodes].every(n => n === pill))) return; placePill(false); if(ms.some(m => m.type === "childList" || m.attributeName === "hidden")) refractAll(); });
-    tbObs.observe(tb, {childList:true, subtree:true, attributes:true, attributeFilter:["hidden","aria-current"]}); placePill(true); refractAll(); }
-  // answer the tap instantly: move the droplet on touch, before the page has even changed
-  document.addEventListener("pointerdown", e => { const a = e.target.closest("#tabbar a, #tabbar [data-act='tab-more']"); if(!a || a.getAttribute("aria-current") === "page") return;
-    const tb = a.parentNode; tb.querySelectorAll('[aria-current="page"]').forEach(x => x !== a && x.removeAttribute("aria-current")); a.setAttribute("aria-current","page"); }, true);
+    tbObs = new MutationObserver(ms => { if(ms.every(m => [...m.addedNodes, ...m.removedNodes].every(n => n === pill))) return; if(root.classList.contains("vt-nav")){ placePill(false); return; } requestAnimationFrame(() => { placePill(false); refractAll(); }); });
+    tbObs.observe(tb, {childList:true, attributes:true, attributeFilter:["hidden"]}); placePill(true); refractAll(); }
 
   // ---- 3. specular light follows the phone's tilt (no permission needed on Android) ----
   let target = 135, shown = 135, raf = 0;
@@ -5229,7 +5215,7 @@ if("serviceWorker" in navigator){
 
 // Version check: whenever the app is opened or brought back to the front, ask GitHub for the latest version number.
 // If it is newer than what is running, reload (straight away if nothing is open, otherwise offer a button).
-window.APP_VERSION = "20261106161705";
+window.APP_VERSION = "20261106162730";
 (function(){
   let busy = false, shown = false;
   function bar(v){ if(shown) return; shown = true; const b = document.createElement("button"); b.className = "upd-bar"; b.textContent = "New version ready — tap to update"; b.onclick = () => go(v); document.body.appendChild(b); }
