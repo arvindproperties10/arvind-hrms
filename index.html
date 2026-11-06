@@ -2243,13 +2243,14 @@ function ledger(id){
   for(const l of Object.values(S.leaves)) if(l.empId===id && l.status==="approved" && l.to && l.to.slice(0,7) > end) end = l.to.slice(0,7);
   for(const d of Object.keys(S.att)) if(d.slice(0,7) > end && S.att[d]?.marks?.[id]==="L") end = d.slice(0,7);
   if(UI.payMonth > end) end = UI.payMonth;
-  const unpaid = new Set(); let bal = 0, accruedNow = 0, usedNow = 0, unpaidNow = 0, booked = 0;
+  const unpaid = new Set(); let bal = 0, accruedNow = 0, usedNow = 0, unpaidNow = 0, unpaidMonth = 0, booked = 0;
   // one day off: need 1 (leave / absent) or ½ (half day). Returns what wasn't covered.
   function settle(ds, st0, take){
     const need = st0 === "HD" ? .5 : 1; let rem = need;
     const co = takeCo(ds, rem); rem -= co; if(ds <= today) coUsedNow += co; else coBooked += co;
     if(rem > 0) rem -= take(rem, st0);
     cover[ds] = need - rem;
+    if(rem > 0 && ds.slice(0,7) === nowYm && ds <= today) unpaidMonth += rem;   // this month so far, absences included (matches payroll)
     if(st0 === "A"){ if(cover[ds] > 0) coCover.add(ds); return; }   // absences: only comp offs / optional holiday cover them; the rest is loss of pay
     if(st0 === "HD"){ if(rem <= 0) halfCover.add(ds); else halfUnpaid.add(ds); }
     if(rem > 0){ unpaidAmt[ds] = rem; if(st0 === "L") unpaid.add(ds); if(ds.slice(0,7) <= nowYm) unpaidNow += rem; }
@@ -2278,7 +2279,7 @@ function ledger(id){
       settle(ds, st0, (want, st) => { if(st === "A") return 0; const p = halves(bal, want); if(p > 0){ bal -= p; if(ym <= nowYm) usedNow += p; else booked += p; } return p; });
     }
   }
-  return LEDGER[id] = {start, eligYm, waiting: eligYm > nowYm, cover, unpaidAmt, coCover, halfCover, halfUnpaid, preUsed, optUsed, accrued:accruedNow, used:usedNow, balance:accruedNow-usedNow, booked, unpaid, unpaidNow,
+  return LEDGER[id] = {start, eligYm, waiting: eligYm > nowYm, cover, unpaidAmt, coCover, halfCover, halfUnpaid, preUsed, optUsed, accrued:accruedNow, used:usedNow, balance:accruedNow-usedNow, booked, unpaid, unpaidNow, unpaidMonth,
     co:(() => { const live = credits.filter(c => c.exp >= today);   // comp offs still usable today
       const free = live.filter(c => c.left > 0); const next = free.map(c => c.exp).sort()[0] || ""; const left = free.reduce((n, c) => n + c.left, 0);
       return {earned:live.length, used:live.reduce((n, c) => n + (1 - c.left), 0), booked:0, balance:left, free:left, dates:coDates, next, credits}; })()};
@@ -3829,11 +3830,11 @@ leave(){
   const f = UI.leaveFilter;
   const all = [...Object.entries(S.leaves).map(([id,l])=>({id,...l, _d:l.from})), ...permList().map(p=>({...p, _perm:true, _d:p.date}))].filter(l=>f==="all"||l.status===f).sort((a,b)=>(b._d||"").localeCompare(a._d||""));
   const tools = `<div class="seg" role="group" aria-label="Filter requests">${[["pending","Pending"],["approved","Approved"],["rejected","Rejected"],["all","All"]].map(([v,t])=>`<button data-lf="${v}" aria-pressed="${f===v}" style="${f===v?"background:var(--accent);color:var(--accent-ink)":""}">${t}</button>`).join("")}</div>${canWrite?`<button class="btn primary" data-act="new-leave">Apply for leave</button>`:""}`;
-  const balRows = activeEmps().sort((a,b)=>DEPTS.indexOf(a.dept)-DEPTS.indexOf(b.dept) || byRank(a,b)).map(e => { const L=ledger(e.id); return `<tr><td>${who(e, e.dept)}</td><td class="num">${L.accrued}</td><td class="num">${L.used}</td><td class="num"><b>${L.balance}</b>${L.booked?` <span class="note">(${L.booked} booked)</span>`:""}</td><td class="num">${L.unpaidNow?`<span class="pill bad">${L.unpaidNow}</span>`:"0"}</td><td class="num">${L.co.balance}</td></tr>`; }).join("");
+  const balRows = activeEmps().sort((a,b)=>DEPTS.indexOf(a.dept)-DEPTS.indexOf(b.dept) || byRank(a,b)).map(e => { const L=ledger(e.id); return `<tr><td>${who(e, e.dept)}</td><td class="num">${L.accrued}</td><td class="num">${L.used}</td><td class="num"><b>${L.balance}</b>${L.booked?` <span class="note">(${L.booked} booked)</span>`:""}</td><td class="num">${L.unpaidMonth?`<span class="pill bad">${L.unpaidMonth}</span>`:"0"}</td><td class="num">${L.co.balance}</td></tr>`; }).join("");
   const pendN = Object.values(S.leaves).filter(x=>x.status==="pending").length + pendingPerms().length;
   return head("Leave", `${canApprove() && pendN ? `<b>${pendN} waiting for your approval</b> · ` : ""}1 paid leave a month from ${monthName(LEAVE_START)}. Unused days carry forward; leave beyond the balance is loss of pay. Tuesdays and company holidays don't count.`, tools) +
    `<div class="leavegrid fill"><div class="panel lg-req"><h2>${f==="all"?"All requests":f[0].toUpperCase()+f.slice(1)+" requests"}</h2><div class="scrollbox">${all.length? all.map(x => x._perm ? permRow(x) : reqRow(x)).join("") : `<p class="empty">No ${f==="all"?"":f} requests.</p>`}</div></div>
-   <div class="panel lg-bal" style="padding:0;overflow:hidden"><div style="padding:16px 18px 4px"><h2>Paid leave balances</h2></div><div class="scrollbox stickyhead" style="overflow:auto"><table><thead><tr><th>Employee</th><th class="num">Earned</th><th class="num">Used</th><th class="num" title="Balance"><span class="lbl-long">Balance</span><span class="lbl-short">Left</span></th><th class="num" title="Unpaid days"><span class="lbl-long">Unpaid days</span><span class="lbl-short">Unpaid</span></th><th class="num" title="Comp offs available"><span class="lbl-long">Comp off</span><span class="lbl-short">C/off</span></th></tr></thead><tbody>${balRows||`<tr><td colspan="6" class="empty">No staff yet.</td></tr>`}</tbody></table></div></div>${holidaysPanel()}</div>`;
+   <div class="panel lg-bal" style="padding:0;overflow:hidden"><div style="padding:16px 18px 4px"><h2>Paid leave balances</h2></div><div class="scrollbox stickyhead" style="overflow:auto"><table><thead><tr><th>Employee</th><th class="num">Earned</th><th class="num">Used</th><th class="num" title="Balance"><span class="lbl-long">Balance</span><span class="lbl-short">Left</span></th><th class="num" title="Unpaid days this month (leave beyond the balance, and absent days)"><span class="lbl-long">Unpaid this month</span><span class="lbl-short">Unpaid</span></th><th class="num" title="Comp offs available"><span class="lbl-long">Comp off</span><span class="lbl-short">C/off</span></th></tr></thead><tbody>${balRows||`<tr><td colspan="6" class="empty">No staff yet.</td></tr>`}</tbody></table></div></div>${holidaysPanel()}</div>`;
 },
 
 payroll(){
@@ -4857,7 +4858,7 @@ if("serviceWorker" in navigator){
 
 // Version check: whenever the app is opened or brought back to the front, ask GitHub for the latest version number.
 // If it is newer than what is running, reload (straight away if nothing is open, otherwise offer a button).
-window.APP_VERSION = "20261106052857";
+window.APP_VERSION = "20261106065648";
 (function(){
   let busy = false, shown = false;
   function bar(v){ if(shown) return; shown = true; const b = document.createElement("button"); b.className = "upd-bar"; b.textContent = "New version ready — tap to update"; b.onclick = () => go(v); document.body.appendChild(b); }
