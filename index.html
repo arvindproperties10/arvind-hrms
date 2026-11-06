@@ -2179,10 +2179,10 @@ html.lg body .mtop{position:relative}
   html.lg body .tabbar [aria-current="page"] svg{transform:scale(1.1)}
   html.lg body .tabbar a:active,html.lg body .tabbar button:active{transform:scale(.94)}
   html.lg body .lg-pill{position:absolute;z-index:1;top:6px;left:0;height:calc(100% - 12px);width:60px;border-radius:26px;pointer-events:none;opacity:0;
-    background:linear-gradient(180deg,rgba(255,255,255,.85),rgba(255,255,255,.55));
-    box-shadow:0 4px 14px -6px rgba(0,60,160,.35),inset 0 0 0 1px rgba(255,255,255,.9),inset 0 -6px 10px -8px rgba(0,90,200,.25);
+    background:linear-gradient(180deg,rgba(214,236,255,.95),rgba(176,214,250,.82));   /* glacier blue */
+    box-shadow:0 4px 14px -6px rgba(0,90,190,.38),inset 0 0 0 1px rgba(236,247,255,.95),inset 0 1.5px 0 rgba(255,255,255,.9),inset 0 -6px 10px -8px rgba(0,100,210,.35);
     transition:transform .55s cubic-bezier(.25,1.35,.35,1),width .55s cubic-bezier(.25,1.35,.35,1),opacity .2s;will-change:transform}
-  html.lg body.dark .lg-pill{background:linear-gradient(180deg,rgba(255,255,255,.20),rgba(255,255,255,.09));box-shadow:0 4px 14px -6px rgba(0,0,0,.6),inset 0 0 0 1px rgba(255,255,255,.16)}
+  html.lg body.dark .lg-pill{background:linear-gradient(180deg,rgba(120,184,240,.40),rgba(70,140,215,.26));box-shadow:0 4px 14px -6px rgba(0,0,0,.6),inset 0 0 0 1px rgba(170,215,255,.28),inset 0 1px 0 rgba(220,240,255,.3)}
   html.lg body .lg-pill.on{opacity:1}
   html.lg body .lg-pill.squish{transition-duration:.18s}
 }
@@ -5215,7 +5215,7 @@ if("serviceWorker" in navigator){
 
 // Version check: whenever the app is opened or brought back to the front, ask GitHub for the latest version number.
 // If it is newer than what is running, reload (straight away if nothing is open, otherwise offer a button).
-window.APP_VERSION = "20261106162730";
+window.APP_VERSION = "20261106163006";
 (function(){
   let busy = false, shown = false;
   function bar(v){ if(shown) return; shown = true; const b = document.createElement("button"); b.className = "upd-bar"; b.textContent = "New version ready — tap to update"; b.onclick = () => go(v); document.body.appendChild(b); }
