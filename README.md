@@ -15,7 +15,7 @@ The server (Firestore rules) enforces these limits, not just the screens.
 
 ## Check-in rules
 
-- Places: Head Office (150 m), Site Office (300 m), Home Office (150 m), Vruksha (300 m). Anyone can use any of them.
+- Places: Head Office (50 m), Site Office (150 m), Home Office (50 m), Vruksha (150 m), Vistara (150 m). Anyone can use any of them.
 - Check-in needs location + a selfie; check-out needs location. Time comes from the server, not the phone.
 - Shift 10:00 AM – 6:00 PM. In after 10:15 = late. In after 1:00 PM or out before 2:00 PM = half day. Out before 6:00 PM = left early.
 - Every 3 late marks in a month = half a day's loss of pay.

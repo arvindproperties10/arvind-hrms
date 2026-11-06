@@ -38,11 +38,11 @@ service cloud.firestore {
     function near(lat, lng, plat, plng, dlat, dlng) { return math.abs(lat - plat) <= dlat && math.abs(lng - plng) <= dlng; }
     function inFence(p) {
       return p.lat is number && p.lng is number && (
-        near(p.lat, p.lng, 12.97397, 77.51017, 0.0018, 0.0019)        // Head Office, 150 m
-        || near(p.lat, p.lng, 13.050315, 77.393156, 0.0032, 0.0033)   // Site Office, 300 m
-        || near(p.lat, p.lng, 12.979020, 77.504793, 0.0018, 0.0019)   // Home Office, 150 m
-        || near(p.lat, p.lng, 13.107688, 77.404609, 0.0032, 0.0033)   // Vruksha, 300 m
-        || near(p.lat, p.lng, 13.057363, 77.390734, 0.0032, 0.0033)); // Vistara, 300 m
+        near(p.lat, p.lng, 12.97397, 77.51017, 0.0007, 0.0007)        // Head Office, 50 m
+        || near(p.lat, p.lng, 13.050315, 77.393156, 0.0018, 0.0019)   // Site Office, 150 m
+        || near(p.lat, p.lng, 12.979020, 77.504793, 0.0007, 0.0007)   // Home Office, 50 m
+        || near(p.lat, p.lng, 13.107688, 77.404609, 0.0018, 0.0019)   // Vruksha, 150 m
+        || near(p.lat, p.lng, 13.057363, 77.390734, 0.0018, 0.0019)); // Vistara, 150 m
     }
     // field staff (ticked by HR on their employee record) may check in / out anywhere; GPS is still recorded
     function fieldOk() { return get(/databases/$(database)/documents/employees/$(myEmp())).data.get('fieldOk', false) == true; }

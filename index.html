@@ -3402,11 +3402,11 @@ function pushMenu(){
 
 // ================= GPS check-in, attendance rules and self-service =================
 const PLACES = [
-  {id:"ho",   name:"Head Office", lat:12.97397,  lng:77.51017,  r:150},
-  {id:"so",   name:"Site Office", lat:13.050315, lng:77.393156, r:300},
-  {id:"home", name:"Home Office", lat:12.979020, lng:77.504793, r:150},
-  {id:"vruksha", name:"Vruksha", lat:13.107688, lng:77.404609, r:300},
-  {id:"vistara", name:"Vistara", lat:13.057363, lng:77.390734, r:300}
+  {id:"ho",   name:"Head Office", lat:12.97397,  lng:77.51017,  r:50},
+  {id:"so",   name:"Site Office", lat:13.050315, lng:77.393156, r:150},
+  {id:"home", name:"Home Office", lat:12.979020, lng:77.504793, r:50},
+  {id:"vruksha", name:"Vruksha", lat:13.107688, lng:77.404609, r:150},
+  {id:"vistara", name:"Vistara", lat:13.057363, lng:77.390734, r:150}
 ];
 const placeName = id => id==="field" ? "Field" : PLACES.find(p=>p.id===id)?.name || id || "—";
 const placeLbl = s => s ? placeName(s.place) + (s.note ? " · " + s.note : "") : "";
@@ -4896,7 +4896,7 @@ if("serviceWorker" in navigator){
 
 // Version check: whenever the app is opened or brought back to the front, ask GitHub for the latest version number.
 // If it is newer than what is running, reload (straight away if nothing is open, otherwise offer a button).
-window.APP_VERSION = "20261106075335";
+window.APP_VERSION = "20261106075632";
 (function(){
   let busy = false, shown = false;
   function bar(v){ if(shown) return; shown = true; const b = document.createElement("button"); b.className = "upd-bar"; b.textContent = "New version ready — tap to update"; b.onclick = () => go(v); document.body.appendChild(b); }
