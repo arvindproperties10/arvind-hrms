@@ -2065,6 +2065,18 @@ body.dark .dbfloat{background:rgba(30,32,40,.85);border-color:rgba(255,255,255,.
 .co-hist > div{display:flex;justify-content:space-between;gap:10px;font-size:13.5px;padding:6px 0;border-bottom:1px solid var(--line)}
 .co-hist > div:last-child{border-bottom:0}
 .co-hist b{font-weight:600;white-space:nowrap}.co-hist b.ok{color:#1f8a4c}.co-hist b.mute{color:var(--muted)}.co-hist b.live{color:var(--accent,#0071e3)}
+
+/* check-in: "too far" map */
+.ck-mapwrap{width:100%;margin-top:10px;text-align:left}
+.ck-map{width:100%;height:230px;border-radius:16px;overflow:hidden;border:1px solid var(--line, rgba(0,0,0,.12));background:#e8eef5;z-index:0}
+.ck-maplegend{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:7px;font-size:12px;opacity:.8}
+.ck-maplegend span{display:inline-flex;align-items:center;gap:6px}
+.ck-key{display:inline-block;width:12px;height:12px;border-radius:50%}
+.ck-key.ring{border:2px solid #0a84ff;background:rgba(10,132,255,.18)}
+.ck-key.dot{background:#d70015;border:2px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,.2)}
+.leaflet-tooltip.ck-maptip{font:600 11.5px/1.2 inherit;padding:3px 7px;border-radius:8px;box-shadow:0 1px 4px rgba(0,0,0,.2)}
+.ck-map .leaflet-control-attribution{font-size:9px}
+.ck-dir{margin-left:auto;font-weight:600;color:#0a84ff;text-decoration:none}
 </style>
 </head>
 <body>
@@ -3486,7 +3498,7 @@ function shrinkPhoto(file, max=360){
   });
 }
 const CK = {step:"idle", pos:null, near:null, img:"", err:"", kind:"in"};
-const ckReset = () => { camStop(); CK.step="idle"; CK.pos=null; CK.near=null; CK.img=""; CK.err=""; CK.kind="in"; CK.field=false; CK.note=""; CK.camErr=""; };
+const ckReset = () => { camStop(); CK.far=null; CK.step="idle"; CK.pos=null; CK.near=null; CK.img=""; CK.err=""; CK.kind="in"; CK.field=false; CK.note=""; CK.camErr=""; };
 // ---- selfie camera inside the page (works where the phone's "open camera" file picker doesn't) ----
 function camStop(){ try{ CK.cam?.getTracks().forEach(t => t.stop()); }catch(_){} CK.cam = null; }
 function camAttach(){ const v = document.getElementById("ck_video"); if(v && CK.cam && v.srcObject !== CK.cam){ v.srcObject = CK.cam; v.play().catch(()=>{}); } }
@@ -3517,12 +3529,12 @@ function camErrHtml(){
   return `<div class="ck-err">${why}</div>`;
 }
 async function ckLocate(kind){
-  CK.kind = kind; CK.err = ""; CK.step = "locating"; render();
+  CK.kind = kind; CK.err = ""; CK.far = null; CK.step = "locating"; render();
   try{
     const pos = await getPos(); let n = nearestPlace(pos.lat, pos.lng); CK.field = false;
     if(n.d > n.p.r && fieldOk()){ n = {p:{id:"field", name:"Field", r:0}, d:n.d}; CK.field = true; }
     if(n.d > n.p.r && !CK.field){
-      CK.step = "idle";
+      CK.step = "idle"; CK.far = {lat:pos.lat, lng:pos.lng, acc:pos.acc, p:n.p, d:n.d};
       CK.err = `You're about ${n.d>=1000 ? (n.d/1000).toFixed(1)+" km" : Math.round(n.d)+" m"} from ${n.p.name}. You can check ${kind} only within ${n.p.r} m of ${n.p.name} or at another check-in place (Head Office, Site Office, Home Office, Vruksha, Vistara).` + (pos.acc > 100 ? ` Your phone's location is rough right now (±${Math.round(pos.acc)} m), so moving near a window may help.` : "");
       render(); return;
     }
@@ -3623,7 +3635,7 @@ function checkinCard(){
       <li>You're <b>never tracked</b> at any other time.</li>
       <li>Only HR and management can see check-ins. Selfies are deleted after 90 days.</li></ul>
     <button class="btn primary big ck-go" data-act="consent-ok">I agree</button></div>`;
-  const err = CK.err ? `<div class="ck-err"><b>Couldn't check ${CK.kind}</b><span>${esc(CK.err)}</span></div>` : "";
+  const err = CK.err ? `<div class="ck-err"><b>Couldn't check ${CK.kind}</b><span>${esc(CK.err)}</span></div>${CK.far ? `<div class="ck-mapwrap"><div class="ck-map" id="ck_map" aria-label="Map of ${esc(CK.far.p.name)} and your location"></div><div class="ck-maplegend"><span><i class="ck-key ring"></i>${esc(CK.far.p.name)} check-in area (${CK.far.p.r} m)</span><span><i class="ck-key dot"></i>You are here</span><a class="ck-dir" href="https://www.google.com/maps/dir/?api=1&destination=${CK.far.p.lat},${CK.far.p.lng}" target="_blank" rel="noopener">Directions ↗</a></div></div>` : ""}` : "";
   const leave = leaveOn(id, now.date), off = isOff(now.date);
   const note = leave ? `<p class="ck-note">You're on approved leave today.</p>` : off ? `<p class="ck-note">${offLabel(now.date)} · ${c?.in && !c.in.manual ? "<b>1 comp off earned</b> for today." : "check in if you're working to <b>earn 1 comp off</b>."}</p>` : "";
   const where = CK.near ? `<div class="ck-where">${PIN}<span>${CK.near.p.id==="field" ? `<b>Field check-in</b> · ${CK.near.d>=1000 ? (CK.near.d/1000).toFixed(1)+" km" : Math.round(CK.near.d)+" m"} from the nearest office` : `<b>${esc(CK.near.p.name)}</b> · ${Math.round(CK.near.d)} m away`}</span></div>` : "";
@@ -3755,6 +3767,32 @@ async function runSelfTest(){
   await t("Read your own payslips", false, () => raw.collection("payslips").where("empId","==",me).get());
   ST.running = false; render();
 }
+
+// ---- "too far" map: the nearest office's check-in circle and where the employee is ----
+let LEAFLET = null;
+function loadLeaflet(){
+  if(LEAFLET) return LEAFLET;
+  LEAFLET = new Promise((ok, no) => {
+    const c = document.createElement("link"); c.rel = "stylesheet"; c.href = "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"; document.head.appendChild(c);
+    const sc = document.createElement("script"); sc.src = "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js";
+    sc.onload = () => ok(window.L); sc.onerror = () => { LEAFLET = null; no(); }; document.head.appendChild(sc);
+  });
+  return LEAFLET;
+}
+function drawFarMap(el){
+  el.dataset.init = "1"; const f = CK.far; if(!f) return;
+  loadLeaflet().then(L => {
+    if(!el.isConnected) return;
+    const m = L.map(el, {zoomControl:true, scrollWheelZoom:false, attributionControl:true});
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {maxZoom:19, attribution:"© OpenStreetMap"}).addTo(m);
+    const area = L.circle([f.p.lat, f.p.lng], {radius:f.p.r, color:"#0a84ff", weight:2, fillColor:"#0a84ff", fillOpacity:.16}).addTo(m);
+    area.bindTooltip(f.p.name, {permanent:true, direction:"center", className:"ck-maptip"});
+    if(f.acc && f.acc < 3000) L.circle([f.lat, f.lng], {radius:f.acc, color:"#d70015", weight:1, dashArray:"4 4", fillColor:"#d70015", fillOpacity:.06, interactive:false}).addTo(m);
+    L.circleMarker([f.lat, f.lng], {radius:8, color:"#fff", weight:3, fillColor:"#d70015", fillOpacity:1}).addTo(m).bindTooltip("You", {permanent:true, direction:"top", offset:[0,-8], className:"ck-maptip"});
+    m.fitBounds(L.latLng(f.p.lat, f.p.lng).toBounds(f.p.r * 2).extend([f.lat, f.lng]), {padding:[34, 34], maxZoom:17});
+  }).catch(err => { console.warn("map", err); if(el.isConnected) el.outerHTML = `<p class="ck-sub">The map couldn't load. Check the internet connection.</p>`; });
+}
+new MutationObserver(() => { const el = document.getElementById("ck_map"); if(el && !el.dataset.init) drawFarMap(el); }).observe(document.documentElement, {childList:true, subtree:true});
 
 const VIEWS = {
 access(){ return accessView(); },
@@ -4858,7 +4896,7 @@ if("serviceWorker" in navigator){
 
 // Version check: whenever the app is opened or brought back to the front, ask GitHub for the latest version number.
 // If it is newer than what is running, reload (straight away if nothing is open, otherwise offer a button).
-window.APP_VERSION = "20261106065648";
+window.APP_VERSION = "20261106075335";
 (function(){
   let busy = false, shown = false;
   function bar(v){ if(shown) return; shown = true; const b = document.createElement("button"); b.className = "upd-bar"; b.textContent = "New version ready — tap to update"; b.onclick = () => go(v); document.body.appendChild(b); }
