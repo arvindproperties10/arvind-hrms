@@ -2235,35 +2235,6 @@ html.lg main#main{view-transition-name:page}
 
 
 
-/* 11 — every toggle uses the bottom-bar design: glass track + a gliding glacier-blue glass droplet */
-html.lg body .seg,html.lg body .dots{position:relative;isolation:isolate;border:0!important;border-radius:999px!important;padding:3px!important;gap:2px!important;
-  background:rgba(255,255,255,.34)!important;box-shadow:inset 0 0 0 1px rgba(255,255,255,.6),inset 1px 1.5px 0 -.5px rgba(255,255,255,.9),inset 0 1px 3px rgba(16,42,94,.08)!important}
-html.lg body.dark .seg,html.lg body.dark .dots{background:rgba(255,255,255,.06)!important;box-shadow:inset 0 0 0 1px rgba(255,255,255,.09),inset 1px 1px 0 -.5px rgba(255,255,255,.18)!important}
-html.lg body .seg > button,html.lg body .dots > button{position:relative;z-index:1;background:transparent!important;border:0!important;border-radius:999px!important;box-shadow:none!important;
-  transition:color .3s cubic-bezier(.2,.8,.2,1),transform .35s cubic-bezier(.2,1.5,.4,1)}
-html.lg body .seg > button:active,html.lg body .dots > button:active{transform:scale(.95)}
-html.lg body .seg > button[aria-pressed="true"],html.lg body .dots > button[aria-selected="true"]{color:var(--accent)!important;font-weight:650}
-/* the droplet */
-html.lg body .seg-pill{position:absolute;left:0;top:0;z-index:0;border-radius:999px;pointer-events:none;opacity:0;transition:opacity .2s;will-change:transform;
-  background:linear-gradient(180deg,rgba(210,234,255,.80),rgba(160,206,250,.52));
-  box-shadow:0 3px 10px -5px rgba(0,60,160,.35),inset 0 0 0 1px rgba(255,255,255,.9),inset 0 -5px 8px -7px rgba(0,90,200,.25)}
-html.lg body.dark .seg-pill{background:linear-gradient(180deg,rgba(150,205,255,.24),rgba(110,175,240,.11));box-shadow:0 3px 10px -5px rgba(0,0,0,.6),inset 0 0 0 1px rgba(255,255,255,.16)}
-html.lg body .seg-pill.on{opacity:1}
-/* attendance marks keep their meaning: the droplet takes the status colour, still glass */
-html.lg body .seg-pill[data-v="P"]{background:linear-gradient(180deg,rgba(64,206,104,.92),rgba(36,170,72,.80))}
-html.lg body .seg-pill[data-v="HD"]{background:linear-gradient(180deg,rgba(255,176,46,.95),rgba(240,140,10,.82))}
-html.lg body .seg-pill[data-v="A"]{background:linear-gradient(180deg,rgba(255,92,82,.94),rgba(220,48,40,.82))}
-html.lg body .seg-pill[data-v="L"]{background:linear-gradient(180deg,rgba(150,120,255,.92),rgba(110,80,230,.82))}
-html.lg body .seg > button[aria-pressed="true"][data-v="P"],html.lg body .seg > button[aria-pressed="true"][data-v="HD"],html.lg body .seg > button[aria-pressed="true"][data-v="A"],html.lg body .seg > button[aria-pressed="true"][data-v="L"]{color:#fff!important}
-/* on/off switches: glass track, glass knob that stretches under the finger and springs across; glacier blue when on */
-html.lg body .switch{background:rgba(120,130,150,.22)!important;box-shadow:inset 0 0 0 1px rgba(255,255,255,.55),inset 1px 1.5px 0 -.5px rgba(255,255,255,.85),inset 0 1px 3px rgba(16,42,94,.12)!important;transition:background .35s cubic-bezier(.2,.8,.2,1),box-shadow .35s}
-html.lg body .switch[aria-checked="true"]{background:linear-gradient(180deg,rgba(150,200,250,.95),rgba(96,160,236,.88))!important;box-shadow:inset 0 0 0 1px rgba(255,255,255,.55),inset 1px 1.5px 0 -.5px rgba(255,255,255,.8),0 0 14px -2px rgba(96,160,236,.55)!important}
-html.lg body .switch .knob{background:linear-gradient(180deg,rgba(255,255,255,.98),rgba(240,247,255,.9))!important;box-shadow:0 2px 7px -1px rgba(10,40,90,.3),inset 0 0 0 .5px rgba(255,255,255,.9)!important;
-  transition:transform .5s cubic-bezier(.3,1.35,.4,1),width .25s cubic-bezier(.2,.8,.2,1)!important;transform-origin:left center}
-html.lg body .switch:active .knob{width:30px}
-html.lg body .switch[aria-checked="true"]:active .knob{transform:translateX(14px)}
-html.lg body.dark .switch{background:rgba(255,255,255,.10)!important;box-shadow:inset 0 0 0 1px rgba(255,255,255,.12)!important}
-html.lg body.dark .switch[aria-checked="true"]{background:linear-gradient(180deg,rgba(110,175,240,.75),rgba(70,140,215,.65))!important}
 </style>
 </head>
 <body>
@@ -5225,52 +5196,10 @@ if("serviceWorker" in navigator){
   setTimeout(boot, 800); setTimeout(watchdog, 2500);
 })();
 
-// ===================== glass droplets for every segmented toggle (.seg / .dots) =====================
-(function(){
-  const root = document.documentElement; if(!root.classList.contains("lg")) return;
-  const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
-  const mem = new Map();   // remembers where each toggle's droplet was, so it still glides after the screen redraws
-  const SPRING = "cubic-bezier(.3,1.22,.4,1)";
-  const keyOf = seg => (seg.getAttribute("aria-label") || "") + "|" + seg.className + "|" + [...seg.children].filter(b => b.tagName === "BUTTON").map(b => (b.dataset.v || b.textContent.trim())).join(",");
-  function sync(seg){
-    const btns = [...seg.children].filter(b => b.tagName === "BUTTON"); if(!btns.length) return;
-    const on = btns.find(b => b.getAttribute("aria-pressed") === "true" || b.getAttribute("aria-selected") === "true");
-    let pill = seg.querySelector(":scope > .seg-pill");
-    if(!pill){ pill = document.createElement("span"); pill.className = "seg-pill"; pill.setAttribute("aria-hidden","true"); seg.insertBefore(pill, seg.firstChild); }
-    if(!on || !on.offsetWidth){ pill.classList.remove("on"); return; }
-    const x = on.offsetLeft, y = on.offsetTop, w = on.offsetWidth, h = on.offsetHeight, key = keyOf(seg), prev = mem.get(key);
-    const cur = pill.dataset.at;
-    const at = `${x},${y},${w},${h},${on.dataset.v || ""}`; if(cur === at) return;
-    pill.dataset.at = at; pill.dataset.v = on.dataset.v || "";
-    pill.style.width = w + "px"; pill.style.height = h + "px"; pill.style.transform = `translate(${x}px,${y}px)`;
-    const from = cur ? cur.split(",").map(Number) : (prev && [prev.x, prev.y, prev.w, prev.h]);
-    if(from && !reduceMotion && root.dataset.glass !== "off" && (from[0] !== x || from[1] !== y)){
-      const dx = x - from[0], sx = Math.min(1.35, 1 + Math.abs(dx) / Math.max(w, 30) * .18);
-      pill.animate([
-        {transform:`translate(${from[0]}px,${from[1]}px)`, width:from[2] + "px", height:from[3] + "px"},
-        {transform:`translate(${from[0] + dx * .5}px,${from[1] + (y - from[1]) * .5}px) scaleY(${(1 / sx).toFixed(3)})`, width:Math.round((from[2] + w) / 2 * sx) + "px", height:h + "px", offset:.35},
-        {transform:`translate(${x}px,${y}px)`, width:w + "px", height:h + "px"}
-      ], {duration:460, easing:SPRING});
-    }
-    mem.set(key, {x, y, w, h}); pill.classList.add("on");
-  }
-  let queued = false;
-  function syncAll(){ queued = false; document.querySelectorAll(".seg, .dots").forEach(sync); if(mem.size > 400) mem.clear(); }
-  const q = () => { if(!queued){ queued = true; requestAnimationFrame(syncAll); } };
-  // move the droplet the moment a toggle is tapped (the data save and redraw follow)
-  document.addEventListener("pointerdown", e => { const b = e.target.closest(".seg > button, .dots > button"); if(!b || b.disabled) return;
-    const seg = b.parentNode, attr = b.hasAttribute("aria-selected") ? "aria-selected" : "aria-pressed";
-    if(b.getAttribute(attr) === "true") return;
-    if(seg.closest("[data-ro]") || document.body.classList.contains("ro")) return;
-    [...seg.children].forEach(x => { if(x.tagName === "BUTTON") x.setAttribute(attr, String(x === b)); }); }, true);
-  new MutationObserver(q).observe(document.body, {childList:true, subtree:true, attributes:true, attributeFilter:["aria-pressed","aria-selected"]});
-  addEventListener("resize", q);
-  q();
-})();
 
 // Version check: whenever the app is opened or brought back to the front, ask GitHub for the latest version number.
 // If it is newer than what is running, reload (straight away if nothing is open, otherwise offer a button).
-window.APP_VERSION = "20261106164313";
+window.APP_VERSION = "20261106170741";
 (function(){
   let busy = false, shown = false;
   function bar(v){ if(shown) return; shown = true; const b = document.createElement("button"); b.className = "upd-bar"; b.textContent = "New version ready — tap to update"; b.onclick = () => go(v); document.body.appendChild(b); }
