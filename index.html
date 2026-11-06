@@ -1,6 +1,9 @@
 <!doctype html>
 <html lang="en">
-<head>
+<head><script>(function(){try{var d=document.documentElement,f=localStorage.getItem("apGlass"),m=navigator.deviceMemory||4,c=navigator.hardwareConcurrency||4,
+rt=matchMedia("(prefers-reduced-transparency: reduce)").matches,bf=CSS.supports("backdrop-filter","blur(1px)")||CSS.supports("-webkit-backdrop-filter","blur(1px)"),
+cr=/Chrome\/\d+/.test(navigator.userAgent)&&!/Edg\//.test(navigator.userAgent)&&!!window.chrome,
+t=f||(rt||!bf?"off":(cr&&m>=6&&c>=8?"full":"lite"));d.classList.add("lg","lg-"+t);d.dataset.glass=t;}catch(e){}})();</script>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Srigandha Properties HRMS</title>
@@ -2092,6 +2095,133 @@ body.dark .dbfloat{background:rgba(30,32,40,.85);border-color:rgba(255,255,255,.
 @keyframes bdayPop{0%{transform:scale(.3);opacity:0}100%{transform:scale(1);opacity:1}}
 @media (prefers-reduced-motion:reduce){.bday-confetti{display:none}.bday-cake{animation:none}}
 body.dark .bday-modal{background:rgba(28,28,30,.98)!important}
+
+/* =====================================================================================
+   LIQUID GLASS (Apple-style), performance first
+   Content (tiles, tables, lists) = clear surfaces with no live blur: they sit on a smooth
+   background, so a blur would look the same and cost a lot. Controls that float over
+   content (tab bar, sheets, drawers, toasts, top bar) = real glass: lensing at the edges
+   (top tier), light blur, specular rim that follows the phone's tilt.
+   Tiers on <html>: lg-full (refraction) · lg-lite (blur only) · lg-off (solid, for
+   "reduce transparency" or browsers without blur).
+   ===================================================================================== */
+@property --lg-a{syntax:"<angle>";inherits:true;initial-value:135deg}
+html.lg{--lg-a:135deg;
+  --lg-ink-shadow:0 10px 30px -12px rgba(15,30,70,.35),0 2px 6px -2px rgba(15,30,70,.12);
+  --lg-rim:inset 0 0 0 1px rgba(255,255,255,.55),inset 1px 1.5px 0 -.5px rgba(255,255,255,.95),inset -1px -1px 0 -.5px rgba(255,255,255,.45);
+  --lg-fill:rgba(255,255,255,.30);
+  --lg-blur:blur(14px) saturate(185%) brightness(1.04);
+  --tile-a:rgba(255,255,255,.72);--tile-b:rgba(255,255,255,.50);--tile-line:rgba(255,255,255,.75)}
+html.lg-lite{--lg-fill:rgba(255,255,255,.58);--lg-blur:blur(12px) saturate(170%)}
+html.lg-full{--lg-fill:rgba(255,255,255,.22);--lg-blur:blur(3px) saturate(190%) brightness(1.05)}
+html.lg body.dark{--lg-rim:inset 0 0 0 1px rgba(255,255,255,.12),inset 1px 1.5px 0 -.5px rgba(255,255,255,.28),inset -1px -1px 0 -.5px rgba(255,255,255,.08);
+  --lg-fill:rgba(30,32,40,.55);--lg-ink-shadow:0 12px 32px -12px rgba(0,0,0,.7);
+  --tile-a:rgba(46,50,62,.70);--tile-b:rgba(26,28,36,.58);--tile-line:rgba(255,255,255,.09)}
+html.lg-lite body.dark{--lg-fill:rgba(30,32,40,.70)}
+html.lg-full body.dark{--lg-fill:rgba(24,26,34,.38)}
+
+/* 1 — no live blur anywhere by default (this alone removes ~50 stacked blur layers) */
+html.lg *,html.lg *::before,html.lg *::after{-webkit-backdrop-filter:none!important;backdrop-filter:none!important}
+
+/* 2 — background: painted once on a fixed layer instead of background-attachment:fixed (which repaints on every scroll) */
+@media (max-width:760px){
+  html.lg:has(body.has-tabbar){background:#e9eff9!important}
+  html.lg:has(body.dark.has-tabbar){background:#0e1016!important}
+  html.lg body.has-tabbar,html.lg body.dark.has-tabbar{background:transparent!important;background-attachment:scroll!important}
+  html.lg body.has-tabbar::before{content:""!important;display:block!important;height:auto!important;position:fixed!important;inset:-10vmax!important;z-index:-1!important;pointer-events:none;transform:translateZ(0);
+    background:radial-gradient(60vmax 60vmax at 5% 5%,rgba(0,113,227,.30),transparent 60%),radial-gradient(50vmax 50vmax at 100% 25%,rgba(255,186,73,.28),transparent 62%),
+      radial-gradient(55vmax 55vmax at 85% 100%,rgba(88,86,214,.22),transparent 60%),radial-gradient(45vmax 45vmax at 5% 85%,rgba(48,176,199,.20),transparent 60%)}
+  html.lg body.dark.has-tabbar::before{background:radial-gradient(60vmax 60vmax at 5% 5%,rgba(10,132,255,.26),transparent 60%),radial-gradient(50vmax 50vmax at 100% 25%,rgba(255,159,10,.14),transparent 62%),
+      radial-gradient(55vmax 55vmax at 85% 100%,rgba(94,92,230,.22),transparent 60%),radial-gradient(45vmax 45vmax at 5% 85%,rgba(64,200,224,.12),transparent 60%)}
+}
+
+/* 3 — content surfaces: clear glass look, zero blur cost */
+html.lg body .panel,html.lg body .sumstrip,html.lg body .kpi,html.lg body .ucard,html.lg body .mcard,html.lg body .ck-card,html.lg body .tablewrap,html.lg body .pcard,html.lg body .banner{
+  background:linear-gradient(180deg,rgba(255,255,255,.35) 0%,rgba(255,255,255,0) 42%),linear-gradient(165deg,var(--tile-a),var(--tile-b))!important;
+  border:1px solid var(--tile-line)!important;
+  box-shadow:0 16px 36px -24px rgba(16,42,94,.45),0 2px 8px -4px rgba(16,42,94,.10),inset 0 1px 0 rgba(255,255,255,.9),inset 0 0 0 .5px rgba(255,255,255,.4)!important}
+html.lg body.dark .panel,html.lg body.dark .sumstrip,html.lg body.dark .kpi,html.lg body.dark .ucard,html.lg body.dark .mcard,html.lg body.dark .ck-card,html.lg body.dark .tablewrap,html.lg body.dark .pcard,html.lg body.dark .banner{
+  background:linear-gradient(180deg,rgba(255,255,255,.06) 0%,rgba(255,255,255,0) 42%),linear-gradient(165deg,var(--tile-a),var(--tile-b))!important;
+  box-shadow:0 16px 36px -22px rgba(0,0,0,.7),inset 0 1px 0 rgba(255,255,255,.10)!important}
+/* tiles inside tiles: a lighter layer, never muddy */
+html.lg body .panel .kpi,html.lg body .panel .mcard,html.lg body .panel .ucard,html.lg body .panel .pcard,html.lg body .panel .tablewrap{background:rgba(255,255,255,.45)!important;box-shadow:inset 0 0 0 1px rgba(255,255,255,.6)!important;border-color:transparent!important}
+html.lg body.dark .panel .kpi,html.lg body.dark .panel .mcard,html.lg body.dark .panel .ucard,html.lg body.dark .panel .pcard,html.lg body.dark .panel .tablewrap{background:rgba(255,255,255,.04)!important;box-shadow:inset 0 0 0 1px rgba(255,255,255,.07)!important}
+/* sticky table headers: solid tint instead of blur */
+html.lg body .stickyhead thead th{background:rgba(246,249,255,.97)!important}
+html.lg body.dark .stickyhead thead th{background:rgba(30,33,42,.97)!important}
+
+/* 4 — the glass material for floating controls */
+html.lg body .tabbar,html.lg body .mtop,html.lg body .drawer,html.lg body .modal,html.lg body .toast,html.lg body .inst-sheet,html.lg body .upd-bar,html.lg body .rail{
+  -webkit-backdrop-filter:var(--lg-blur)!important;backdrop-filter:var(--lg-blur)!important}
+html.lg body .tabbar,html.lg body .mtop{background:var(--lg-fill)!important;border:0!important;box-shadow:var(--lg-ink-shadow),var(--lg-rim)!important;isolation:isolate}
+html.lg body .drawer,html.lg body .modal{background:color-mix(in srgb,var(--lg-fill) 100%,transparent)!important;box-shadow:0 30px 70px -20px rgba(10,20,50,.45),var(--lg-rim)!important}
+/* sheets are read, not looked through: keep text crisp with a denser fill */
+html.lg-lite body .drawer,html.lg-lite body .modal{background:rgba(255,255,255,.84)!important}
+html.lg-full body .drawer,html.lg-full body .modal{background:rgba(255,255,255,.72)!important}
+html.lg-lite body.dark .drawer,html.lg-lite body.dark .modal{background:rgba(28,30,38,.88)!important}
+html.lg-full body.dark .drawer,html.lg-full body.dark .modal{background:rgba(28,30,38,.78)!important}
+html.lg body .toast{background:rgba(20,22,28,.72)!important;box-shadow:0 10px 30px -10px rgba(0,0,0,.45),inset 0 0 0 1px rgba(255,255,255,.12),inset 1px 1px 0 -.5px rgba(255,255,255,.3)!important}
+/* scrims: dim only (blurring the whole screen is the most expensive thing a phone can do) */
+html.lg body .scrim,html.lg body .navscrim,html.lg body .inst-scrim{background:rgba(10,18,40,.30)!important}
+/* specular rim that follows the light (angle driven by the phone's tilt) */
+html.lg body .tabbar::after,html.lg body .mtop::after{content:""!important;display:block!important;position:absolute;inset:0;border-radius:inherit;pointer-events:none;z-index:3;padding:1.2px;
+  background:linear-gradient(var(--lg-a),rgba(255,255,255,.95),rgba(255,255,255,.18) 26%,rgba(255,255,255,0) 50%,rgba(255,255,255,.18) 74%,rgba(255,255,255,.75))!important;
+  -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;opacity:.9}
+html.lg body.dark .tabbar::after,html.lg body.dark .mtop::after{opacity:.35}
+html.lg body .mtop::before{display:none!important}
+html.lg body .mtop{position:relative}
+
+/* 5 — tab bar: floating capsule with a glass "droplet" that glides to the selected tab */
+@media (max-width:760px){
+  html.lg body.has-tabbar .tabbar{border-radius:32px!important;padding:6px!important;left:10px;right:10px;bottom:calc(10px + env(safe-area-inset-bottom,0px))}
+  html.lg body .tabbar a,html.lg body .tabbar button{position:relative;z-index:2;background:none!important;border-radius:26px!important;transition:color .25s,transform .45s cubic-bezier(.2,1.5,.4,1)}
+  html.lg body .tabbar a svg,html.lg body .tabbar button svg{transition:transform .45s cubic-bezier(.2,1.6,.4,1)}
+  html.lg body .tabbar [aria-current="page"] svg{transform:scale(1.1)}
+  html.lg body .tabbar a:active,html.lg body .tabbar button:active{transform:scale(.94)}
+  html.lg body .lg-pill{position:absolute;z-index:1;top:6px;left:0;height:calc(100% - 12px);width:60px;border-radius:26px;pointer-events:none;opacity:0;
+    background:linear-gradient(180deg,rgba(255,255,255,.85),rgba(255,255,255,.55));
+    box-shadow:0 4px 14px -6px rgba(0,60,160,.35),inset 0 0 0 1px rgba(255,255,255,.9),inset 0 -6px 10px -8px rgba(0,90,200,.25);
+    transition:transform .55s cubic-bezier(.25,1.35,.35,1),width .55s cubic-bezier(.25,1.35,.35,1),opacity .2s;will-change:transform}
+  html.lg body.dark .lg-pill{background:linear-gradient(180deg,rgba(255,255,255,.20),rgba(255,255,255,.09));box-shadow:0 4px 14px -6px rgba(0,0,0,.6),inset 0 0 0 1px rgba(255,255,255,.16)}
+  html.lg body .lg-pill.on{opacity:1}
+  html.lg body .lg-pill.squish{transition-duration:.18s}
+}
+
+/* 6 — interactive glass: controls lift and brighten under the finger, with a spring */
+html.lg body .btn,html.lg body .kpi[data-go],html.lg body .ck-go,html.lg body .mt-burger{transition:transform .4s cubic-bezier(.2,1.6,.4,1),filter .2s,box-shadow .2s}
+html.lg body .btn:active,html.lg body .ck-go:active,html.lg body .mt-burger:active{transform:scale(1.04);filter:brightness(1.08)}
+html.lg body .kpi[data-go]:active{transform:scale(.98)}
+html.lg body .btn.primary,html.lg body .ck-go{box-shadow:0 8px 20px -10px rgba(0,113,227,.6),inset 0 1px 0 rgba(255,255,255,.35),inset 0 0 0 1px rgba(255,255,255,.12)!important}
+
+/* 7 — accessibility and the "off" tier: solid, calm surfaces */
+html.lg-off body .tabbar,html.lg-off body .mtop{background:rgba(255,255,255,.97)!important}
+html.lg-off body.dark .tabbar,html.lg-off body.dark .mtop{background:rgba(28,30,38,.98)!important}
+html.lg-off body .drawer,html.lg-off body .modal{background:#fff!important}
+html.lg-off body.dark .drawer,html.lg-off body.dark .modal{background:#1c1e26!important}
+html.lg-off body .panel,html.lg-off body .sumstrip,html.lg-off body .kpi,html.lg-off body .ucard,html.lg-off body .mcard,html.lg-off body .ck-card,html.lg-off body .tablewrap{background:#fff!important}
+html.lg-off body.dark .panel,html.lg-off body.dark .sumstrip,html.lg-off body.dark .kpi,html.lg-off body.dark .ucard,html.lg-off body.dark .mcard,html.lg-off body.dark .ck-card,html.lg-off body.dark .tablewrap{background:#1c1e26!important}
+html.lg-off body .tabbar::after,html.lg-off body .mtop::after{display:none!important}
+html.lg.lg-off body .tabbar,html.lg.lg-off body .mtop,html.lg.lg-off body .drawer,html.lg.lg-off body .modal,html.lg.lg-off body .toast,html.lg.lg-off body .inst-sheet,html.lg.lg-off body .upd-bar,html.lg.lg-off body .rail{-webkit-backdrop-filter:none!important;backdrop-filter:none!important}
+@media (prefers-reduced-motion:reduce){html.lg body .lg-pill,html.lg body .tabbar a,html.lg body .btn{transition:none!important}}
+
+/* 8 — premium motion (transform + opacity only, so it stays on the GPU) */
+@keyframes lgRise{from{opacity:0;translate:0 18px;scale:.985}to{opacity:1;translate:0 0;scale:1}}
+@keyframes lgSheet{0%{opacity:0;translate:0 60px;scale:.94}60%{opacity:1}100%{opacity:1;translate:0 0;scale:1}}
+@keyframes lgDrawer{from{opacity:.4;translate:40px 0}to{opacity:1;translate:0 0}}
+@keyframes lgFade{from{opacity:0}to{opacity:1}}
+@keyframes lgToast{0%{opacity:0;translate:0 24px;scale:.9}100%{opacity:1;translate:0 0;scale:1}}
+@keyframes lgGlint{from{background-position:-160% 0}to{background-position:260% 0}}
+@media (prefers-reduced-motion:no-preference){
+  html.lg body main > .lg-in{animation:lgRise .62s cubic-bezier(.16,1,.3,1) both;animation-delay:calc(var(--i,0) * 45ms)}
+  html.lg body #overlay .modal,html.lg body .inst-sheet{animation:lgSheet .6s cubic-bezier(.2,1.25,.35,1) both!important}
+  html.lg body #overlay .drawer{animation:lgDrawer .5s cubic-bezier(.16,1,.3,1) both!important}
+  html.lg body #overlay .scrim,html.lg body .inst-scrim{animation:lgFade .3s ease-out both}
+  html.lg body .toast{animation:lgToast .5s cubic-bezier(.2,1.4,.35,1) both}
+  /* a slow light sweep across the check-in button */
+  html.lg body .ck-go{background-image:linear-gradient(105deg,transparent 35%,rgba(255,255,255,.28) 50%,transparent 65%)!important;background-size:250% 100%!important;background-repeat:no-repeat!important;animation:lgGlint 3.6s cubic-bezier(.45,0,.2,1) 1.2s infinite}
+  html.lg body .ck-go.primary,html.lg body .btn.primary.ck-go{background-color:var(--accent)!important}
+}
+html.lg-off body main > .lg-in{animation:none!important}
 </style>
 </head>
 <body>
@@ -4936,9 +5066,111 @@ if("serviceWorker" in navigator){
   enhance(document);
 })();
 
+// ===================== Liquid Glass engine =====================
+(function(){
+  const root = document.documentElement; if(!root.classList.contains("lg")) return;
+  const tier = () => root.dataset.glass;
+  const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const setTier = t => { root.classList.remove("lg-full","lg-lite","lg-off"); root.classList.add("lg-" + t); root.dataset.glass = t; refractAll(); };
+  window.__glass = { tier, set: t => { try{ localStorage.setItem("apGlass", t); }catch(_){ } setTier(t); }, auto: () => { try{ localStorage.removeItem("apGlass"); }catch(_){ } location.reload(); } };
+
+  // ---- 1. lensing: an SVG displacement map shaped like each control, bending what's behind its rim ----
+  const NS = "http://www.w3.org/2000/svg";
+  let defs = null;
+  function svgDefs(){ if(defs) return defs; const s = document.createElementNS(NS, "svg"); s.setAttribute("width","0"); s.setAttribute("height","0"); s.setAttribute("aria-hidden","true"); s.style.cssText = "position:absolute;width:0;height:0;pointer-events:none";
+    defs = document.createElementNS(NS, "defs"); s.appendChild(defs); document.body.appendChild(s); return defs; }
+  function dispMap(w, h, r, band){   // R = x shift, G = y shift, 128 = none; strongest at the edge, zero in the middle
+    const c = document.createElement("canvas"); c.width = w; c.height = h; const g = c.getContext("2d"), img = g.createImageData(w, h), d = img.data;
+    for(let y = 0; y < h; y++) for(let x = 0; x < w; x++){
+      const cx = Math.min(Math.max(x, r), w - r), cy = Math.min(Math.max(y, r), h - r);   // nearest point on the inner rounded-rect core
+      let dx = x - cx, dy = y - cy; const inCorner = dx || dy;
+      let dist, nx = 0, ny = 0;
+      if(inCorner){ const l = Math.hypot(dx, dy) || 1; dist = r - l; nx = dx / l; ny = dy / l; }
+      else { const dl = x, dr = w - 1 - x, dt = y, db = h - 1 - y, m = Math.min(dl, dr, dt, db); dist = m; if(m === dl) nx = -1; else if(m === dr) nx = 1; else if(m === dt) ny = -1; else ny = 1; }
+      const t = Math.max(0, 1 - dist / band), k = t * t * (3 - 2 * t);   // smoothstep: soft inside, strong at the rim
+      const i = (y * w + x) * 4; d[i] = 128 - nx * k * 127; d[i + 1] = 128 - ny * k * 127; d[i + 2] = 128; d[i + 3] = 255;
+    }
+    g.putImageData(img, 0, 0); return c.toDataURL();
+  }
+  const lensed = new Map();
+  function refract(el, id){
+    if(tier() !== "full"){ el.style.removeProperty("backdrop-filter"); el.style.removeProperty("-webkit-backdrop-filter"); return; }
+    const b = el.getBoundingClientRect(); if(b.width < 20 || b.height < 20) return;
+    const w = Math.round(b.width), h = Math.round(b.height), key = w + "x" + h; if(lensed.get(el) === key) return; lensed.set(el, key);
+    const r = Math.min(parseFloat(getComputedStyle(el).borderTopLeftRadius) || 20, h / 2), band = Math.min(22, h / 2.4);
+    let f = document.getElementById(id); if(f) f.remove();
+    f = document.createElementNS(NS, "filter"); f.id = id; f.setAttribute("x","0"); f.setAttribute("y","0"); f.setAttribute("width", w); f.setAttribute("height", h);
+    f.setAttribute("filterUnits","userSpaceOnUse"); f.setAttribute("primitiveUnits","userSpaceOnUse"); f.setAttribute("color-interpolation-filters","sRGB");
+    const im = document.createElementNS(NS, "feImage"); im.setAttribute("href", dispMap(w, h, r, band)); im.setAttribute("x","0"); im.setAttribute("y","0"); im.setAttribute("width", w); im.setAttribute("height", h); im.setAttribute("preserveAspectRatio","none"); im.setAttribute("result","map");
+    const dm = document.createElementNS(NS, "feDisplacementMap"); dm.setAttribute("in","SourceGraphic"); dm.setAttribute("in2","map"); dm.setAttribute("scale", String(Math.round(Math.min(48, h * .7)))); dm.setAttribute("xChannelSelector","R"); dm.setAttribute("yChannelSelector","G");
+    f.appendChild(im); f.appendChild(dm); svgDefs().appendChild(f);
+    const v = `url(#${id}) blur(2.5px) saturate(190%) brightness(1.05)`;
+    el.style.setProperty("backdrop-filter", v, "important"); el.style.setProperty("-webkit-backdrop-filter", v, "important");
+  }
+  function refractAll(){ const tb = document.getElementById("tabbar"); if(tb && !tb.hidden) refract(tb, "lg-tabbar"); }
+  let rz = 0; addEventListener("resize", () => { clearTimeout(rz); rz = setTimeout(() => { lensed.clear(); refractAll(); placePill(true); }, 150); });
+
+  // ---- 2. the tab bar droplet: persists across redraws, glides with a spring, stretches while it travels ----
+  const pill = document.createElement("span"); pill.className = "lg-pill"; pill.setAttribute("aria-hidden","true");
+  let lastX = null;
+  function placePill(instant){
+    const tb = document.getElementById("tabbar"); if(!tb || tb.hidden) return;
+    if(pill.parentNode !== tb) tb.insertBefore(pill, tb.firstChild);
+    const cur = tb.querySelector('[aria-current="page"]'); if(!cur){ pill.classList.remove("on"); return; }
+    const x = cur.offsetLeft, w = cur.offsetWidth;
+    if(instant || lastX === null || reduceMotion){ pill.style.transition = "none"; pill.style.transform = `translateX(${x}px)`; pill.style.width = w + "px"; void pill.offsetWidth; pill.style.transition = ""; }
+    else if(x !== lastX){
+      // stretch toward the destination, then settle (the "liquid" part)
+      const span = Math.abs(x - lastX) + w, left = Math.min(x, lastX);
+      pill.classList.add("squish"); pill.style.transform = `translateX(${left}px)`; pill.style.width = span + "px";
+      setTimeout(() => { pill.classList.remove("squish"); pill.style.transform = `translateX(${x}px)`; pill.style.width = w + "px"; }, 170);
+    } else { pill.style.width = w + "px"; }
+    lastX = x; pill.classList.add("on");
+  }
+  let tbObs = null;
+  function watchTabbar(){ const tb = document.getElementById("tabbar"); if(!tb || tbObs) return;
+    tbObs = new MutationObserver(ms => { if(ms.every(m => [...m.addedNodes, ...m.removedNodes].every(n => n === pill))) return; requestAnimationFrame(() => { placePill(false); refractAll(); }); });
+    tbObs.observe(tb, {childList:true, attributes:true, attributeFilter:["hidden"]}); placePill(true); refractAll(); }
+
+  // ---- 3. specular light follows the phone's tilt (no permission needed on Android) ----
+  let target = 135, shown = 135, raf = 0;
+  function tick(){ shown += (target - shown) * .18; root.style.setProperty("--lg-a", shown.toFixed(1) + "deg"); raf = Math.abs(target - shown) > .3 ? requestAnimationFrame(tick) : 0; }
+  if(!reduceMotion) addEventListener("deviceorientation", e => { if(e.gamma == null || tier() === "off") return; const t = 135 + Math.max(-35, Math.min(35, e.gamma)) * 1.6 + Math.max(-20, Math.min(20, (e.beta || 45) - 45)) * .6; if(Math.abs(t - target) < 1.5) return; target = t; if(!raf) raf = requestAnimationFrame(tick); }, {passive:true});
+
+  // ---- 4. page entrance: staggered rise when the section changes (not on every data refresh) ----
+  let wantIn = true, wantAt = performance.now();
+  addEventListener("hashchange", () => { wantIn = true; wantAt = performance.now(); });
+  document.addEventListener("click", e => { if(e.target.closest("[data-go],[data-v],.tabbar a,#nav a,[data-act='tab-more']")){ wantIn = true; wantAt = performance.now(); } }, true);
+  const countUp = el => { const m = /^(\D*)([\d,]+(?:\.\d+)?)(\D*)$/.exec(el.textContent.trim()); if(!m) return; const end = parseFloat(m[2].replace(/,/g,"")); if(!(end > 0) || end > 1e7) return;
+    const dec = (m[2].split(".")[1] || "").length, comma = m[2].includes(","), t0 = performance.now(), dur = 750;
+    const fmt = v => { let s = v.toFixed(dec); if(comma) s = Number(s).toLocaleString("en-IN", {minimumFractionDigits:dec, maximumFractionDigits:dec}); return m[1] + s + m[3]; };
+    const step = now => { const p = Math.min(1, (now - t0) / dur), e = 1 - Math.pow(2, -10 * p); el.textContent = fmt(end * (p >= 1 ? 1 : e)); if(p < 1 && el.isConnected) requestAnimationFrame(step); };
+    requestAnimationFrame(step); };
+  function enter(){
+    if(!wantIn || performance.now() - wantAt > 1500 || tier() === "off" || reduceMotion){ return; }
+    const main = document.querySelector("main"); if(!main || !main.children.length) return; wantIn = false;
+    [...main.children].slice(0, 10).forEach((el, i) => { el.classList.remove("lg-in"); void el.offsetWidth; el.style.setProperty("--i", i); el.classList.add("lg-in"); el.addEventListener("animationend", () => el.classList.remove("lg-in"), {once:true}); });
+    main.querySelectorAll(".kpi .v, .sumstrip b").forEach((el, i) => { if(i < 12) countUp(el); });
+  }
+  let mainObs = null;
+  function watchMain(){ const main = document.querySelector("main"); if(!main || mainObs) return; mainObs = new MutationObserver(() => requestAnimationFrame(enter)); mainObs.observe(main, {childList:true}); }
+
+  // ---- 5. watchdog: if the phone can't hold a smooth frame rate, step down a tier by itself ----
+  function watchdog(){ if(tier() === "off" || (function(){ try{ return localStorage.getItem("apGlass"); }catch(_){ return null; } })()) return;
+    const times = []; let last = performance.now(), n = 0;
+    const f = now => { times.push(now - last); last = now; if(++n < 90) requestAnimationFrame(f); else {
+      times.sort((a,b) => a - b); const p75 = times[Math.floor(times.length * .75)];
+      if(p75 > 26) setTier(tier() === "full" ? "lite" : "off"); else if(p75 > 20 && tier() === "full") setTier("lite"); } };
+    requestAnimationFrame(f); }
+
+  function boot(){ watchTabbar(); watchMain(); enter(); }
+  if(document.readyState === "loading") document.addEventListener("DOMContentLoaded", boot); else boot();
+  setTimeout(boot, 800); setTimeout(watchdog, 2500);
+})();
+
 // Version check: whenever the app is opened or brought back to the front, ask GitHub for the latest version number.
 // If it is newer than what is running, reload (straight away if nothing is open, otherwise offer a button).
-window.APP_VERSION = "20261106105442";
+window.APP_VERSION = "20261106155308";
 (function(){
   let busy = false, shown = false;
   function bar(v){ if(shown) return; shown = true; const b = document.createElement("button"); b.className = "upd-bar"; b.textContent = "New version ready — tap to update"; b.onclick = () => go(v); document.body.appendChild(b); }
