@@ -2113,12 +2113,12 @@ html.lg{--lg-a:135deg;
   --lg-blur:blur(14px) saturate(185%) brightness(1.04);
   --tile-a:rgba(255,255,255,.72);--tile-b:rgba(255,255,255,.50);--tile-line:rgba(255,255,255,.75)}
 html.lg-lite{--lg-fill:rgba(255,255,255,.58);--lg-blur:blur(12px) saturate(170%)}
-html.lg-full{--lg-fill:rgba(255,255,255,.60);--lg-blur:blur(11px) saturate(190%) brightness(1.05)}
+html.lg-full{--lg-fill:rgba(255,255,255,.22);--lg-blur:blur(3px) saturate(190%) brightness(1.05)}
 html.lg body.dark{--lg-rim:inset 0 0 0 1px rgba(255,255,255,.12),inset 1px 1.5px 0 -.5px rgba(255,255,255,.28),inset -1px -1px 0 -.5px rgba(255,255,255,.08);
   --lg-fill:rgba(30,32,40,.55);--lg-ink-shadow:0 12px 32px -12px rgba(0,0,0,.7);
   --tile-a:rgba(46,50,62,.70);--tile-b:rgba(26,28,36,.58);--tile-line:rgba(255,255,255,.09)}
 html.lg-lite body.dark{--lg-fill:rgba(30,32,40,.70)}
-html.lg-full body.dark{--lg-fill:rgba(24,26,34,.62)}
+html.lg-full body.dark{--lg-fill:rgba(24,26,34,.38)}
 
 /* 1 — no live blur anywhere by default (this alone removes ~50 stacked blur layers) */
 html.lg *,html.lg *::before,html.lg *::after{-webkit-backdrop-filter:none!important;backdrop-filter:none!important}
@@ -2179,10 +2179,10 @@ html.lg body .mtop{position:relative}
   html.lg body .tabbar [aria-current="page"] svg{transform:scale(1.1)}
   html.lg body .tabbar a:active,html.lg body .tabbar button:active{transform:scale(.94)}
   html.lg body .lg-pill{position:absolute;z-index:1;top:6px;left:0;height:calc(100% - 12px);width:60px;border-radius:26px;pointer-events:none;opacity:0;
-    background:linear-gradient(180deg,rgba(214,236,255,.95),rgba(176,214,250,.82));   /* glacier blue */
-    box-shadow:0 4px 14px -6px rgba(0,90,190,.38),inset 0 0 0 1px rgba(236,247,255,.95),inset 0 1.5px 0 rgba(255,255,255,.9),inset 0 -6px 10px -8px rgba(0,100,210,.35);
+    background:linear-gradient(180deg,rgba(210,234,255,.80),rgba(160,206,250,.52));   /* the same glass droplet, tinted glacier blue */
+    box-shadow:0 4px 14px -6px rgba(0,60,160,.35),inset 0 0 0 1px rgba(255,255,255,.9),inset 0 -6px 10px -8px rgba(0,90,200,.25);
     transition:transform .55s cubic-bezier(.25,1.35,.35,1),width .55s cubic-bezier(.25,1.35,.35,1),opacity .2s;will-change:transform}
-  html.lg body.dark .lg-pill{background:linear-gradient(180deg,rgba(120,184,240,.40),rgba(70,140,215,.26));box-shadow:0 4px 14px -6px rgba(0,0,0,.6),inset 0 0 0 1px rgba(170,215,255,.28),inset 0 1px 0 rgba(220,240,255,.3)}
+  html.lg body.dark .lg-pill{background:linear-gradient(180deg,rgba(150,205,255,.24),rgba(110,175,240,.11));box-shadow:0 4px 14px -6px rgba(0,0,0,.6),inset 0 0 0 1px rgba(255,255,255,.16)}
   html.lg body .lg-pill.on{opacity:1}
   html.lg body .lg-pill.squish{transition-duration:.18s}
 }
@@ -5135,7 +5135,7 @@ if("serviceWorker" in navigator){
     const im = document.createElementNS(NS, "feImage"); im.setAttribute("href", dispMap(w, h, r, band)); im.setAttribute("x","0"); im.setAttribute("y","0"); im.setAttribute("width", w); im.setAttribute("height", h); im.setAttribute("preserveAspectRatio","none"); im.setAttribute("result","map");
     const dm = document.createElementNS(NS, "feDisplacementMap"); dm.setAttribute("in","SourceGraphic"); dm.setAttribute("in2","map"); dm.setAttribute("scale", String(Math.round(Math.min(48, h * .7)))); dm.setAttribute("xChannelSelector","R"); dm.setAttribute("yChannelSelector","G");
     f.appendChild(im); f.appendChild(dm); svgDefs().appendChild(f);
-    const v = `url(#${id}) blur(11px) saturate(190%) brightness(1.05)`;
+    const v = `url(#${id}) blur(2.5px) saturate(190%) brightness(1.05)`;
     el.dataset.lens = v; if(root.classList.contains("vt-nav")) return;
     el.style.setProperty("backdrop-filter", v, "important"); el.style.setProperty("-webkit-backdrop-filter", v, "important");
   }
@@ -5215,7 +5215,7 @@ if("serviceWorker" in navigator){
 
 // Version check: whenever the app is opened or brought back to the front, ask GitHub for the latest version number.
 // If it is newer than what is running, reload (straight away if nothing is open, otherwise offer a button).
-window.APP_VERSION = "20261106163006";
+window.APP_VERSION = "20261106163542";
 (function(){
   let busy = false, shown = false;
   function bar(v){ if(shown) return; shown = true; const b = document.createElement("button"); b.className = "upd-bar"; b.textContent = "New version ready — tap to update"; b.onclick = () => go(v); document.body.appendChild(b); }
