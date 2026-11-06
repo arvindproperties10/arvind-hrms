@@ -2223,15 +2223,6 @@ html.lg.lg-off body .tabbar,html.lg.lg-off body .mtop,html.lg.lg-off body .drawe
 }
 html.lg-off body main > .lg-in{animation:none!important}
 
-/* 9 — page switches (View Transitions): chrome swaps in place, only the page content moves */
-html.lg main#main{view-transition-name:page}
-::view-transition-old(root),::view-transition-new(root){animation:none}
-::view-transition-group(page){animation-duration:.56s}
-::view-transition-old(page){animation:vtOut .12s cubic-bezier(.4,0,1,1) both}
-::view-transition-new(page){animation:vtIn .46s cubic-bezier(.16,1,.3,1) .1s both}
-@keyframes vtOut{to{opacity:0;transform:scale(.985)}}
-@keyframes vtIn{from{opacity:0;transform:translateY(16px) scale(.99)}to{opacity:1;transform:none}}
-@media (prefers-reduced-motion:reduce){::view-transition-group(*),::view-transition-old(*),::view-transition-new(*){animation:none!important}}
 
 
 
@@ -4939,14 +4930,7 @@ addEventListener("resize", () => { if(!isPhone()) setNav(false); });
   addEventListener("touchend", e => { if(!track) return; track=false; const t=e.changedTouches[0], dx=t.clientX-sx, dy=t.clientY-sy; if(Math.abs(dx) < 50 || Math.abs(dy) > Math.abs(dx)) return;
     if(fromEdge && dx > 0) setNav(true); else if(!fromEdge && dx < 0) setNav(false); }, {passive:true});
 })();
-function route(){
-  const h=(location.hash||"").slice(1), next = VALID.includes(h)?h:(ME && !isStaffU() ? "checkin" : "dashboard");
-  const apply = () => { view = next; ckReset(); closeDrawer(); if(raf){ cancelAnimationFrame(raf); raf = 0; } LEDGER = {}; draw(); const mn=document.getElementById("main"); if(mn) mn.scrollTop=0; window.scrollTo(0,0); };
-  const de = document.documentElement, changing = next !== view;
-  if(changing && document.startViewTransition && !needLogin() && de.dataset.glass !== "off" && !matchMedia("(prefers-reduced-motion: reduce)").matches){
-    de.classList.add("vt-nav"); try{ const t = document.startViewTransition(apply); t.finished.finally(() => de.classList.remove("vt-nav")); }catch(_){ de.classList.remove("vt-nav"); apply(); }
-  } else apply();
-}
+function route(){ const h=(location.hash||"").slice(1); view = VALID.includes(h)?h:(ME && !isStaffU() ? "checkin" : "dashboard"); ckReset(); closeDrawer(); render(); const mn=document.getElementById("main"); if(mn) mn.scrollTop=0; }
 window.addEventListener("hashchange", route);
 document.getElementById("tabbar").addEventListener("click", ev => { const a=ev.target.closest("a"); if(!a) return; ev.preventDefault(); if(location.hash!=="#"+a.dataset.v) location.hash=a.dataset.v; else route(); });
 document.getElementById("nav").addEventListener("click", ev => { const a=ev.target.closest("a"); if(!a) return; ev.preventDefault(); if(location.hash!=="#"+a.dataset.v) location.hash=a.dataset.v; else route(); });
@@ -5166,22 +5150,14 @@ if("serviceWorker" in navigator){
     const fmt = v => { let s = v.toFixed(dec); if(comma) s = Number(s).toLocaleString("en-IN", {minimumFractionDigits:dec, maximumFractionDigits:dec}); return m[1] + s + m[3]; };
     const step = now => { const p = Math.min(1, (now - t0) / dur), e = 1 - Math.pow(2, -10 * p); el.textContent = fmt(end * (p >= 1 ? 1 : e)); if(p < 1 && el.isConnected) requestAnimationFrame(step); };
     requestAnimationFrame(step); };
-  let animStart = 0;   // when the current entrance began; refreshes inside the window continue it rather than restart it
   function enter(){
-    const main = document.querySelector("main"); if(!main || !main.children.length || tier() === "off" || reduceMotion) return;
-    const now = performance.now();
-    if(wantIn && now - wantAt < 1500){ wantIn = false; animStart = now;
-      main.querySelectorAll(".kpi .v, .sumstrip b").forEach((el, i) => { if(i < 12) countUp(el); });
-      if(root.classList.contains("vt-nav")){ animStart = 0; return; }   // the view transition already animates the page
-    }
-    if(!animStart) return;
-    const el0 = now - animStart; if(el0 > 1100){ animStart = 0; return; }
-    [...main.children].slice(0, 10).forEach((el, i) => { if(el.classList.contains("lg-in")) return;
-      el.style.setProperty("--i", i); el.style.animationDelay = `${i * 45 - el0}ms`;   // negative delay = pick up exactly where the old copy was
-      el.classList.add("lg-in"); el.addEventListener("animationend", () => { el.classList.remove("lg-in"); el.style.animationDelay = ""; }, {once:true}); });
+    if(!wantIn || performance.now() - wantAt > 1500 || tier() === "off" || reduceMotion){ return; }
+    const main = document.querySelector("main"); if(!main || !main.children.length) return; wantIn = false;
+    [...main.children].slice(0, 10).forEach((el, i) => { el.classList.remove("lg-in"); void el.offsetWidth; el.style.setProperty("--i", i); el.classList.add("lg-in"); el.addEventListener("animationend", () => el.classList.remove("lg-in"), {once:true}); });
+    main.querySelectorAll(".kpi .v, .sumstrip b").forEach((el, i) => { if(i < 12) countUp(el); });
   }
   let mainObs = null;
-  function watchMain(){ const main = document.querySelector("main"); if(!main || mainObs) return; mainObs = new MutationObserver(enter); mainObs.observe(main, {childList:true}); }   // runs before the browser paints: no flash
+  function watchMain(){ const main = document.querySelector("main"); if(!main || mainObs) return; mainObs = new MutationObserver(() => requestAnimationFrame(enter)); mainObs.observe(main, {childList:true}); }
 
   // ---- 5. watchdog: if the phone can't hold a smooth frame rate, step down a tier by itself ----
   function watchdog(){ if(tier() === "off" || (function(){ try{ return localStorage.getItem("apGlass"); }catch(_){ return null; } })()) return;
@@ -5196,10 +5172,9 @@ if("serviceWorker" in navigator){
   setTimeout(boot, 800); setTimeout(watchdog, 2500);
 })();
 
-
 // Version check: whenever the app is opened or brought back to the front, ask GitHub for the latest version number.
 // If it is newer than what is running, reload (straight away if nothing is open, otherwise offer a button).
-window.APP_VERSION = "20261106170741";
+window.APP_VERSION = "20261106172355";
 (function(){
   let busy = false, shown = false;
   function bar(v){ if(shown) return; shown = true; const b = document.createElement("button"); b.className = "upd-bar"; b.textContent = "New version ready — tap to update"; b.onclick = () => go(v); document.body.appendChild(b); }
