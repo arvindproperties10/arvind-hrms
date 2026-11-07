@@ -2610,6 +2610,11 @@ html.lg body .seg[aria-label^="Attendance"] > button{flex:1 1 0}
 
 /* open: the outline is one continuous line (the tab's own segment hides so there's no doubled join) */
 @media (max-width:760px){ body.navopen .rail-rim .rim-tab,body.navpull-drag .rail-rim .rim-tab{opacity:0} body:not(.navopen):not(.navpull-drag) .rail-rim .rim-tab{opacity:1} }
+/* leave is red everywhere (matches the Leave toggle): labels, legends and charts */
+:root{--leave:#dc2626;--leave-soft:#fdeaea}
+body.dark{--leave:#f87171;--leave-soft:rgba(248,113,113,.15)}
+.pill.leave{background:var(--leave-soft)!important;color:var(--leave)!important}
+html.lg body.dark .pill.leave{background:transparent!important;color:#fca5a5!important;border-color:rgba(248,113,113,.45)!important}
 </style>
 </head>
 <body>
@@ -5819,7 +5824,7 @@ if("serviceWorker" in navigator){
 
 // Version check: whenever the app is opened or brought back to the front, ask GitHub for the latest version number.
 // If it is newer than what is running, reload (straight away if nothing is open, otherwise offer a button).
-window.APP_VERSION = "20261107110448";
+window.APP_VERSION = "20261107110555";
 (function(){
   let busy = false, shown = false;
   function bar(v){ if(shown) return; shown = true; const b = document.createElement("button"); b.className = "upd-bar"; b.textContent = "New version ready — tap to update"; b.onclick = () => go(v); document.body.appendChild(b); }
