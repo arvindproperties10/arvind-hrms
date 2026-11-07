@@ -2966,10 +2966,11 @@ function renderTabbar(){
   document.body.classList.toggle("has-tabbar", emp || staff);
   if(!emp && !staff){ tb.hidden = true; return; }
   tb.hidden = false;
-  if(emp){ tb.innerHTML = TABS.filter(([v]) => canSee(v)).map(t => tabLink(t, view===t[0] || (t[0]==="myslips" && view==="myinc"))).join(""); return; }
+  if(emp){ const html = TABS.filter(([v]) => canSee(v)).map(t => tabLink(t, view===t[0] || (t[0]==="myslips" && view==="myinc"))).join(""); if(tb.dataset.html !== html){ tb.innerHTML = html; tb.dataset.html = html; } return; }
   const picks = STAFF_TABS.filter(([v]) => canSee(v)).slice(0, 4);
   const inMore = !picks.some(([v]) => v===view);
-  tb.innerHTML = picks.map(t => tabLink(t, view===t[0])).join("") + `<button type="button" data-act="tab-more" ${inMore?'aria-current="page" style="color:var(--accent);background:rgba(0,113,227,.10)"':""}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">${MORE_IC}</svg><span>More</span></button>`;
+  const html = picks.map(t => tabLink(t, view===t[0])).join("") + `<button type="button" data-act="tab-more" ${inMore?'aria-current="page" style="color:var(--accent);background:rgba(0,113,227,.10)"':""}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">${MORE_IC}</svg><span>More</span></button>`;
+  if(tb.dataset.html !== html){ tb.innerHTML = html; tb.dataset.html = html; }
 }
 function renderShell(){
   renderTabbar();
@@ -5429,7 +5430,7 @@ if("serviceWorker" in navigator){
 
 // Version check: whenever the app is opened or brought back to the front, ask GitHub for the latest version number.
 // If it is newer than what is running, reload (straight away if nothing is open, otherwise offer a button).
-window.APP_VERSION = "20261107060212";
+window.APP_VERSION = "20261107060323";
 (function(){
   let busy = false, shown = false;
   function bar(v){ if(shown) return; shown = true; const b = document.createElement("button"); b.className = "upd-bar"; b.textContent = "New version ready — tap to update"; b.onclick = () => go(v); document.body.appendChild(b); }
