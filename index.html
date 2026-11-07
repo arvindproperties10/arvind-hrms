@@ -2473,6 +2473,16 @@ html.lg-lite body .rail{-webkit-backdrop-filter:blur(18px) saturate(190%)!import
 }
 /* the pull tab replaces the three-line menu button on phones (the button stays in place, invisible, so the logo stays centred) */
 @media (max-width:760px){ body.has-tabbar .mt-burger{visibility:hidden!important;pointer-events:none!important} }
+/* phone top bar, compact: a small glass capsule that hugs the logo, exactly centred */
+@media (max-width:760px){
+  body.has-tabbar .mtop{left:0!important;right:0!important;margin:0 auto!important;width:max-content!important;max-width:calc(100% - 32px);
+    display:flex!important;justify-content:center;align-items:center;padding:6px 18px!important;border-radius:999px!important;
+    top:calc(10px + env(safe-area-inset-top,0px))!important}
+  body.has-tabbar .mtop .mt-burger,body.has-tabbar .mtop .mt-spacer{display:none!important}
+  body.has-tabbar .mtop .mt-brand{gap:6px}
+  body.has-tabbar .mtop .mt-logo{height:30px!important;width:auto!important}
+  body.has-tabbar main{padding-top:calc(62px + env(safe-area-inset-top,0px))!important;scroll-padding-top:70px}
+}
 </style>
 </head>
 <body>
@@ -5592,7 +5602,7 @@ if("serviceWorker" in navigator){
 
 // Version check: whenever the app is opened or brought back to the front, ask GitHub for the latest version number.
 // If it is newer than what is running, reload (straight away if nothing is open, otherwise offer a button).
-window.APP_VERSION = "20261107074941";
+window.APP_VERSION = "20261107075354";
 (function(){
   let busy = false, shown = false;
   function bar(v){ if(shown) return; shown = true; const b = document.createElement("button"); b.className = "upd-bar"; b.textContent = "New version ready — tap to update"; b.onclick = () => go(v); document.body.appendChild(b); }
