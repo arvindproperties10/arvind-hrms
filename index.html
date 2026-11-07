@@ -2450,6 +2450,9 @@ html.lg body .rail .sessbox,html.lg body .rail .themesw,html.lg body .rail .inst
 html.lg body.dark .rail .sessbox,html.lg body.dark .rail .themesw,html.lg body.dark .rail .inst-menu,html.lg body.dark .rail [data-install],html.lg body.dark .rail .gate{
   background:rgba(255,255,255,.04)!important;box-shadow:inset 0 0 0 1px rgba(255,255,255,.16),inset 0 1px 0 rgba(255,255,255,.12)!important}
 html.lg body .rail .sessbox::before,html.lg body .rail .sessbox::after,html.lg body .rail .themesw::before,html.lg body .rail .themesw::after{display:none!important}
+
+/* side menu on the lighter quality level: a little more frost so the menu text stands out */
+html.lg-lite body .rail{-webkit-backdrop-filter:blur(18px) saturate(190%)!important;backdrop-filter:blur(18px) saturate(190%)!important}
 </style>
 </head>
 <body>
@@ -5322,27 +5325,27 @@ if("serviceWorker" in navigator){
     g.putImageData(img, 0, 0); return c.toDataURL();
   }
   const lensed = new Map();
-  function refract(el, id, blurPx = 2.5){
+  function refract(el, id, blurPx = 2.5, o = {}){
     if(tier() !== "full"){ el.style.removeProperty("backdrop-filter"); el.style.removeProperty("-webkit-backdrop-filter"); return; }
     const b = el.getBoundingClientRect(); if(b.width < 20 || b.height < 20) return;
     const w = Math.round(b.width), h = Math.round(b.height), key = w + "x" + h; if(lensed.get(el) === key) return; lensed.set(el, key);
-    const r = Math.min(parseFloat(getComputedStyle(el).borderTopLeftRadius) || 20, h / 2), band = Math.min(22, h / 2.4);
-    let f = document.getElementById(id); const fkey = `${w}x${h}r${r}`;
-    if(f && f.dataset.key === fkey){ const v0 = `url(#${id}) blur(${blurPx}px) saturate(190%) brightness(1.05)`; el.style.setProperty("backdrop-filter", v0, "important"); el.style.setProperty("-webkit-backdrop-filter", v0, "important"); return; }
+    const r = Math.min(parseFloat(getComputedStyle(el).borderTopLeftRadius) || 20, h / 2), band = Math.round(o.band || Math.min(22, h / 2.4)), scale = Math.round(o.scale || Math.min(48, h * .7));
+    let f = document.getElementById(id); const fkey = `${w}x${h}r${r}b${band}s${scale}`;
+    if(f && f.dataset.key === fkey){ const v0 = `url(#${id}) blur(${blurPx}px) saturate(${o.sat || 190}%) brightness(1.05)`; el.style.setProperty("backdrop-filter", v0, "important"); el.style.setProperty("-webkit-backdrop-filter", v0, "important"); return; }
     if(f) f.remove();
     f = document.createElementNS(NS, "filter"); f.id = id; f.dataset.key = fkey; f.setAttribute("x","0"); f.setAttribute("y","0"); f.setAttribute("width", w); f.setAttribute("height", h);
     f.setAttribute("filterUnits","userSpaceOnUse"); f.setAttribute("primitiveUnits","userSpaceOnUse"); f.setAttribute("color-interpolation-filters","sRGB");
     const im = document.createElementNS(NS, "feImage"); im.setAttribute("href", dispMap(w, h, r, band)); im.setAttribute("x","0"); im.setAttribute("y","0"); im.setAttribute("width", w); im.setAttribute("height", h); im.setAttribute("preserveAspectRatio","none"); im.setAttribute("result","map");
-    const dm = document.createElementNS(NS, "feDisplacementMap"); dm.setAttribute("in","SourceGraphic"); dm.setAttribute("in2","map"); dm.setAttribute("scale", String(Math.round(Math.min(48, h * .7)))); dm.setAttribute("xChannelSelector","R"); dm.setAttribute("yChannelSelector","G");
+    const dm = document.createElementNS(NS, "feDisplacementMap"); dm.setAttribute("in","SourceGraphic"); dm.setAttribute("in2","map"); dm.setAttribute("scale", String(scale)); dm.setAttribute("xChannelSelector","R"); dm.setAttribute("yChannelSelector","G");
     f.appendChild(im); f.appendChild(dm); svgDefs().appendChild(f);
-    const v = `url(#${id}) blur(${blurPx}px) saturate(190%) brightness(1.05)`;
+    const v = `url(#${id}) blur(${blurPx}px) saturate(${o.sat || 190}%) brightness(1.05)`;
     el.style.setProperty("backdrop-filter", v, "important"); el.style.setProperty("-webkit-backdrop-filter", v, "important");
   }
   function refractAll(){ const tb = document.getElementById("tabbar"); if(tb && !tb.hidden) refract(tb, "lg-tabbar");
     const phone = matchMedia("(max-width:760px)").matches;
     const mt = document.querySelector(".mtop"); if(mt && phone && mt.offsetWidth) refract(mt, "lg-mtop");
     const bg = document.getElementById("navToggle"); if(bg && phone && bg.offsetWidth) refract(bg, "lg-burger");
-    const rl = document.getElementById("rail"); if(rl && rl.offsetWidth) refract(rl, phone ? "lg-rail-m" : "lg-rail");   /* same lens and blur as the bottom bar */
+    const rl = document.getElementById("rail"); if(rl && rl.offsetWidth){ const rw = rl.getBoundingClientRect().width; refract(rl, phone ? "lg-rail-m" : "lg-rail", 9, {band: Math.min(140, rw * .46), scale: 130, sat: 70}); }   /* deep lens: the page behind bends and softens so the menu text stands out */
     const hd = document.querySelector("main > .head"); if(hd && !phone && hd.offsetWidth) refract(hd, "lg-head");
     const df = document.getElementById("dbFloat"); if(df && !df.hidden && df.offsetWidth) refract(df, "lg-dbf"); }
   // pop-up panels: lens the edge too (with a deep blur), each time one opens
@@ -5521,7 +5524,7 @@ if("serviceWorker" in navigator){
 
 // Version check: whenever the app is opened or brought back to the front, ask GitHub for the latest version number.
 // If it is newer than what is running, reload (straight away if nothing is open, otherwise offer a button).
-window.APP_VERSION = "20261107070413";
+window.APP_VERSION = "20261107070936";
 (function(){
   let busy = false, shown = false;
   function bar(v){ if(shown) return; shown = true; const b = document.createElement("button"); b.className = "upd-bar"; b.textContent = "New version ready — tap to update"; b.onclick = () => go(v); document.body.appendChild(b); }
