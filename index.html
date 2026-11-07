@@ -2361,6 +2361,81 @@ html.lg body #overlay .drawer::after,html.lg body #overlay .modal::after{content
 html.lg body.dark #overlay .drawer::after,html.lg body.dark #overlay .modal::after{opacity:.3}
 html.lg.lg-off body #overlay .drawer,html.lg.lg-off body #overlay .modal{-webkit-backdrop-filter:none!important;backdrop-filter:none!important;background:#fff!important}
 html.lg.lg-off body.dark #overlay .drawer,html.lg.lg-off body.dark #overlay .modal{background:#1c1e26!important}
+
+/* =====================================================================================
+   16 — DARK MODE: pitch black, defined glass borders, highlighted text. Minimal.
+   ===================================================================================== */
+html.lg body.dark{
+  --tile-a:#09090b;--tile-b:#09090b;
+  --dk-bg:#000;--dk-s1:#09090b;--dk-s2:#111115;--dk-s3:#18181d;
+  --dk-line:rgba(255,255,255,.13);--dk-line2:rgba(255,255,255,.22);--dk-hi:inset 0 1px 0 rgba(255,255,255,.09);
+  --dk-ink:#f5f5f7;--dk-mute:#9d9da6;--dk-acc:#4da3ff;--dk-acc-soft:rgba(77,163,255,.14);--dk-acc-line:rgba(77,163,255,.55);
+  --ink:#f5f5f7;--muted:#9d9da6;--line:rgba(255,255,255,.13);
+  --lg-fill:rgba(0,0,0,.55);--lg-ink-shadow:0 12px 30px -12px rgba(0,0,0,.9);
+  --lg-rim:inset 0 0 0 1px rgba(255,255,255,.16),inset 0 1px 0 rgba(255,255,255,.14);
+  color:var(--dk-ink)}
+html.lg-full body.dark{--lg-fill:rgba(0,0,0,.42)}
+/* pitch-black canvas, no glow */
+html.lg:has(body.dark),html.lg body.dark,html.lg body.dark.has-tabbar{background:#000!important}
+html.lg body.dark::before,html.lg body.dark.has-tabbar::before{background:#000!important}
+html.lg body.dark .app,html.lg body.dark main{background:transparent!important}
+/* every surface: near-black with a defined glass edge and a hairline top highlight */
+html.lg body.dark .panel,html.lg body.dark .kpi,html.lg body.dark .sumstrip,html.lg body.dark .ucard,html.lg body.dark .mcard,html.lg body.dark .ck-card,
+html.lg body.dark .tablewrap,html.lg body.dark .banner,html.lg body.dark .panel:not(.panel .panel),html.lg body.dark .kpi:not(.panel .panel),html.lg body.dark .tablewrap:not(.panel .panel){
+  background:var(--dk-s1)!important;border:1px solid var(--dk-line)!important;box-shadow:var(--dk-hi)!important;color:var(--dk-ink)}
+html.lg body.dark .panel .panel{background:var(--dk-s2)!important;border:1px solid var(--dk-line)!important;box-shadow:var(--dk-hi)!important}
+html.lg body.dark .pcard,html.lg body.dark .panel .panel .panel{background:var(--dk-s3)!important;border:1px solid var(--dk-line2)!important;box-shadow:var(--dk-hi),0 10px 24px -16px rgba(0,0,0,.9)!important}
+html.lg body.dark .panel::before,html.lg body.dark .panel::after,html.lg body.dark .kpi::before,html.lg body.dark .kpi::after,html.lg body.dark .pcard::before,html.lg body.dark .pcard::after,
+html.lg body.dark .tablewrap::before,html.lg body.dark .tablewrap::after{display:none!important}
+@media (hover:hover){ html.lg body.dark .pcard:hover,html.lg body.dark .kpi[data-go]:hover{border-color:var(--dk-acc-line)!important} }
+/* text: bright headings and figures, quiet secondary, blue highlights */
+html.lg body.dark h1,html.lg body.dark h2,html.lg body.dark h3,html.lg body.dark h4,html.lg body.dark b,html.lg body.dark strong,html.lg body.dark .kpi .v,html.lg body.dark th{color:var(--dk-ink)!important}
+html.lg body.dark .sub,html.lg body.dark small,html.lg body.dark .muted,html.lg body.dark .hint,html.lg body.dark label{color:var(--dk-mute)}
+html.lg body.dark a:not(.btn),html.lg body.dark .link{color:var(--dk-acc)}
+/* floating bars: black glass with a bright rim */
+html.lg body.dark .tabbar,html.lg body.dark .mtop,html.lg body.dark main > .head,html.lg body.dark .dbfloat,html.lg body.dark .rail{
+  background:var(--lg-fill)!important;box-shadow:0 14px 34px -14px rgba(0,0,0,.95),inset 0 0 0 1px rgba(255,255,255,.16),inset 0 1px 0 rgba(255,255,255,.14)!important}
+@media (max-width:760px){ html.lg body.dark .rail{background:rgba(0,0,0,.82)!important} }
+html.lg body.dark .tabbar::after,html.lg body.dark .mtop::after,html.lg body.dark .rail::after,html.lg body.dark main > .head::after,html.lg body.dark .dbfloat::after{opacity:.45!important}
+/* pop-up panels */
+html.lg body.dark #overlay .drawer,html.lg body.dark #overlay .modal,html.lg body.dark .inst-sheet{background:rgba(8,8,10,.94)!important;box-shadow:0 30px 80px -20px rgba(0,0,0,.95),inset 0 0 0 1px rgba(255,255,255,.16),inset 0 1px 0 rgba(255,255,255,.12)!important}
+html.lg body.dark #overlay .scrim{background:rgba(0,0,0,.6)!important}
+html.lg body.dark .modal header,html.lg body.dark .drawer header,html.lg body.dark .modal footer,html.lg body.dark .drawer footer{border-color:var(--dk-line)!important;background:transparent!important}
+/* selections: blue glass with a defined blue edge (bottom bar, side menu, toggles) */
+html.lg body.dark .lg-pill,html.lg body.dark .nav-pill,html.lg body.dark .seg-pill:not([data-v="P"]):not([data-v="HD"]):not([data-v="A"]):not([data-v="L"]){
+  background:linear-gradient(180deg,rgba(77,163,255,.26),rgba(77,163,255,.12))!important;box-shadow:inset 0 0 0 1px var(--dk-acc-line),inset 0 1px 0 rgba(160,210,255,.35),0 0 18px -6px rgba(77,163,255,.55)!important}
+html.lg body.dark .tabbar [aria-current="page"],html.lg body.dark .rail .nav a[aria-current="page"],html.lg body.dark .seg > button[aria-pressed="true"]:not([data-v]),html.lg body.dark .dots > button[aria-selected="true"]{color:#8cc8ff!important}
+html.lg body.dark .tabbar a,html.lg body.dark .tabbar button{color:#a7a7b0}
+html.lg body.dark .rail .nav a{color:#e6e6ea!important}
+html.lg body.dark .rail .nav a svg{background:var(--dk-s2)!important;box-shadow:inset 0 0 0 1px var(--dk-line)!important;color:var(--dk-acc)!important}
+html.lg body.dark .rail .nav a[aria-current="page"] svg{background:linear-gradient(180deg,#4da3ff,#1a7cf0)!important;color:#fff!important;box-shadow:0 0 14px -3px rgba(77,163,255,.7)!important}
+html.lg body.dark .seg,html.lg body.dark .dots{background:var(--dk-s1)!important;box-shadow:inset 0 0 0 1px var(--dk-line)!important}
+html.lg body.dark .seg > button,html.lg body.dark .dots > button{color:#c9c9d1}
+/* controls */
+html.lg body.dark input:not([type=checkbox]):not([type=radio]),html.lg body.dark select,html.lg body.dark textarea{background:var(--dk-s1)!important;border:1px solid var(--dk-line2)!important;color:var(--dk-ink)!important;box-shadow:none!important}
+html.lg body.dark input:focus,html.lg body.dark select:focus,html.lg body.dark textarea:focus{border-color:var(--dk-acc)!important;box-shadow:0 0 0 3px rgba(77,163,255,.22)!important}
+html.lg body.dark .btn:not(.primary):not(.danger){background:var(--dk-s2)!important;border:1px solid var(--dk-line2)!important;color:var(--dk-ink)!important;box-shadow:var(--dk-hi)!important}
+html.lg body.dark .btn.primary,html.lg body.dark .ck-go{background:linear-gradient(180deg,#4da3ff,#1a7cf0)!important;border:1px solid rgba(160,210,255,.45)!important;color:#fff!important;box-shadow:0 0 22px -8px rgba(77,163,255,.8),inset 0 1px 0 rgba(255,255,255,.3)!important}
+html.lg body.dark .pill{background:transparent!important;border:1px solid var(--dk-line2)!important;color:#d6d6dc!important;box-shadow:none!important}
+html.lg body.dark .pill.ok{color:#4ade80!important;border-color:rgba(74,222,128,.45)!important}
+html.lg body.dark .pill.bad{color:#ff6b6b!important;border-color:rgba(255,107,107,.45)!important}
+html.lg body.dark .pill.warn{color:#ffb547!important;border-color:rgba(255,181,71,.45)!important}
+html.lg body.dark .mt-burger{background:rgba(0,0,0,.4)!important;box-shadow:inset 0 0 0 1px rgba(255,255,255,.18),inset 0 1px 0 rgba(255,255,255,.14)!important}
+html.lg body.dark .switch{background:var(--dk-s2)!important;box-shadow:inset 0 0 0 1px var(--dk-line2)!important}
+html.lg body.dark .switch[aria-checked="true"]{background:linear-gradient(180deg,#4da3ff,#1a7cf0)!important;box-shadow:inset 0 0 0 1px rgba(160,210,255,.45),0 0 14px -4px rgba(77,163,255,.7)!important}
+/* tables and dividers */
+html.lg body.dark table th,html.lg body.dark .stickyhead thead th{background:#050507!important;border-bottom:1px solid var(--dk-line2)!important}
+html.lg body.dark table td{border-color:rgba(255,255,255,.08)!important}
+html.lg body.dark hr,html.lg body.dark .person{border-color:rgba(255,255,255,.09)!important}
+html.lg body.dark .toast{background:rgba(12,12,14,.92)!important;box-shadow:inset 0 0 0 1px rgba(255,255,255,.16)!important}
+/* dark: side-menu rows stay clean (no per-row boxes); the selection is only the blue glass droplet */
+html.lg body.dark .rail .nav a,html.lg body.dark .rail .nav a[aria-current="page"],html.lg body.dark .rail .nav a:hover{background:transparent!important;border:0!important;box-shadow:none!important;outline:0}
+html.lg body.dark .rail .nav a::before,html.lg body.dark .rail .nav a::after{display:none!important}
+html.lg body.dark .rail .nav a[aria-current="page"]{color:#8cc8ff!important}
+@media (hover:hover){ html.lg body.dark .rail .nav a:not([aria-current]):hover{background:rgba(255,255,255,.05)!important} }
+/* dark: menu button without the white gloss */
+html.lg body.dark .mt-burger::before{display:none!important}
+html.lg body.dark .mt-burger{background:rgba(0,0,0,.4)!important}
 </style>
 </head>
 <body>
@@ -5432,7 +5507,7 @@ if("serviceWorker" in navigator){
 
 // Version check: whenever the app is opened or brought back to the front, ask GitHub for the latest version number.
 // If it is newer than what is running, reload (straight away if nothing is open, otherwise offer a button).
-window.APP_VERSION = "20261107064429";
+window.APP_VERSION = "20261107065843";
 (function(){
   let busy = false, shown = false;
   function bar(v){ if(shown) return; shown = true; const b = document.createElement("button"); b.className = "upd-bar"; b.textContent = "New version ready — tap to update"; b.onclick = () => go(v); document.body.appendChild(b); }
