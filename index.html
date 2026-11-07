@@ -5258,7 +5258,13 @@ if("serviceWorker" in navigator){
     const df = document.getElementById("dbFloat"); if(df && !df.hidden && df.offsetWidth) refract(df, "lg-dbf"); }
   // pop-up panels: lens the edge too (with a deep blur), each time one opens
   const ov = document.getElementById("overlay");
-  if(ov) new MutationObserver(() => requestAnimationFrame(() => { const sh = ov.querySelector(".drawer, .modal"); if(sh && sh.offsetWidth) refract(sh, "lg-sheet", 30); })).observe(ov, {childList:true});
+  if(ov) new MutationObserver(ms => {
+    // a panel replaced by another (e.g. next / previous employee): swap in place, don't replay the opening animation or the backdrop fade
+    const isSheet = n => n.nodeType === 1 && (n.matches(".drawer, .modal, .scrim") || n.querySelector?.(".drawer, .modal"));
+    const swapped = ms.some(m => [...m.removedNodes].some(isSheet)) && ms.some(m => [...m.addedNodes].some(isSheet));
+    if(swapped) ov.querySelectorAll(".drawer, .modal, .scrim").forEach(el => { el.style.setProperty("animation", "none", "important"); });
+    requestAnimationFrame(() => { const sh = ov.querySelector(".drawer, .modal"); if(sh && sh.offsetWidth) refract(sh, "lg-sheet", 30); });
+  }).observe(ov, {childList:true});
   // the floating day bar is created and shown on demand: lens it when it appears
   new MutationObserver(ms => { for(const m of ms) for(const n of m.addedNodes) if(n.id === "dbFloat") new MutationObserver(() => requestAnimationFrame(refractAll)).observe(n, {attributes:true, attributeFilter:["hidden"]}); }).observe(document.body, {childList:true});
   // the desktop top bar is redrawn with each page; re-apply its lens (cached, so this is cheap)
@@ -5426,7 +5432,7 @@ if("serviceWorker" in navigator){
 
 // Version check: whenever the app is opened or brought back to the front, ask GitHub for the latest version number.
 // If it is newer than what is running, reload (straight away if nothing is open, otherwise offer a button).
-window.APP_VERSION = "20261107063522";
+window.APP_VERSION = "20261107064429";
 (function(){
   let busy = false, shown = false;
   function bar(v){ if(shown) return; shown = true; const b = document.createElement("button"); b.className = "upd-bar"; b.textContent = "New version ready — tap to update"; b.onclick = () => go(v); document.body.appendChild(b); }
