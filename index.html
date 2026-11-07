@@ -2570,9 +2570,9 @@ html.lg-lite body .rail{-webkit-backdrop-filter:blur(18px) saturate(190%)!import
 }
 
 /* closed menu: only the tab's own outline shows (no edge line or box along the screen edge) */
-@media (max-width:760px){ .rail-rim .rim-body{transition:opacity .25s} body:not(.navopen) .rail-rim .rim-body{opacity:0} }
+@media (max-width:760px){ .rail-rim .rim-body,.rail-rim .rim-edge{transition:opacity .2s} body:not(.navopen):not(.navpull-drag) .rail-rim .rim-body,body:not(.navopen):not(.navpull-drag) .rail-rim .rim-edge{opacity:0} body.dark .rail-rim .rim-tabfill{opacity:.35} }
 /* desktop glass logo, light mode: deeper, darker tones */
-@media (min-width:761px){ html.lg body:not(.dark) .rail .glass-logo > .gl-base{filter:url(#glassBevel) brightness(.72) contrast(1.25) saturate(1.2)!important} }
+@media (min-width:761px){ html.lg body .rail .glass-logo > .gl-base{filter:url(#glassBevel) brightness(1.1) saturate(1.08) contrast(1.04)!important} }
 </style>
 </head>
 <body>
@@ -5455,7 +5455,7 @@ if("serviceWorker" in navigator){
     if(f) f.remove();
     f = document.createElementNS(NS, "filter"); f.id = id; f.dataset.key = fkey; f.setAttribute("x","0"); f.setAttribute("y","0"); f.setAttribute("width", w); f.setAttribute("height", h);
     f.setAttribute("filterUnits","userSpaceOnUse"); f.setAttribute("primitiveUnits","userSpaceOnUse"); f.setAttribute("color-interpolation-filters","sRGB");
-    const im = document.createElementNS(NS, "feImage"); im.setAttribute("href", dispMap(w, h, r, band)); im.setAttribute("x","0"); im.setAttribute("y","0"); im.setAttribute("width", w); im.setAttribute("height", h); im.setAttribute("preserveAspectRatio","none"); im.setAttribute("result","map");
+    const im = document.createElementNS(NS, "feImage"); im.setAttribute("href", (o.mapFn && o.mapFn(w, h, band)) || dispMap(w, h, r, band)); im.setAttribute("x","0"); im.setAttribute("y","0"); im.setAttribute("width", w); im.setAttribute("height", h); im.setAttribute("preserveAspectRatio","none"); im.setAttribute("result","map");
     const dm = document.createElementNS(NS, "feDisplacementMap"); dm.setAttribute("in","SourceGraphic"); dm.setAttribute("in2","map"); dm.setAttribute("scale", String(scale)); dm.setAttribute("xChannelSelector","R"); dm.setAttribute("yChannelSelector","G");
     f.appendChild(im); f.appendChild(dm); svgDefs().appendChild(f);
     const v = `url(#${id}) blur(${blurPx}px) saturate(${o.sat || 190}%) brightness(1.05)`;
@@ -5465,7 +5465,7 @@ if("serviceWorker" in navigator){
     const phone = matchMedia("(max-width:760px)").matches;
     const mt = document.querySelector(".mtop"); if(mt && phone && mt.offsetWidth) refract(mt, "lg-mtop");
     const bg = document.getElementById("navToggle"); if(bg && phone && bg.offsetWidth) refract(bg, "lg-burger");
-    const rl = document.getElementById("rail"); if(rl && rl.offsetWidth){ const rw = rl.getBoundingClientRect().width; refract(rl, phone ? "lg-rail-m" : "lg-rail", 9, {band: Math.min(140, rw * .46), scale: 130, sat: 70}); }   /* deep lens: the page behind bends and softens so the menu text stands out */
+    const rl = document.getElementById("rail"); if(rl && rl.offsetWidth){ const rw = rl.getBoundingClientRect().width; refract(rl, phone ? "lg-rail-m" : "lg-rail", 9, {band: Math.min(140, rw * .46), scale: 130, sat: 70, mapFn: phone && window.__railShapeMap ? window.__railShapeMap : null}); }   /* deep lens: the page behind bends and softens so the menu text stands out */
     const hd = document.querySelector("main > .head"); if(hd && !phone && hd.offsetWidth) refract(hd, "lg-head");
     const df = document.getElementById("dbFloat"); if(df && !df.hidden && df.offsetWidth) refract(df, "lg-dbf"); }
   // pop-up panels: lens the edge too (with a deep blur), each time one opens
@@ -5759,19 +5759,39 @@ if("serviceWorker" in navigator){
   const rail = document.getElementById("rail"); if(!rail) return;
   const NS = "http://www.w3.org/2000/svg", T = 28, TH = 84, R = 24, S = 10, TR = 13;
   const rim = document.createElementNS(NS, "svg"); rim.setAttribute("class", "rail-rim"); rim.setAttribute("aria-hidden", "true");
-  rim.innerHTML = '<defs><linearGradient id="railRimG" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".95"/><stop offset=".45" stop-color="#fff" stop-opacity=".35"/><stop offset="1" stop-color="#fff" stop-opacity=".75"/></linearGradient></defs><path class="rim-body" fill="none" stroke="url(#railRimG)" stroke-width="1.3"/><path class="rim-tab" fill="none" stroke="url(#railRimG)" stroke-width="1.3"/>';
+  rim.innerHTML = '<defs><linearGradient id="railRimG" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".95"/><stop offset=".45" stop-color="#fff" stop-opacity=".35"/><stop offset="1" stop-color="#fff" stop-opacity=".75"/></linearGradient></defs><linearGradient id="railTabG" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".55"/><stop offset=".5" stop-color="#fff" stop-opacity=".08"/><stop offset="1" stop-color="#fff" stop-opacity=".3"/></linearGradient><linearGradient id="railTopG" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#fff" stop-opacity="0"/><stop offset=".55" stop-color="#fff" stop-opacity=".75"/><stop offset="1" stop-color="#fff" stop-opacity=".95"/></linearGradient><path class="rim-tabfill" stroke="none" fill="url(#railTabG)"/><path class="rim-body" fill="none" stroke="url(#railRimG)" stroke-width="1.3"/><path class="rim-edge" fill="none" stroke="url(#railTopG)" stroke-width="1.3"/><path class="rim-tab" fill="none" stroke="url(#railRimG)" stroke-width="1.3"/>';
   document.body.appendChild(rim);
   const outline = (W, H, open) => { const y0 = H/2 - TH/2, y1 = H/2 + TH/2;
     const right = `H ${W-R} A ${R} ${R} 0 0 1 ${W} ${R} V ${y0-S} A ${S} ${S} 0 0 0 ${W+S} ${y0} H ${W+T-TR} A ${TR} ${TR} 0 0 1 ${W+T} ${y0+TR} V ${y1-TR} A ${TR} ${TR} 0 0 1 ${W+T-TR} ${y1} H ${W+S} A ${S} ${S} 0 0 0 ${W} ${y1+S} V ${H-R} A ${R} ${R} 0 0 1 ${W-R} ${H}`;
     const top = `M ${W-R-1} 0.6 A ${R} ${R} 0 0 1 ${W} ${R} V ${y0-S}`, bot = `M ${W} ${y1+S} V ${H-R} A ${R} ${R} 0 0 1 ${W-R} ${H}`;
     const tabp = `M ${W} ${y0-S} A ${S} ${S} 0 0 0 ${W+S} ${y0} H ${W+T-TR} A ${TR} ${TR} 0 0 1 ${W+T} ${y0+TR} V ${y1-TR} A ${TR} ${TR} 0 0 1 ${W+T-TR} ${y1} H ${W+S} A ${S} ${S} 0 0 0 ${W} ${y1+S}`;
-    return {clip:`M 0 0 ${right} H 0 Z`, body: top + " " + bot, tab: tabp}; };
+    const edge = `M 0 0.6 H ${W-R-1} M ${W-R} ${H-0.6} H 0`;
+    const tfill = `M ${W-1} ${y0-S} A ${S} ${S} 0 0 0 ${W+S} ${y0} H ${W+T-TR} A ${TR} ${TR} 0 0 1 ${W+T} ${y0+TR} V ${y1-TR} A ${TR} ${TR} 0 0 1 ${W+T-TR} ${y1} H ${W+S} A ${S} ${S} 0 0 0 ${W-1} ${y1+S} Z`;
+    return {clip:`M 0 0 ${right} H 0 Z`, body: top + " " + bot, tab: tabp, edge, tfill}; };
+  window.__railOutline = (W, H) => outline(W, H).clip;
+  // displacement map that follows the menu's real outline (body + tab), so the lens bends at every edge
+  window.__railShapeMap = (w, h, band) => { try{
+    const k = .5, sw = Math.ceil(w * k), sh = Math.ceil(h * k), W = w - T;
+    const a = document.createElement("canvas"); a.width = sw; a.height = sh; const ga = a.getContext("2d");
+    ga.fillStyle = "#000"; ga.fillRect(0, 0, sw, sh); ga.scale(k, k); ga.fillStyle = "#fff"; ga.fill(new Path2D(outline(W, h).clip));
+    const b = document.createElement("canvas"); b.width = sw; b.height = sh; const gb = b.getContext("2d");
+    gb.filter = `blur(${Math.max(4, band * k * .5)}px)`; gb.drawImage(a, 0, 0);
+    const A = ga.getImageData(0, 0, sw, sh).data, Bd = gb.getImageData(0, 0, sw, sh).data;
+    const out = gb.createImageData(sw, sh), O = out.data; let gmax = 1; const G = new Float32Array(sw * sh * 2);
+    for(let y = 1; y < sh - 1; y++) for(let x = 1; x < sw - 1; x++){ const i = y * sw + x;
+      const gx = Bd[(i + 1) * 4] - Bd[(i - 1) * 4], gy = Bd[(i + sw) * 4] - Bd[(i - sw) * 4];
+      G[i * 2] = gx; G[i * 2 + 1] = gy; const m = Math.hypot(gx, gy); if(m > gmax) gmax = m; }
+    for(let i = 0; i < sw * sh; i++){ const inside = A[i * 4] > 127, gx = G[i * 2], gy = G[i * 2 + 1], m = Math.hypot(gx, gy);
+      let r = 128, g = 128; if(inside && m > 0){ const s = Math.min(1, m / gmax) ; r = 128 + gx / m * s * 127; g = 128 + gy / m * s * 127; }
+      O[i * 4] = r; O[i * 4 + 1] = g; O[i * 4 + 2] = 128; O[i * 4 + 3] = 255; }
+    gb.putImageData(out, 0, 0); return b.toDataURL();
+  }catch(_){ return null; } };
   function draw(){
     if(!matchMedia("(max-width:760px)").matches || !document.body.classList.contains("has-tabbar")){ rail.style.removeProperty("--rail-clip"); return; }
     const box = rail.getBoundingClientRect(), W = Math.round(box.width - T), H = Math.round(box.height); if(W < 100 || H < 200) return;
     const o = outline(W, H);
     rail.style.setProperty("--rail-clip", `path("${o.clip}")`);
-    rim.setAttribute("viewBox", `0 0 ${W+T} ${H}`); rim.style.width = (W+T) + "px"; rim.style.height = H + "px"; rim.querySelector(".rim-body").setAttribute("d", o.body); rim.querySelector(".rim-tab").setAttribute("d", o.tab);
+    rim.setAttribute("viewBox", `0 0 ${W+T} ${H}`); rim.style.width = (W+T) + "px"; rim.style.height = H + "px"; rim.querySelector(".rim-body").setAttribute("d", o.body); rim.querySelector(".rim-tab").setAttribute("d", o.tab); rim.querySelector(".rim-edge").setAttribute("d", o.edge); rim.querySelector(".rim-tabfill").setAttribute("d", o.tfill);
   }
   // drags move the menu by inline transform: mirror it on the rim in the same frame
   new MutationObserver(() => { const t = rail.style.getPropertyValue("transform"); if(t) rim.style.setProperty("transform", t, "important"); else rim.style.removeProperty("transform"); }).observe(rail, {attributes:true, attributeFilter:["style"]});
@@ -5782,7 +5802,7 @@ if("serviceWorker" in navigator){
 
 // Version check: whenever the app is opened or brought back to the front, ask GitHub for the latest version number.
 // If it is newer than what is running, reload (straight away if nothing is open, otherwise offer a button).
-window.APP_VERSION = "20261107093742";
+window.APP_VERSION = "20261107101905";
 (function(){
   let busy = false, shown = false;
   function bar(v){ if(shown) return; shown = true; const b = document.createElement("button"); b.className = "upd-bar"; b.textContent = "New version ready — tap to update"; b.onclick = () => go(v); document.body.appendChild(b); }
