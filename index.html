@@ -2581,16 +2581,26 @@ html.lg-lite body .rail{-webkit-backdrop-filter:blur(18px) saturate(190%)!import
 }
 
 
-/* 21 — attendance P / HD / A / L toggle = the bottom bar exactly: clear glass track, glacier-blue glass droplet, blue label */
+
+/* 21 — attendance toggle (Present / Half day / Leave): the bottom bar's clear glass track; the droplet is the same glass, tinted green / yellow / red */
 html.lg body .seg[aria-label^="Attendance"]{background:var(--lg-fill)!important;-webkit-backdrop-filter:var(--lg-blur)!important;backdrop-filter:var(--lg-blur)!important;
   box-shadow:var(--lg-ink-shadow),var(--lg-rim)!important;padding:4px!important}
-html.lg body .seg[aria-label^="Attendance"] > .seg-pill,html.lg body .seg[aria-label^="Attendance"] > .seg-pill[data-v]{
-  background:linear-gradient(180deg,rgba(210,234,255,.80),rgba(160,206,250,.52))!important;
-  box-shadow:0 4px 14px -6px rgba(0,60,160,.35),inset 0 0 0 1px rgba(255,255,255,.9),inset 0 -6px 10px -8px rgba(0,90,200,.25)!important}
-html.lg body.dark .seg[aria-label^="Attendance"] > .seg-pill,html.lg body.dark .seg[aria-label^="Attendance"] > .seg-pill[data-v]{
-  background:linear-gradient(180deg,rgba(77,163,255,.26),rgba(77,163,255,.12))!important;box-shadow:inset 0 0 0 1px rgba(77,163,255,.55),inset 0 1px 0 rgba(160,210,255,.35),0 0 18px -6px rgba(77,163,255,.55)!important}
-html.lg body .seg[aria-label^="Attendance"] > button[aria-pressed="true"],html.lg body .seg[aria-label^="Attendance"] > button[aria-pressed="true"][data-v]{color:var(--accent)!important;font-weight:650;text-shadow:none}
-html.lg body.dark .seg[aria-label^="Attendance"] > button[aria-pressed="true"],html.lg body.dark .seg[aria-label^="Attendance"] > button[aria-pressed="true"][data-v]{color:#8cc8ff!important}
+html.lg body .seg[aria-label^="Attendance"] > .seg-pill{box-shadow:0 4px 14px -6px rgba(0,60,160,.3),inset 0 0 0 1px rgba(255,255,255,.9),inset 0 -6px 10px -8px rgba(0,0,0,.18)!important}
+html.lg body .seg[aria-label^="Attendance"] > .seg-pill[data-v="P"]{background:linear-gradient(180deg,rgba(214,246,222,.85),rgba(150,222,170,.55))!important}
+html.lg body .seg[aria-label^="Attendance"] > .seg-pill[data-v="HD"]{background:linear-gradient(180deg,rgba(255,244,200,.88),rgba(250,214,110,.55))!important}
+html.lg body .seg[aria-label^="Attendance"] > .seg-pill[data-v="L"]{background:linear-gradient(180deg,rgba(255,222,220,.88),rgba(246,150,145,.55))!important}
+html.lg body .seg[aria-label^="Attendance"] > button[aria-pressed="true"]{font-weight:650;text-shadow:none}
+html.lg body .seg[aria-label^="Attendance"] > button[aria-pressed="true"][data-v="P"]{color:#15803d!important}
+html.lg body .seg[aria-label^="Attendance"] > button[aria-pressed="true"][data-v="HD"]{color:#a16207!important}
+html.lg body .seg[aria-label^="Attendance"] > button[aria-pressed="true"][data-v="L"]{color:#b91c1c!important}
+html.lg body.dark .seg[aria-label^="Attendance"] > .seg-pill[data-v="P"]{background:linear-gradient(180deg,rgba(74,222,128,.26),rgba(74,222,128,.12))!important;box-shadow:inset 0 0 0 1px rgba(74,222,128,.5),inset 0 1px 0 rgba(190,255,210,.3),0 0 16px -6px rgba(74,222,128,.5)!important}
+html.lg body.dark .seg[aria-label^="Attendance"] > .seg-pill[data-v="HD"]{background:linear-gradient(180deg,rgba(250,204,21,.26),rgba(250,204,21,.12))!important;box-shadow:inset 0 0 0 1px rgba(250,204,21,.5),inset 0 1px 0 rgba(255,240,180,.3),0 0 16px -6px rgba(250,204,21,.5)!important}
+html.lg body.dark .seg[aria-label^="Attendance"] > .seg-pill[data-v="L"]{background:linear-gradient(180deg,rgba(248,113,113,.26),rgba(248,113,113,.12))!important;box-shadow:inset 0 0 0 1px rgba(248,113,113,.5),inset 0 1px 0 rgba(255,200,200,.3),0 0 16px -6px rgba(248,113,113,.5)!important}
+html.lg body.dark .seg[aria-label^="Attendance"] > button[aria-pressed="true"][data-v="P"]{color:#86efac!important}
+html.lg body.dark .seg[aria-label^="Attendance"] > button[aria-pressed="true"][data-v="HD"]{color:#fde047!important}
+html.lg body.dark .seg[aria-label^="Attendance"] > button[aria-pressed="true"][data-v="L"]{color:#fca5a5!important}
+html.lg body .seg[aria-label^="Attendance"]{display:flex!important}
+html.lg body .seg[aria-label^="Attendance"] > button{flex:1 1 0}
 </style>
 </head>
 <body>
@@ -2643,7 +2653,7 @@ const NEEDS_PLACE = new Set(["Site visit","Client meeting","Field work"]);
 const LEAVE_START = "2026-11";   // 1 paid leave accrues each month from here; unused days carry forward
 const TRACK_FROM = "2026-11-01"; // deadlines before this date are not flagged as overdue
 const INC_ROLES = ["Tele Calling","Sales Executives","Team Leaders","Others"];
-const MARKS = [["P","Present"],["HD","Half day"],["A","Absent"],["L","Leave"]];
+const MARKS = [["P","Present"],["HD","Half day"],["L","Leave"]];
 
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -5800,7 +5810,7 @@ if("serviceWorker" in navigator){
 
 // Version check: whenever the app is opened or brought back to the front, ask GitHub for the latest version number.
 // If it is newer than what is running, reload (straight away if nothing is open, otherwise offer a button).
-window.APP_VERSION = "20261107105723";
+window.APP_VERSION = "20261107110103";
 (function(){
   let busy = false, shown = false;
   function bar(v){ if(shown) return; shown = true; const b = document.createElement("button"); b.className = "upd-bar"; b.textContent = "New version ready — tap to update"; b.onclick = () => go(v); document.body.appendChild(b); }
