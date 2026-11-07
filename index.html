@@ -2558,6 +2558,7 @@ html.lg-lite body .rail{-webkit-backdrop-filter:blur(18px) saturate(190%)!import
   body:has(#overlay .scrim) .rail-rim{display:none!important}
 }
 @media (max-width:760px){ html.lg body.has-tabbar .navpull{z-index:72!important} }
+@media (max-width:760px){ html.lg body.has-tabbar.navpull-drag .rail,html.lg body.has-tabbar.navpull-drag .navpull,html.lg body.has-tabbar.navpull-drag .rail-rim{transition:none!important} }
 </style>
 </head>
 <body>
@@ -5765,7 +5766,7 @@ if("serviceWorker" in navigator){
 
 // Version check: whenever the app is opened or brought back to the front, ask GitHub for the latest version number.
 // If it is newer than what is running, reload (straight away if nothing is open, otherwise offer a button).
-window.APP_VERSION = "20261107093156";
+window.APP_VERSION = "20261107093322";
 (function(){
   let busy = false, shown = false;
   function bar(v){ if(shown) return; shown = true; const b = document.createElement("button"); b.className = "upd-bar"; b.textContent = "New version ready — tap to update"; b.onclick = () => go(v); document.body.appendChild(b); }
