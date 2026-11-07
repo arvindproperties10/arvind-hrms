@@ -2562,6 +2562,17 @@ html.lg-lite body .rail{-webkit-backdrop-filter:blur(18px) saturate(190%)!import
 /* desktop glass logo: no sweeping reflection; colours kept vivid */
 @media (min-width:761px){ html.lg body .rail .glass-logo > .gl-shine{display:none!important} html.lg body .rail .glass-logo > .gl-base{filter:url(#glassBevel) saturate(1.12)} }
 @media (min-width:761px){ html.lg body .rail .glass-logo > .gl-dark{display:none!important} html.lg body.dark .rail .glass-logo > .gl-base:not(.gl-dark){display:none!important} html.lg body.dark .rail .glass-logo > .gl-dark{display:block!important} }
+/* the grab area over the tab draws nothing of its own (no box, outline, shadow or tap flash) */
+@media (max-width:760px){
+  html.lg body.has-tabbar .navpull,html.lg body.dark.has-tabbar .navpull,html.lg body.has-tabbar .navpull:focus,html.lg body.has-tabbar .navpull:active{
+    background:transparent!important;border:0!important;outline:0!important;box-shadow:none!important;-webkit-tap-highlight-color:transparent!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important;appearance:none;-webkit-appearance:none}
+  html.lg body.has-tabbar .navpull:focus-visible::before{box-shadow:0 0 0 3px rgba(77,163,255,.5)}
+}
+
+/* closed menu: only the tab's own outline shows (no edge line or box along the screen edge) */
+@media (max-width:760px){ .rail-rim .rim-body{transition:opacity .25s} body:not(.navopen) .rail-rim .rim-body{opacity:0} }
+/* desktop glass logo, light mode: deeper, darker tones */
+@media (min-width:761px){ html.lg body:not(.dark) .rail .glass-logo > .gl-base{filter:url(#glassBevel) brightness(.72) contrast(1.25) saturate(1.2)!important} }
 </style>
 </head>
 <body>
@@ -5748,17 +5759,19 @@ if("serviceWorker" in navigator){
   const rail = document.getElementById("rail"); if(!rail) return;
   const NS = "http://www.w3.org/2000/svg", T = 28, TH = 84, R = 24, S = 10, TR = 13;
   const rim = document.createElementNS(NS, "svg"); rim.setAttribute("class", "rail-rim"); rim.setAttribute("aria-hidden", "true");
-  rim.innerHTML = '<defs><linearGradient id="railRimG" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".95"/><stop offset=".45" stop-color="#fff" stop-opacity=".35"/><stop offset="1" stop-color="#fff" stop-opacity=".75"/></linearGradient></defs><path fill="none" stroke="url(#railRimG)" stroke-width="1.3"/>';
+  rim.innerHTML = '<defs><linearGradient id="railRimG" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".95"/><stop offset=".45" stop-color="#fff" stop-opacity=".35"/><stop offset="1" stop-color="#fff" stop-opacity=".75"/></linearGradient></defs><path class="rim-body" fill="none" stroke="url(#railRimG)" stroke-width="1.3"/><path class="rim-tab" fill="none" stroke="url(#railRimG)" stroke-width="1.3"/>';
   document.body.appendChild(rim);
   const outline = (W, H, open) => { const y0 = H/2 - TH/2, y1 = H/2 + TH/2;
     const right = `H ${W-R} A ${R} ${R} 0 0 1 ${W} ${R} V ${y0-S} A ${S} ${S} 0 0 0 ${W+S} ${y0} H ${W+T-TR} A ${TR} ${TR} 0 0 1 ${W+T} ${y0+TR} V ${y1-TR} A ${TR} ${TR} 0 0 1 ${W+T-TR} ${y1} H ${W+S} A ${S} ${S} 0 0 0 ${W} ${y1+S} V ${H-R} A ${R} ${R} 0 0 1 ${W-R} ${H}`;
-    return {clip:`M 0 0 ${right} H 0 Z`, rim:`M ${W-R-1} 0.6 ${right.replace(/^H \S+/, "")}`}; };
+    const top = `M ${W-R-1} 0.6 A ${R} ${R} 0 0 1 ${W} ${R} V ${y0-S}`, bot = `M ${W} ${y1+S} V ${H-R} A ${R} ${R} 0 0 1 ${W-R} ${H}`;
+    const tabp = `M ${W} ${y0-S} A ${S} ${S} 0 0 0 ${W+S} ${y0} H ${W+T-TR} A ${TR} ${TR} 0 0 1 ${W+T} ${y0+TR} V ${y1-TR} A ${TR} ${TR} 0 0 1 ${W+T-TR} ${y1} H ${W+S} A ${S} ${S} 0 0 0 ${W} ${y1+S}`;
+    return {clip:`M 0 0 ${right} H 0 Z`, body: top + " " + bot, tab: tabp}; };
   function draw(){
     if(!matchMedia("(max-width:760px)").matches || !document.body.classList.contains("has-tabbar")){ rail.style.removeProperty("--rail-clip"); return; }
     const box = rail.getBoundingClientRect(), W = Math.round(box.width - T), H = Math.round(box.height); if(W < 100 || H < 200) return;
     const o = outline(W, H);
     rail.style.setProperty("--rail-clip", `path("${o.clip}")`);
-    rim.setAttribute("viewBox", `0 0 ${W+T} ${H}`); rim.style.width = (W+T) + "px"; rim.style.height = H + "px"; rim.querySelector("path").setAttribute("d", o.rim);
+    rim.setAttribute("viewBox", `0 0 ${W+T} ${H}`); rim.style.width = (W+T) + "px"; rim.style.height = H + "px"; rim.querySelector(".rim-body").setAttribute("d", o.body); rim.querySelector(".rim-tab").setAttribute("d", o.tab);
   }
   // drags move the menu by inline transform: mirror it on the rim in the same frame
   new MutationObserver(() => { const t = rail.style.getPropertyValue("transform"); if(t) rim.style.setProperty("transform", t, "important"); else rim.style.removeProperty("transform"); }).observe(rail, {attributes:true, attributeFilter:["style"]});
@@ -5769,7 +5782,7 @@ if("serviceWorker" in navigator){
 
 // Version check: whenever the app is opened or brought back to the front, ask GitHub for the latest version number.
 // If it is newer than what is running, reload (straight away if nothing is open, otherwise offer a button).
-window.APP_VERSION = "20261107093544";
+window.APP_VERSION = "20261107093742";
 (function(){
   let busy = false, shown = false;
   function bar(v){ if(shown) return; shown = true; const b = document.createElement("button"); b.className = "upd-bar"; b.textContent = "New version ready — tap to update"; b.onclick = () => go(v); document.body.appendChild(b); }
