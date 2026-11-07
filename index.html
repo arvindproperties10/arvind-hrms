@@ -5739,26 +5739,6 @@ if("serviceWorker" in navigator){
 })();
 
 
-// ===================== desktop: build the glass logo (the logo's shape as a mask over glass layers) =====================
-(function(){
-  const root = document.documentElement; if(!root.classList.contains("lg")) return;
-  const brand = document.querySelector(".rail .brand"), img = brand && brand.querySelector(".logo-full:not(.logo-dark)"); if(!img) return;
-  const g = document.createElement("div"); g.className = "glass-logo"; g.setAttribute("role","img"); g.setAttribute("aria-label", img.alt || "Srigandha Properties");
-  g.style.setProperty("--logo", `url("${img.src}")`);
-  // glass like a moulded letter: the logo keeps its own colours; a lit bevel (specular lighting on its shape) and a moving sheen make it read as glass
-  g.innerHTML = '<svg width="0" height="0" style="position:absolute" aria-hidden="true"><filter id="glassBevel" x="-8%" y="-15%" width="116%" height="130%" color-interpolation-filters="sRGB">'
-    + '<feGaussianBlur in="SourceAlpha" stdDeviation="1.3" result="b"/>'
-    + '<feSpecularLighting in="b" surfaceScale="3.2" specularConstant=".8" specularExponent="30" lighting-color="#ffffff" result="spec"><feDistantLight azimuth="225" elevation="42"/></feSpecularLighting>'
-    + '<feComposite in="spec" in2="SourceAlpha" operator="in" result="specIn"/>'
-    + '<feSpecularLighting in="b" surfaceScale="3.2" specularConstant=".55" specularExponent="10" lighting-color="#ffe7c9" result="spec2"><feDistantLight azimuth="45" elevation="30"/></feSpecularLighting>'
-    + '<feComposite in="spec2" in2="SourceAlpha" operator="in" result="spec2In"/>'
-    + '<feMorphology in="SourceAlpha" operator="erode" radius=".7" result="er"/><feComposite in="SourceAlpha" in2="er" operator="out" result="rim"/>'
-    + '<feFlood flood-color="#ffffff" flood-opacity=".4"/><feComposite in2="rim" operator="in" result="rimLit"/>'
-    + '<feMerge><feMergeNode in="SourceGraphic"/><feMergeNode in="spec2In"/><feMergeNode in="specIn"/><feMergeNode in="rimLit"/></feMerge></filter></svg>'
-    + `<img class="gl-base" src="${img.src}" alt="">` + (brand.querySelector('.logo-dark') ? `<img class="gl-base gl-dark" src="${brand.querySelector('.logo-dark').src}" alt="">` : '') + '<i class="gl-shine"></i>';
-  brand.insertBefore(g, img); brand.classList.add("has-glass");
-})();
-
 // ===================== side menu outline with the pull tab built in (clip path + rim) =====================
 (function(){
   const root = document.documentElement; if(!root.classList.contains("lg")) return;
@@ -5808,7 +5788,7 @@ if("serviceWorker" in navigator){
 
 // Version check: whenever the app is opened or brought back to the front, ask GitHub for the latest version number.
 // If it is newer than what is running, reload (straight away if nothing is open, otherwise offer a button).
-window.APP_VERSION = "20261107101941";
+window.APP_VERSION = "20261107102054";
 (function(){
   let busy = false, shown = false;
   function bar(v){ if(shown) return; shown = true; const b = document.createElement("button"); b.className = "upd-bar"; b.textContent = "New version ready — tap to update"; b.onclick = () => go(v); document.body.appendChild(b); }
