@@ -2483,6 +2483,17 @@ html.lg-lite body .rail{-webkit-backdrop-filter:blur(18px) saturate(190%)!import
   body.has-tabbar .mtop .mt-logo{height:30px!important;width:auto!important}
   body.has-tabbar main{padding-top:calc(62px + env(safe-area-inset-top,0px))!important;scroll-padding-top:70px}
 }
+/* the pull tab is positioned every frame from the menu's real edge (script), so it never lags */
+
+
+/* menu and pull tab move as one: same distance, same timing curve, same frame */
+@media (max-width:760px){
+  body.has-tabbar .rail{transform:translateX(-100%)!important;transition:transform .32s cubic-bezier(.2,.8,.2,1)!important}
+  body.has-tabbar.navopen .rail{transform:none!important}
+  body.has-tabbar .navpull{transform:translateX(0);transition:transform .32s cubic-bezier(.2,.8,.2,1),opacity .2s,width .2s!important}
+  body.has-tabbar.navopen .navpull{transform:translateX(var(--rail-w,300px));z-index:71}
+  body.navpull-drag .rail,body.navpull-drag .navpull{transition:none!important}
+}
 </style>
 </head>
 <body>
@@ -5561,13 +5572,13 @@ if("serviceWorker" in navigator){
   const isOpen = () => document.body.classList.contains("navopen");
   const setOpen = want => { if(want !== isOpen()) tog.click(); tab.setAttribute("aria-label", want ? "Push back the menu" : "Pull out the menu"); };
   const railW = () => rail.getBoundingClientRect().width || 300;
-  const syncW = () => { const r = rail.getBoundingClientRect(); document.documentElement.style.setProperty("--rail-w", Math.round((isOpen() ? r.right : r.width) - 2) + "px"); };
+  const syncW = () => document.documentElement.style.setProperty("--rail-w", Math.round(rail.getBoundingClientRect().width) + "px");
   new MutationObserver(() => setTimeout(syncW, 450)).observe(document.body, {attributes:true, attributeFilter:["class"]});
   let drag = null;
   function start(e){
     if(!phone()) return;
     syncW(); const w = railW();
-    const prev = rail.style.transform; rail.style.transform = `translateX(${-w}px)`; const left = rail.getBoundingClientRect().left + w; rail.style.transform = prev;   // where the open menu starts
+    const prev = rail.style.transform; rail.style.setProperty("transform", `translateX(${-w}px)`, "important"); const left = rail.getBoundingClientRect().left + w; rail.style.transform = prev;   // where the open menu starts
     drag = {x0:e.clientX, t0:performance.now(), w, left, open:isOpen(), moved:0, id:e.pointerId};
     document.body.classList.add("navpull-drag"); try{ tab.setPointerCapture(e.pointerId); }catch(_){}
     e.preventDefault();
@@ -5576,10 +5587,10 @@ if("serviceWorker" in navigator){
     if(!drag || e.pointerId !== drag.id) return;
     const dx = e.clientX - drag.x0; drag.moved = Math.max(drag.moved, Math.abs(dx));
     const pos = Math.max(0, Math.min(drag.w, (drag.open ? drag.w : 0) + dx));   // how far the menu is out, in px
-    rail.style.transform = `translateX(${pos - drag.w}px)`;
+    rail.style.setProperty("transform", `translateX(${pos - drag.w}px)`, "important");
     if(pos > 0 && !drag.open) rail.style.visibility = "visible";
-    const edge = drag.left + pos;   // the menu's right edge on screen
-    tab.style.transform = `translateX(${Math.max(0, edge - 2)}px)`;
+    tab.style.setProperty("transform", `translateX(${pos}px)`, "important");
+
     drag.pos = pos; drag.last = {x:e.clientX, t:performance.now()};
   }
   function end(e){
@@ -5627,13 +5638,13 @@ if("serviceWorker" in navigator){
     if(g.lock !== "x") return;
     if(e.cancelable) e.preventDefault();
     const pos = Math.max(0, Math.min(g.w, (g.open ? g.w : 0) + dx));
-    rail.style.transform = `translateX(${pos - g.w}px)`;
+    rail.style.setProperty("transform", `translateX(${pos - g.w}px)`, "important"); const pt = document.querySelector('.navpull'); if(pt) pt.style.setProperty("transform", `translateX(${pos}px)`, "important");
     g.pos = pos; g.lastX = t.clientX;
   }, {passive:false});
   const end = () => {
     if(!g) return; const d = g; g = null;
     if(d.lock !== "x") return;
-    document.body.classList.remove("navpull-drag"); rail.style.transform = ""; rail.style.visibility = "";
+    document.body.classList.remove("navpull-drag"); rail.style.transform = ""; rail.style.visibility = ""; const pt = document.querySelector('.navpull'); if(pt) pt.style.transform = "";
     const v = ((d.lastX ?? d.x0) - d.x0) / Math.max(1, performance.now() - d.t0);
     const want = Math.abs(v) > .45 ? v > 0 : (d.pos || 0) > d.w * .4;
     if(want !== isOpen()) tog.click();
@@ -5642,9 +5653,10 @@ if("serviceWorker" in navigator){
   document.addEventListener("touchcancel", end, {passive:true});
 })();
 
+
 // Version check: whenever the app is opened or brought back to the front, ask GitHub for the latest version number.
 // If it is newer than what is running, reload (straight away if nothing is open, otherwise offer a button).
-window.APP_VERSION = "20261107075913";
+window.APP_VERSION = "20261107091441";
 (function(){
   let busy = false, shown = false;
   function bar(v){ if(shown) return; shown = true; const b = document.createElement("button"); b.className = "upd-bar"; b.textContent = "New version ready — tap to update"; b.onclick = () => go(v); document.body.appendChild(b); }
