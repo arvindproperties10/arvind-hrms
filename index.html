@@ -2471,6 +2471,8 @@ html.lg-lite body .rail{-webkit-backdrop-filter:blur(18px) saturate(190%)!import
   body.navpull-drag .rail,body.navpull-drag .navpull{transition:none!important}
   body:has(#overlay .scrim) .navpull,body.navopen .tabbar ~ .navpull[hidden]{display:none!important}
 }
+/* the pull tab replaces the three-line menu button on phones (the button stays in place, invisible, so the logo stays centred) */
+@media (max-width:760px){ body.has-tabbar .mt-burger{visibility:hidden!important;pointer-events:none!important} }
 </style>
 </head>
 <body>
@@ -5590,7 +5592,7 @@ if("serviceWorker" in navigator){
 
 // Version check: whenever the app is opened or brought back to the front, ask GitHub for the latest version number.
 // If it is newer than what is running, reload (straight away if nothing is open, otherwise offer a button).
-window.APP_VERSION = "20261107074225";
+window.APP_VERSION = "20261107074941";
 (function(){
   let busy = false, shown = false;
   function bar(v){ if(shown) return; shown = true; const b = document.createElement("button"); b.className = "upd-bar"; b.textContent = "New version ready — tap to update"; b.onclick = () => go(v); document.body.appendChild(b); }
