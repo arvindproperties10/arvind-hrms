@@ -2615,6 +2615,26 @@ html.lg body .seg[aria-label^="Attendance"] > button{flex:1 1 0}
 body.dark{--leave:#f87171;--leave-soft:rgba(248,113,113,.15)}
 .pill.leave{background:var(--leave-soft)!important;color:var(--leave)!important}
 html.lg body.dark .pill.leave{background:transparent!important;color:#fca5a5!important;border-color:rgba(248,113,113,.45)!important}
+
+/* 22 — desktop: high-definition glass — crisper rims, sharper edge lines, cleaner highlights and layered shadows */
+@media (min-width:761px){
+  html.lg body{--lg-rim:inset 0 0 0 1px rgba(255,255,255,.78),inset 1.5px 2px 0 -.5px rgba(255,255,255,1),inset -1px -1.5px 0 -.5px rgba(255,255,255,.55),0 0 0 .6px rgba(20,50,120,.16);
+    --lg-ink-shadow:0 1px 1px rgba(16,42,94,.06),0 6px 14px -6px rgba(16,42,94,.18),0 22px 40px -22px rgba(16,42,94,.38)}
+  html.lg body.dark{--lg-rim:inset 0 0 0 1px rgba(255,255,255,.2),inset 1px 1.5px 0 -.5px rgba(255,255,255,.35),inset -1px -1px 0 -.5px rgba(255,255,255,.1),0 0 0 .6px rgba(0,0,0,.9)}
+  /* the light-catching edge on bars and the sidebar: brighter and slightly thicker */
+  html.lg body .rail::after,html.lg body main > .head::after,html.lg body .tabbar::after{padding:1.6px!important;opacity:1!important}
+  html.lg body.dark .rail::after,html.lg body.dark main > .head::after{opacity:.55!important}
+  /* content tiles: a crisp hairline, a bright top edge and layered depth */
+  html.lg body:not(.dark) .panel:not(.panel .panel),html.lg body:not(.dark) .kpi:not(.panel .panel),html.lg body:not(.dark) .sumstrip,html.lg body:not(.dark) .tablewrap:not(.panel .panel),html.lg body:not(.dark) .ucard,html.lg body:not(.dark) .mcard{
+    border:1px solid rgba(255,255,255,.95)!important;
+    box-shadow:0 0 0 .6px rgba(20,50,120,.14),0 1px 1px rgba(16,42,94,.05),0 8px 18px -10px rgba(16,42,94,.22),0 26px 44px -28px rgba(16,42,94,.4),inset 0 1.5px 0 rgba(255,255,255,1),inset 0 -1px 0 rgba(255,255,255,.55)!important}
+  html.lg body:not(.dark) .panel .panel,html.lg body:not(.dark) .pcard{box-shadow:0 0 0 .6px rgba(20,50,120,.16),0 6px 14px -8px rgba(16,42,94,.28),inset 0 1.5px 0 rgba(255,255,255,1)!important}
+  html.lg body.dark .panel,html.lg body.dark .kpi,html.lg body.dark .sumstrip,html.lg body.dark .tablewrap,html.lg body.dark .pcard{box-shadow:inset 0 1px 0 rgba(255,255,255,.12),0 0 0 .6px rgba(0,0,0,.9),0 14px 30px -18px rgba(0,0,0,.95)!important}
+  /* glass selections and buttons: crisper outlines */
+  html.lg body:not(.dark) .nav-pill,html.lg body:not(.dark) .seg-pill{box-shadow:0 0 0 .6px rgba(30,90,190,.28),0 4px 12px -6px rgba(0,60,160,.4),inset 0 0 0 1px rgba(255,255,255,.95),inset 0 1.5px 0 rgba(255,255,255,1),inset 0 -6px 10px -8px rgba(0,90,200,.3)!important}
+  html.lg body:not(.dark) .btn:not(.primary){box-shadow:0 0 0 .6px rgba(20,50,120,.16),0 2px 6px -3px rgba(16,42,94,.2),inset 0 1px 0 rgba(255,255,255,1)!important}
+  html.lg body .btn.primary{box-shadow:0 0 0 .6px rgba(0,60,160,.4),0 8px 18px -8px rgba(0,113,227,.65),inset 0 1px 0 rgba(255,255,255,.45)!important}
+}
 </style>
 </head>
 <body>
@@ -5824,7 +5844,7 @@ if("serviceWorker" in navigator){
 
 // Version check: whenever the app is opened or brought back to the front, ask GitHub for the latest version number.
 // If it is newer than what is running, reload (straight away if nothing is open, otherwise offer a button).
-window.APP_VERSION = "20261107110555";
+window.APP_VERSION = "20261107110909";
 (function(){
   let busy = false, shown = false;
   function bar(v){ if(shown) return; shown = true; const b = document.createElement("button"); b.className = "upd-bar"; b.textContent = "New version ready — tap to update"; b.onclick = () => go(v); document.body.appendChild(b); }
