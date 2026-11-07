@@ -2527,6 +2527,31 @@ html.lg-lite body .rail{-webkit-backdrop-filter:blur(18px) saturate(190%)!import
 }
 /* optical centring: the round emblem's curved left edge reads as extra space, so the logo sits 2px left of the exact centre */
 @media (max-width:760px){ body.has-tabbar .mtop{padding:8px 26px 8px 22px!important} }
+
+/* 19 — desktop: the logo and brand name made of glass (the logo's shape cut from frosted, refracting glass with a lit edge) */
+.glass-logo{display:none}
+@media (min-width:761px){
+  html.lg body .rail .brand.has-glass > .logo-full{display:none!important}
+  html.lg body .rail .glass-logo{display:block;position:relative;width:100%;aspect-ratio:900/253;
+    filter:drop-shadow(0 1px 0 rgba(255,255,255,.95)) drop-shadow(0 -1px 0 rgba(255,255,255,.5)) drop-shadow(0 3px 5px rgba(10,40,110,.28)) drop-shadow(0 0 1px rgba(30,70,150,.45))}
+  html.lg body .rail .glass-logo > i{position:absolute;inset:0;-webkit-mask:var(--logo) center/contain no-repeat;mask:var(--logo) center/contain no-repeat}
+  /* the glass body: frosted, refracting what's behind, with a faint gold tint inside the emblem */
+  html.lg body .rail .glass-logo > .gl-body{-webkit-backdrop-filter:blur(3px) saturate(220%) brightness(1.12);backdrop-filter:blur(3px) saturate(220%) brightness(1.12);
+    background:linear-gradient(170deg,rgba(255,255,255,.62) 0%,rgba(225,238,255,.34) 45%,rgba(190,215,250,.42) 55%,rgba(255,255,255,.55) 100%)}
+  html.lg body .rail .glass-logo > .gl-tint{background:var(--logo) center/contain no-repeat;opacity:.22;mix-blend-mode:multiply;-webkit-mask:none;mask:none}
+  /* light catching the glass: a moving sheen and a bright top band */
+  html.lg body .rail .glass-logo > .gl-shine{background:linear-gradient(var(--lg-a,135deg),rgba(255,255,255,0) 30%,rgba(255,255,255,.95) 46%,rgba(255,255,255,0) 58%),
+      linear-gradient(180deg,rgba(255,255,255,.7) 0%,rgba(255,255,255,0) 38%);mix-blend-mode:screen}
+  html.lg body.dark .rail .glass-logo{filter:drop-shadow(0 1px 0 rgba(255,255,255,.45)) drop-shadow(0 0 1px rgba(160,200,255,.6)) drop-shadow(0 4px 8px rgba(0,0,0,.8))}
+  html.lg body.dark .rail .glass-logo > .gl-body{background:linear-gradient(170deg,rgba(255,255,255,.34) 0%,rgba(120,160,230,.16) 45%,rgba(90,140,220,.22) 55%,rgba(255,255,255,.3) 100%)}
+  html.lg body.dark .rail .glass-logo > .gl-tint{opacity:.35;mix-blend-mode:screen}
+  html.lg body.dark .rail .glass-logo > .gl-shine{opacity:.6}
+}
+@media (min-width:761px){
+  html.lg body:not(.dark) .rail .glass-logo{filter:drop-shadow(0 1px 0 rgba(255,255,255,1)) drop-shadow(0 0 .6px rgba(20,50,120,.75)) drop-shadow(0 3px 6px rgba(10,40,110,.35))}
+  html.lg body:not(.dark) .rail .glass-logo > .gl-body{background:linear-gradient(170deg,rgba(255,255,255,.55) 0%,rgba(170,200,240,.45) 44%,rgba(90,130,200,.5) 56%,rgba(200,220,250,.5) 100%)}
+  html.lg body:not(.dark) .rail .glass-logo > .gl-tint{opacity:.42}
+}
 </style>
 </head>
 <body>
@@ -5687,9 +5712,19 @@ if("serviceWorker" in navigator){
 })();
 
 
+// ===================== desktop: build the glass logo (the logo's shape as a mask over glass layers) =====================
+(function(){
+  const root = document.documentElement; if(!root.classList.contains("lg")) return;
+  const brand = document.querySelector(".rail .brand"), img = brand && brand.querySelector(".logo-full:not(.logo-dark)"); if(!img) return;
+  const g = document.createElement("div"); g.className = "glass-logo"; g.setAttribute("role","img"); g.setAttribute("aria-label", img.alt || "Srigandha Properties");
+  g.style.setProperty("--logo", `url("${img.src}")`);
+  g.innerHTML = '<i class="gl-body"></i><i class="gl-tint"></i><i class="gl-shine"></i>';
+  brand.insertBefore(g, img); brand.classList.add("has-glass");
+})();
+
 // Version check: whenever the app is opened or brought back to the front, ask GitHub for the latest version number.
 // If it is newer than what is running, reload (straight away if nothing is open, otherwise offer a button).
-window.APP_VERSION = "20261107092556";
+window.APP_VERSION = "20261107092802";
 (function(){
   let busy = false, shown = false;
   function bar(v){ if(shown) return; shown = true; const b = document.createElement("button"); b.className = "upd-bar"; b.textContent = "New version ready — tap to update"; b.onclick = () => go(v); document.body.appendChild(b); }
