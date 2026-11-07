@@ -2579,6 +2579,17 @@ html.lg-lite body .rail{-webkit-backdrop-filter:blur(18px) saturate(190%)!import
   body:not(.dark):not(.navopen) .rail-rim{filter:drop-shadow(3px 0 6px rgba(20,50,120,.28)) drop-shadow(0 0 1px rgba(20,50,120,.25))}
   body:not(.dark) .rail-rim .rim-tabfill{fill:rgba(190,220,255,.45)}
 }
+
+/* 21 — attendance P / HD / A / L toggle: the bottom bar's liquid glass (clear track, blur, rim, shadow) with glossy coloured glass droplets */
+html.lg body .seg[aria-label^="Attendance"]{background:var(--lg-fill)!important;-webkit-backdrop-filter:var(--lg-blur)!important;backdrop-filter:var(--lg-blur)!important;
+  box-shadow:0 6px 16px -10px rgba(15,30,70,.35),var(--lg-rim)!important;padding:4px!important}
+html.lg-full body .seg[aria-label^="Attendance"]{-webkit-backdrop-filter:blur(6px) saturate(190%) brightness(1.05)!important;backdrop-filter:blur(6px) saturate(190%) brightness(1.05)!important;background:rgba(255,255,255,.3)!important}
+html.lg body.dark .seg[aria-label^="Attendance"]{background:rgba(255,255,255,.05)!important;box-shadow:0 6px 16px -10px rgba(0,0,0,.9),inset 0 0 0 1px rgba(255,255,255,.16),inset 0 1px 0 rgba(255,255,255,.14)!important}
+html.lg body .seg[aria-label^="Attendance"] > .seg-pill{box-shadow:0 4px 12px -5px rgba(0,0,0,.35),inset 0 0 0 1px rgba(255,255,255,.55),inset 0 1.5px 0 rgba(255,255,255,.75),inset 0 -6px 10px -6px rgba(0,0,0,.22)!important}
+html.lg body .seg[aria-label^="Attendance"] > .seg-pill::after{content:"";position:absolute;left:12%;right:12%;top:2px;height:42%;border-radius:999px;pointer-events:none;
+  background:linear-gradient(180deg,rgba(255,255,255,.6),rgba(255,255,255,0))}
+html.lg body .seg[aria-label^="Attendance"] > button{text-shadow:none}
+html.lg body .seg[aria-label^="Attendance"] > button[aria-pressed="true"]{text-shadow:0 1px 1px rgba(0,0,0,.25)}
 </style>
 </head>
 <body>
@@ -5788,7 +5799,7 @@ if("serviceWorker" in navigator){
 
 // Version check: whenever the app is opened or brought back to the front, ask GitHub for the latest version number.
 // If it is newer than what is running, reload (straight away if nothing is open, otherwise offer a button).
-window.APP_VERSION = "20261107102054";
+window.APP_VERSION = "20261107105358";
 (function(){
   let busy = false, shown = false;
   function bar(v){ if(shown) return; shown = true; const b = document.createElement("button"); b.className = "upd-bar"; b.textContent = "New version ready — tap to update"; b.onclick = () => go(v); document.body.appendChild(b); }
