@@ -2453,6 +2453,24 @@ html.lg body .rail .sessbox::before,html.lg body .rail .sessbox::after,html.lg b
 
 /* side menu on the lighter quality level: a little more frost so the menu text stands out */
 html.lg-lite body .rail{-webkit-backdrop-filter:blur(18px) saturate(190%)!important;backdrop-filter:blur(18px) saturate(190%)!important}
+
+/* 18 — pull tab for the phone side menu: a small glass handle on the left edge; drag it out, drag it back */
+.navpull{display:none}
+@media (max-width:760px){
+  body.has-tabbar .navpull{display:block;position:fixed;left:0;top:50%;z-index:69;width:22px;height:76px;margin-top:-38px;padding:0;border:0;cursor:grab;touch-action:none;
+    border-radius:0 16px 16px 0;background:var(--lg-fill,rgba(255,255,255,.5));-webkit-backdrop-filter:blur(10px) saturate(180%);backdrop-filter:blur(10px) saturate(180%);
+    box-shadow:6px 0 18px -8px rgba(15,30,70,.35),inset 0 0 0 1px rgba(255,255,255,.55),inset -1px 1.5px 0 -.5px rgba(255,255,255,.9);
+    transition:transform .3s cubic-bezier(.2,.8,.2,1),opacity .2s,width .2s}
+  body.has-tabbar .navpull::before{content:"";position:absolute;left:50%;top:50%;width:4px;height:30px;margin:-15px 0 0 -3px;border-radius:4px;
+    background:linear-gradient(180deg,var(--accent,#0071e3),rgba(0,113,227,.55));box-shadow:0 0 8px rgba(0,113,227,.45)}
+  body.has-tabbar .navpull:active{cursor:grabbing;width:26px}
+  body.dark.has-tabbar .navpull{box-shadow:6px 0 18px -8px rgba(0,0,0,.9),inset 0 0 0 1px rgba(255,255,255,.18),inset -1px 1px 0 rgba(255,255,255,.14)}
+  body.dark.has-tabbar .navpull::before{background:linear-gradient(180deg,#4da3ff,#1a7cf0);box-shadow:0 0 10px rgba(77,163,255,.7)}
+  /* while the menu is open, the tab rides on the menu's right edge */
+  body.navopen .navpull{z-index:71;transform:translateX(var(--rail-w,300px))}
+  body.navpull-drag .rail,body.navpull-drag .navpull{transition:none!important}
+  body:has(#overlay .scrim) .navpull,body.navopen .tabbar ~ .navpull[hidden]{display:none!important}
+}
 </style>
 </head>
 <body>
@@ -5522,9 +5540,57 @@ if("serviceWorker" in navigator){
   q(); setTimeout(q, 600); setTimeout(q, 1600);
 })();
 
+// ===================== phone side menu: pull tab (drag out / drag back / tap) =====================
+(function(){
+  const rail = document.getElementById("rail"), tog = document.getElementById("navToggle"); if(!rail || !tog) return;
+  const phone = () => matchMedia("(max-width:760px)").matches;
+  const tab = document.createElement("button"); tab.type = "button"; tab.className = "navpull"; tab.setAttribute("aria-label", "Pull out the menu");
+  document.body.appendChild(tab);
+  const isOpen = () => document.body.classList.contains("navopen");
+  const setOpen = want => { if(want !== isOpen()) tog.click(); tab.setAttribute("aria-label", want ? "Push back the menu" : "Pull out the menu"); };
+  const railW = () => rail.getBoundingClientRect().width || 300;
+  const syncW = () => { const r = rail.getBoundingClientRect(); document.documentElement.style.setProperty("--rail-w", Math.round((isOpen() ? r.right : r.width) - 2) + "px"); };
+  new MutationObserver(() => setTimeout(syncW, 450)).observe(document.body, {attributes:true, attributeFilter:["class"]});
+  let drag = null;
+  function start(e){
+    if(!phone()) return;
+    syncW(); const w = railW();
+    const prev = rail.style.transform; rail.style.transform = `translateX(${-w}px)`; const left = rail.getBoundingClientRect().left + w; rail.style.transform = prev;   // where the open menu starts
+    drag = {x0:e.clientX, t0:performance.now(), w, left, open:isOpen(), moved:0, id:e.pointerId};
+    document.body.classList.add("navpull-drag"); try{ tab.setPointerCapture(e.pointerId); }catch(_){}
+    e.preventDefault();
+  }
+  function move(e){
+    if(!drag || e.pointerId !== drag.id) return;
+    const dx = e.clientX - drag.x0; drag.moved = Math.max(drag.moved, Math.abs(dx));
+    const pos = Math.max(0, Math.min(drag.w, (drag.open ? drag.w : 0) + dx));   // how far the menu is out, in px
+    rail.style.transform = `translateX(${pos - drag.w}px)`;
+    if(pos > 0 && !drag.open) rail.style.visibility = "visible";
+    const edge = drag.left + pos;   // the menu's right edge on screen
+    tab.style.transform = `translateX(${Math.max(0, edge - 2)}px)`;
+    drag.pos = pos; drag.last = {x:e.clientX, t:performance.now()};
+  }
+  function end(e){
+    if(!drag || (e && e.pointerId !== drag.id)) return;
+    const d = drag; drag = null; document.body.classList.remove("navpull-drag");
+    rail.style.transform = ""; rail.style.visibility = ""; tab.style.transform = "";
+    if(d.moved < 6){ setOpen(!d.open); return; }   // a tap toggles
+    const dt = Math.max(1, performance.now() - d.t0), v = (d.last ? d.last.x - d.x0 : 0) / dt;   // px per ms
+    const want = Math.abs(v) > .5 ? v > 0 : (d.pos || 0) > d.w * .4;
+    setOpen(want);
+  }
+  tab.addEventListener("pointerdown", start);
+  tab.addEventListener("pointermove", move);
+  tab.addEventListener("pointerup", end);
+  tab.addEventListener("pointercancel", end);
+  addEventListener("resize", syncW); setTimeout(syncW, 800);
+  // keep the label right when the menu is opened or closed some other way
+  new MutationObserver(() => tab.setAttribute("aria-label", isOpen() ? "Push back the menu" : "Pull out the menu")).observe(document.body, {attributes:true, attributeFilter:["class"]});
+})();
+
 // Version check: whenever the app is opened or brought back to the front, ask GitHub for the latest version number.
 // If it is newer than what is running, reload (straight away if nothing is open, otherwise offer a button).
-window.APP_VERSION = "20261107070936";
+window.APP_VERSION = "20261107074225";
 (function(){
   let busy = false, shown = false;
   function bar(v){ if(shown) return; shown = true; const b = document.createElement("button"); b.className = "upd-bar"; b.textContent = "New version ready — tap to update"; b.onclick = () => go(v); document.body.appendChild(b); }
