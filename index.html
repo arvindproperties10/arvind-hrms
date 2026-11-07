@@ -2232,7 +2232,7 @@ html.lg body .seg > button,html.lg body .dots > button{position:relative;z-index
 html.lg body .seg > button:active,html.lg body .dots > button:active{transform:scale(.95)}
 html.lg body .seg > button[aria-pressed="true"],html.lg body .dots > button[aria-selected="true"]{color:var(--accent)!important;font-weight:650}
 /* the droplet */
-html.lg body .seg-pill{position:absolute;left:0;top:0;z-index:0;border-radius:999px;pointer-events:none;opacity:0;transition:opacity .2s;will-change:transform;
+html.lg body .seg-pill{position:absolute;left:0;top:0;z-index:0;border-radius:999px;pointer-events:none;opacity:0;will-change:transform;
   background:linear-gradient(180deg,rgba(210,234,255,.80),rgba(160,206,250,.52));
   box-shadow:0 3px 10px -5px rgba(0,60,160,.35),inset 0 0 0 1px rgba(255,255,255,.9),inset 0 -5px 8px -7px rgba(0,90,200,.25)}
 html.lg body.dark .seg-pill{background:linear-gradient(180deg,rgba(150,205,255,.24),rgba(110,175,240,.11));box-shadow:0 3px 10px -5px rgba(0,0,0,.6),inset 0 0 0 1px rgba(255,255,255,.16)}
@@ -2311,7 +2311,6 @@ html.lg.lg-off body.dark .rail,html.lg.lg-off body.dark main > .head{background:
 
 /* desktop top bar floats in place like the phone's: it never slides, the page scrolls under its glass */
 @media (min-width:761px){ html.lg body main > .head{top:12px!important} }
-@media (min-width:761px){ html.lg-lite body main > .head{-webkit-backdrop-filter:blur(18px) saturate(180%)!important;backdrop-filter:blur(18px) saturate(180%)!important} }
 /* desktop top bar floats above the scrolling page (like the phone's), so the page can blur and bend beneath it */
 @media (min-width:761px){
   html.lg body.lg-fixhead main > .head{position:fixed!important;top:var(--hd-t,20px)!important;left:var(--hd-l)!important;width:var(--hd-w)!important;right:auto!important;margin:0!important;z-index:30!important}
@@ -2342,6 +2341,11 @@ html.lg body .dbfloat .dbf-day{position:relative;z-index:2}
 body.navopen .dbfloat,body:has(#overlay .scrim) .dbfloat{display:none!important}
 html.lg.lg-off body .dbfloat{-webkit-backdrop-filter:none!important;backdrop-filter:none!important;background:rgba(255,255,255,.97)!important}
 html.lg.lg-off body.dark .dbfloat{background:rgba(28,30,38,.98)!important}
+
+/* desktop top bar = the phone bottom bar's glass, exactly (same fill, blur, lens, rim, shadow) */
+@media (min-width:761px){
+  html.lg body main > .head{background:var(--lg-fill)!important;-webkit-backdrop-filter:var(--lg-blur)!important;backdrop-filter:var(--lg-blur)!important;box-shadow:var(--lg-ink-shadow),var(--lg-rim)!important}
+}
 </style>
 </head>
 <body>
@@ -5234,7 +5238,7 @@ if("serviceWorker" in navigator){
     const mt = document.querySelector(".mtop"); if(mt && phone && mt.offsetWidth) refract(mt, "lg-mtop");
     const bg = document.getElementById("navToggle"); if(bg && phone && bg.offsetWidth) refract(bg, "lg-burger");
     const rl = document.getElementById("rail"); if(rl && rl.offsetWidth) refract(rl, phone ? "lg-rail-m" : "lg-rail", phone ? 16 : 2.5);
-    const hd = document.querySelector("main > .head"); if(hd && !phone && hd.offsetWidth) refract(hd, "lg-head", 12);
+    const hd = document.querySelector("main > .head"); if(hd && !phone && hd.offsetWidth) refract(hd, "lg-head");
     const df = document.getElementById("dbFloat"); if(df && !df.hidden && df.offsetWidth) refract(df, "lg-dbf"); }
   // the floating day bar is created and shown on demand: lens it when it appears
   new MutationObserver(ms => { for(const m of ms) for(const n of m.addedNodes) if(n.id === "dbFloat") new MutationObserver(() => requestAnimationFrame(refractAll)).observe(n, {attributes:true, attributeFilter:["hidden"]}); }).observe(document.body, {childList:true});
@@ -5337,7 +5341,7 @@ if("serviceWorker" in navigator){
   function syncAll(){ queued = false; document.querySelectorAll(".seg, .dots").forEach(sync); if(mem.size > 400) mem.clear(); }
   const q = () => { if(!queued){ queued = true; requestAnimationFrame(syncAll); } };
   // (no early move on touch: a toggle changes only on a real tap, never at the start of a scroll)
-  new MutationObserver(q).observe(document.body, {childList:true, subtree:true, attributes:true, attributeFilter:["aria-pressed","aria-selected"]});
+  new MutationObserver(() => syncAll()).observe(document.body, {childList:true, subtree:true, attributes:true, attributeFilter:["aria-pressed","aria-selected"]});   // runs before paint: redrawn toggles never show a frame without their droplet
   addEventListener("resize", q);
   q();
 })();
@@ -5403,7 +5407,7 @@ if("serviceWorker" in navigator){
 
 // Version check: whenever the app is opened or brought back to the front, ask GitHub for the latest version number.
 // If it is newer than what is running, reload (straight away if nothing is open, otherwise offer a button).
-window.APP_VERSION = "20261107055338";
+window.APP_VERSION = "20261107055939";
 (function(){
   let busy = false, shown = false;
   function bar(v){ if(shown) return; shown = true; const b = document.createElement("button"); b.className = "upd-bar"; b.textContent = "New version ready — tap to update"; b.onclick = () => go(v); document.body.appendChild(b); }
