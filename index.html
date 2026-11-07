@@ -2573,6 +2573,12 @@ html.lg-lite body .rail{-webkit-backdrop-filter:blur(18px) saturate(190%)!import
 @media (max-width:760px){ .rail-rim .rim-body,.rail-rim .rim-edge{transition:opacity .2s} body:not(.navopen):not(.navpull-drag) .rail-rim .rim-body,body:not(.navopen):not(.navpull-drag) .rail-rim .rim-edge{opacity:0} body.dark .rail-rim .rim-tabfill{opacity:.35} }
 /* desktop glass logo, light mode: deeper, darker tones */
 @media (min-width:761px){ html.lg body .rail .glass-logo > .gl-base{filter:url(#glassBevel) brightness(1.1) saturate(1.08) contrast(1.04)!important} }
+/* light mode: give the pull tab definition against the light page (blue-grey edge, soft shadow, faint glacier tint) */
+@media (max-width:760px){
+  body:not(.dark) .rail-rim .rim-tab{stroke:rgba(40,90,170,.42)!important;stroke-width:1.2}
+  body:not(.dark):not(.navopen) .rail-rim{filter:drop-shadow(3px 0 6px rgba(20,50,120,.28)) drop-shadow(0 0 1px rgba(20,50,120,.25))}
+  body:not(.dark) .rail-rim .rim-tabfill{fill:rgba(190,220,255,.45)}
+}
 </style>
 </head>
 <body>
@@ -5802,7 +5808,7 @@ if("serviceWorker" in navigator){
 
 // Version check: whenever the app is opened or brought back to the front, ask GitHub for the latest version number.
 // If it is newer than what is running, reload (straight away if nothing is open, otherwise offer a button).
-window.APP_VERSION = "20261107101905";
+window.APP_VERSION = "20261107101941";
 (function(){
   let busy = false, shown = false;
   function bar(v){ if(shown) return; shown = true; const b = document.createElement("button"); b.className = "upd-bar"; b.textContent = "New version ready — tap to update"; b.onclick = () => go(v); document.body.appendChild(b); }
