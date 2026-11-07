@@ -2505,6 +2505,28 @@ html.lg-lite body .rail{-webkit-backdrop-filter:blur(18px) saturate(190%)!import
   body.has-tabbar .mtop .mt-logo{filter:drop-shadow(0 1px 2px rgba(0,40,120,.18))}
   body.has-tabbar main{padding-top:calc(72px + env(safe-area-inset-top,0px))!important;scroll-padding-top:80px}
 }
+/* pull tab = part of the side menu: the same glass, no seam on the joining side, curved shoulders flowing into the menu's edge */
+@media (max-width:760px){
+  html.lg body.has-tabbar .navpull{width:24px;height:84px;margin-top:-42px;border-radius:0 18px 18px 0;
+    background:var(--lg-fill)!important;-webkit-backdrop-filter:var(--lg-blur)!important;backdrop-filter:var(--lg-blur)!important;
+    box-shadow:8px 0 18px -10px rgba(15,30,70,.35),inset -1px 0 0 rgba(255,255,255,.6),inset 0 1px 0 rgba(255,255,255,.75),inset 0 -1px 0 rgba(255,255,255,.4)!important}
+  html.lg body.has-tabbar.navopen .navpull{transform:translateX(calc(var(--rail-w,300px) - 1px))}
+  html.lg body.has-tabbar .navpull::after{content:"";position:absolute;left:0;top:-16px;width:16px;height:calc(100% + 32px);pointer-events:none;
+    background:var(--lg-fill);-webkit-backdrop-filter:var(--lg-blur);backdrop-filter:var(--lg-blur);
+    -webkit-mask:radial-gradient(circle at 100% 0,transparent 15.5px,#000 16px) 0 0/16px 16px no-repeat,radial-gradient(circle at 100% 100%,transparent 15.5px,#000 16px) 0 100%/16px 16px no-repeat;
+    mask:radial-gradient(circle at 100% 0,transparent 15.5px,#000 16px) 0 0/16px 16px no-repeat,radial-gradient(circle at 100% 100%,transparent 15.5px,#000 16px) 0 100%/16px 16px no-repeat}
+  html.lg body.dark.has-tabbar .navpull{box-shadow:8px 0 18px -10px rgba(0,0,0,.9),inset -1px 0 0 rgba(255,255,255,.18),inset 0 1px 0 rgba(255,255,255,.16),inset 0 -1px 0 rgba(255,255,255,.08)!important}
+  html.lg body.has-tabbar .navpull:active{width:28px}
+}
+/* match the menu's own frosting exactly, and tuck the tab over the menu's edge line so there's no seam */
+@media (max-width:760px){
+  html.lg-full body.has-tabbar .navpull,html.lg-full body.has-tabbar .navpull::after{-webkit-backdrop-filter:blur(9px) saturate(70%) brightness(1.05)!important;backdrop-filter:blur(9px) saturate(70%) brightness(1.05)!important}
+  html.lg-lite body.has-tabbar .navpull,html.lg-lite body.has-tabbar .navpull::after{-webkit-backdrop-filter:blur(18px) saturate(190%)!important;backdrop-filter:blur(18px) saturate(190%)!important}
+  html.lg body.has-tabbar.navopen .navpull{transform:translateX(calc(var(--rail-w,300px) - 3px));z-index:72}
+  html.lg body.has-tabbar.navopen .navpull::after{left:-3px;width:19px}
+}
+/* optical centring: the round emblem's curved left edge reads as extra space, so the logo sits 2px left of the exact centre */
+@media (max-width:760px){ body.has-tabbar .mtop{padding:8px 26px 8px 22px!important} }
 </style>
 </head>
 <body>
@@ -5667,7 +5689,7 @@ if("serviceWorker" in navigator){
 
 // Version check: whenever the app is opened or brought back to the front, ask GitHub for the latest version number.
 // If it is newer than what is running, reload (straight away if nothing is open, otherwise offer a button).
-window.APP_VERSION = "20261107091827";
+window.APP_VERSION = "20261107092556";
 (function(){
   let busy = false, shown = false;
   function bar(v){ if(shown) return; shown = true; const b = document.createElement("button"); b.className = "upd-bar"; b.textContent = "New version ready — tap to update"; b.onclick = () => go(v); document.body.appendChild(b); }
