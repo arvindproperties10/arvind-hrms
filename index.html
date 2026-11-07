@@ -2,8 +2,8 @@
 <html lang="en">
 <head><script>(function(){try{var d=document.documentElement,f=localStorage.getItem("apGlass"),m=navigator.deviceMemory||4,c=navigator.hardwareConcurrency||4,
 rt=matchMedia("(prefers-reduced-transparency: reduce)").matches,bf=CSS.supports("backdrop-filter","blur(1px)")||CSS.supports("-webkit-backdrop-filter","blur(1px)"),
-cr=/Chrome\/\d+/.test(navigator.userAgent)&&!/Edg\//.test(navigator.userAgent)&&!!window.chrome,
-t=f||(rt||!bf?"off":(cr&&m>=6&&c>=8?"full":"lite"));d.classList.add("lg","lg-"+t);d.dataset.glass=t;}catch(e){}})();</script>
+cr=/Chrome\/\d+/.test(navigator.userAgent),dk=!/Android|iPhone|iPad|Mobile/i.test(navigator.userAgent),
+t=f||(rt||!bf?"off":(cr&&(dk?(m>=4&&c>=4):(m>=6&&c>=8))?"full":"lite"));d.classList.add("lg","lg-"+t);d.dataset.glass=t;}catch(e){}})();</script>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Srigandha Properties HRMS</title>
@@ -2121,7 +2121,7 @@ html.lg-lite body.dark{--lg-fill:rgba(30,32,40,.70)}
 html.lg-full body.dark{--lg-fill:rgba(24,26,34,.38)}
 
 /* 1 — no live blur anywhere by default (this alone removes ~50 stacked blur layers) */
-html.lg *,html.lg *::before,html.lg *::after{-webkit-backdrop-filter:none!important;backdrop-filter:none!important}
+html.lg :not(.panel .panel,.panel .panel *),html.lg :not(.panel .panel,.panel .panel *)::before,html.lg :not(.panel .panel,.panel .panel *)::after{-webkit-backdrop-filter:none!important;backdrop-filter:none!important}   /* cards inside cards keep their original glass edge */
 
 /* 2 — background: painted once on a fixed layer instead of background-attachment:fixed (which repaints on every scroll) */
 @media (max-width:760px){
@@ -2136,16 +2136,15 @@ html.lg *,html.lg *::before,html.lg *::after{-webkit-backdrop-filter:none!import
 }
 
 /* 3 — content surfaces: clear glass look, zero blur cost */
-html.lg body .panel,html.lg body .sumstrip,html.lg body .kpi,html.lg body .ucard,html.lg body .mcard,html.lg body .ck-card,html.lg body .tablewrap,html.lg body .pcard,html.lg body .banner{
+html.lg body .panel:not(.panel .panel),html.lg body .sumstrip,html.lg body .kpi,html.lg body .ucard,html.lg body .mcard,html.lg body .ck-card,html.lg body .tablewrap,html.lg body .banner{
   background:linear-gradient(180deg,rgba(255,255,255,.35) 0%,rgba(255,255,255,0) 42%),linear-gradient(165deg,var(--tile-a),var(--tile-b))!important;
   border:1px solid var(--tile-line)!important;
   box-shadow:0 16px 36px -24px rgba(16,42,94,.45),0 2px 8px -4px rgba(16,42,94,.10),inset 0 1px 0 rgba(255,255,255,.9),inset 0 0 0 .5px rgba(255,255,255,.4)!important}
-html.lg body.dark .panel,html.lg body.dark .sumstrip,html.lg body.dark .kpi,html.lg body.dark .ucard,html.lg body.dark .mcard,html.lg body.dark .ck-card,html.lg body.dark .tablewrap,html.lg body.dark .pcard,html.lg body.dark .banner{
+html.lg body.dark .panel:not(.panel .panel),html.lg body.dark .sumstrip,html.lg body.dark .kpi,html.lg body.dark .ucard,html.lg body.dark .mcard,html.lg body.dark .ck-card,html.lg body.dark .tablewrap,html.lg body.dark .banner{
   background:linear-gradient(180deg,rgba(255,255,255,.06) 0%,rgba(255,255,255,0) 42%),linear-gradient(165deg,var(--tile-a),var(--tile-b))!important;
   box-shadow:0 16px 36px -22px rgba(0,0,0,.7),inset 0 1px 0 rgba(255,255,255,.10)!important}
-/* tiles inside tiles: a lighter layer, never muddy */
-html.lg body .panel .kpi,html.lg body .panel .mcard,html.lg body .panel .ucard,html.lg body .panel .pcard,html.lg body .panel .tablewrap{background:rgba(255,255,255,.45)!important;box-shadow:inset 0 0 0 1px rgba(255,255,255,.6)!important;border-color:transparent!important}
-html.lg body.dark .panel .kpi,html.lg body.dark .panel .mcard,html.lg body.dark .panel .ucard,html.lg body.dark .panel .pcard,html.lg body.dark .panel .tablewrap{background:rgba(255,255,255,.04)!important;box-shadow:inset 0 0 0 1px rgba(255,255,255,.07)!important}
+
+
 /* sticky table headers: solid tint instead of blur */
 html.lg body .stickyhead thead th{background:rgba(246,249,255,.97)!important}
 html.lg body.dark .stickyhead thead th{background:rgba(30,33,42,.97)!important}
@@ -2198,8 +2197,8 @@ html.lg-off body .tabbar,html.lg-off body .mtop{background:rgba(255,255,255,.97)
 html.lg-off body.dark .tabbar,html.lg-off body.dark .mtop{background:rgba(28,30,38,.98)!important}
 html.lg-off body .drawer,html.lg-off body .modal{background:#fff!important}
 html.lg-off body.dark .drawer,html.lg-off body.dark .modal{background:#1c1e26!important}
-html.lg-off body .panel,html.lg-off body .sumstrip,html.lg-off body .kpi,html.lg-off body .ucard,html.lg-off body .mcard,html.lg-off body .ck-card,html.lg-off body .tablewrap{background:#fff!important}
-html.lg-off body.dark .panel,html.lg-off body.dark .sumstrip,html.lg-off body.dark .kpi,html.lg-off body.dark .ucard,html.lg-off body.dark .mcard,html.lg-off body.dark .ck-card,html.lg-off body.dark .tablewrap{background:#1c1e26!important}
+html.lg-off body .panel:not(.panel .panel),html.lg-off body .sumstrip,html.lg-off body .kpi,html.lg-off body .ucard,html.lg-off body .mcard,html.lg-off body .ck-card,html.lg-off body .tablewrap{background:#fff!important}
+html.lg-off body.dark .panel:not(.panel .panel),html.lg-off body.dark .sumstrip,html.lg-off body.dark .kpi,html.lg-off body.dark .ucard,html.lg-off body.dark .mcard,html.lg-off body.dark .ck-card,html.lg-off body.dark .tablewrap{background:#1c1e26!important}
 html.lg-off body .tabbar::after,html.lg-off body .mtop::after{display:none!important}
 html.lg.lg-off body .tabbar,html.lg.lg-off body .mtop,html.lg.lg-off body .drawer,html.lg.lg-off body .modal,html.lg.lg-off body .toast,html.lg.lg-off body .inst-sheet,html.lg.lg-off body .upd-bar,html.lg.lg-off body .rail{-webkit-backdrop-filter:none!important;backdrop-filter:none!important}
 @media (prefers-reduced-motion:reduce){html.lg body .lg-pill,html.lg body .tabbar a,html.lg body .btn{transition:none!important}}
@@ -2347,27 +2346,6 @@ html.lg.lg-off body.dark .dbfloat{background:rgba(28,30,38,.98)!important}
   html.lg body main > .head{background:var(--lg-fill)!important;-webkit-backdrop-filter:var(--lg-blur)!important;backdrop-filter:var(--lg-blur)!important;box-shadow:var(--lg-ink-shadow),var(--lg-rim)!important}
 }
 
-/* 14 — glass on glass: cards inside cards get their own depth (incentives teams, person tiles, and anywhere panels nest) */
-/* level 2: a tinted glass tray set into the panel */
-html.lg body .panel .panel{border:0!important;border-radius:22px!important;
-  background:linear-gradient(180deg,rgba(255,255,255,.55) 0%,rgba(255,255,255,0) 38%),linear-gradient(165deg,rgba(236,244,255,.72),rgba(220,233,252,.46))!important;
-  box-shadow:inset 0 0 0 1px rgba(255,255,255,.95),inset 0 1.5px 0 rgba(255,255,255,1),inset 0 -10px 24px -18px rgba(30,90,200,.25),0 12px 28px -20px rgba(16,42,94,.5),0 0 0 .5px rgba(16,42,94,.10)!important}
-/* level 3: raised clear-glass cards sitting on the tray */
-html.lg body .panel .panel .panel{border-radius:18px!important;
-  background:linear-gradient(180deg,rgba(255,255,255,.96),rgba(255,255,255,.74))!important;
-  box-shadow:0 8px 18px -12px rgba(16,42,94,.45),0 1px 3px -1px rgba(16,42,94,.12),inset 0 0 0 1px rgba(255,255,255,1),inset 0 -4px 10px -8px rgba(30,90,200,.18),0 0 0 .5px rgba(16,42,94,.09)!important;
-  transition:transform .4s cubic-bezier(.2,1.5,.4,1),box-shadow .3s}
-html.lg body .panel .teamtile{cursor:pointer}
-@media (hover:hover){ html.lg body .panel .teamtile:hover{transform:translateY(-3px);box-shadow:0 16px 28px -14px rgba(16,42,94,.5),0 2px 6px -2px rgba(16,42,94,.14),inset 0 0 0 1px rgba(255,255,255,1),0 0 0 .5px rgba(16,42,94,.1)!important} }
-html.lg body .panel .teamtile:active{transform:scale(.97)}
-html.lg body .panel .panel::before,html.lg body .panel .panel::after{display:none!important}
-/* dark */
-html.lg body.dark .panel .panel{background:linear-gradient(180deg,rgba(255,255,255,.06) 0%,rgba(255,255,255,0) 38%),linear-gradient(165deg,rgba(60,90,140,.30),rgba(30,45,80,.22))!important;
-  box-shadow:inset 0 0 0 1px rgba(255,255,255,.10),inset 0 1px 0 rgba(255,255,255,.14),0 12px 28px -18px rgba(0,0,0,.7)!important}
-html.lg body.dark .panel .panel .panel{background:linear-gradient(180deg,rgba(255,255,255,.10),rgba(255,255,255,.04))!important;
-  box-shadow:0 8px 18px -12px rgba(0,0,0,.7),inset 0 0 0 1px rgba(255,255,255,.12),inset 0 1px 0 rgba(255,255,255,.16)!important}
-/* the rate and summary chips get a light glass edge so they don't float loose */
-html.lg body .slabs .pill,html.lg body main > .head ~ .chips .pill,html.lg body .sumchips .pill{box-shadow:inset 0 0 0 1px rgba(255,255,255,.8),0 2px 6px -4px rgba(16,42,94,.3)}
 </style>
 </head>
 <body>
@@ -5319,12 +5297,12 @@ if("serviceWorker" in navigator){
     const times = []; let last = performance.now(), n = 0;
     const f = now => { times.push(now - last); last = now; if(++n < 90) requestAnimationFrame(f); else {
       times.sort((a,b) => a - b); const p75 = times[Math.floor(times.length * .75)];
-      if(p75 > 26) setTier(tier() === "full" ? "lite" : "off"); else if(p75 > 20 && tier() === "full") setTier("lite"); } };
+      if(p75 > 40) setTier(tier() === "full" ? "lite" : "off"); else if(p75 > 28 && tier() === "full") setTier("lite"); } };
     requestAnimationFrame(f); }
 
   function boot(){ watchTabbar(); watchMain(); enter(); }
   if(document.readyState === "loading") document.addEventListener("DOMContentLoaded", boot); else boot();
-  setTimeout(boot, 800); setTimeout(watchdog, 2500);
+  setTimeout(boot, 800); setTimeout(watchdog, 4000);
 })();
 
 // ===================== glass droplets for every segmented toggle (.seg / .dots) =====================
@@ -5430,7 +5408,7 @@ if("serviceWorker" in navigator){
 
 // Version check: whenever the app is opened or brought back to the front, ask GitHub for the latest version number.
 // If it is newer than what is running, reload (straight away if nothing is open, otherwise offer a button).
-window.APP_VERSION = "20261107060323";
+window.APP_VERSION = "20261107061430";
 (function(){
   let busy = false, shown = false;
   function bar(v){ if(shown) return; shown = true; const b = document.createElement("button"); b.className = "upd-bar"; b.textContent = "New version ready — tap to update"; b.onclick = () => go(v); document.body.appendChild(b); }
