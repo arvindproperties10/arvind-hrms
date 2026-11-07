@@ -2575,9 +2575,15 @@ html.lg-lite body .rail{-webkit-backdrop-filter:blur(18px) saturate(190%)!import
 @media (min-width:761px){ html.lg body .rail .glass-logo > .gl-base{filter:url(#glassBevel) brightness(1.1) saturate(1.08) contrast(1.04)!important} }
 /* light mode: give the pull tab definition against the light page (blue-grey edge, soft shadow, faint glacier tint) */
 @media (max-width:760px){
-  body:not(.dark) .rail-rim .rim-tab{stroke:rgba(40,90,170,.42)!important;stroke-width:1.2}
-  body:not(.dark):not(.navopen) .rail-rim{filter:drop-shadow(3px 0 6px rgba(20,50,120,.28)) drop-shadow(0 0 1px rgba(20,50,120,.25))}
-  body:not(.dark) .rail-rim .rim-tabfill{fill:rgba(190,220,255,.45)}
+  /* closed: the tab carries a blue hue so it's easy to find */
+  body:not(.navopen):not(.navpull-drag) .rail-rim .rim-tab{stroke:rgba(40,90,170,.45)!important}
+  body.dark:not(.navopen):not(.navpull-drag) .rail-rim .rim-tab{stroke:rgba(77,163,255,.6)!important}
+  body:not(.navopen):not(.navpull-drag) .rail-rim .rim-tabfill{fill:rgba(170,210,255,.5)!important;opacity:1!important}
+  body.dark:not(.navopen):not(.navpull-drag) .rail-rim .rim-tabfill{fill:rgba(77,163,255,.22)!important}
+  body:not(.navopen):not(.navpull-drag) .rail-rim{filter:drop-shadow(3px 0 6px rgba(20,50,120,.28)) drop-shadow(0 0 1px rgba(20,50,120,.25))}
+  /* open (and while pulling): the tab is simply part of the menu — same glass, same rim, no tint */
+  body.navopen .rail-rim .rim-tabfill,body.navpull-drag .rail-rim .rim-tabfill{opacity:0!important}
+  .rail-rim .rim-tab{transition:stroke .3s}.rail-rim .rim-tabfill{transition:opacity .3s,fill .3s}
 }
 
 
@@ -2601,6 +2607,9 @@ html.lg body.dark .seg[aria-label^="Attendance"] > button[aria-pressed="true"][d
 html.lg body.dark .seg[aria-label^="Attendance"] > button[aria-pressed="true"][data-v="L"]{color:#fca5a5!important}
 html.lg body .seg[aria-label^="Attendance"]{display:flex!important}
 html.lg body .seg[aria-label^="Attendance"] > button{flex:1 1 0}
+
+/* open: the outline is one continuous line (the tab's own segment hides so there's no doubled join) */
+@media (max-width:760px){ body.navopen .rail-rim .rim-tab,body.navpull-drag .rail-rim .rim-tab{opacity:0} body:not(.navopen):not(.navpull-drag) .rail-rim .rim-tab{opacity:1} }
 </style>
 </head>
 <body>
@@ -5775,7 +5784,7 @@ if("serviceWorker" in navigator){
     const tabp = `M ${W} ${y0-S} A ${S} ${S} 0 0 0 ${W+S} ${y0} H ${W+T-TR} A ${TR} ${TR} 0 0 1 ${W+T} ${y0+TR} V ${y1-TR} A ${TR} ${TR} 0 0 1 ${W+T-TR} ${y1} H ${W+S} A ${S} ${S} 0 0 0 ${W} ${y1+S}`;
     const edge = `M 0 0.6 H ${W-R-1} M ${W-R} ${H-0.6} H 0`;
     const tfill = `M ${W-1} ${y0-S} A ${S} ${S} 0 0 0 ${W+S} ${y0} H ${W+T-TR} A ${TR} ${TR} 0 0 1 ${W+T} ${y0+TR} V ${y1-TR} A ${TR} ${TR} 0 0 1 ${W+T-TR} ${y1} H ${W+S} A ${S} ${S} 0 0 0 ${W-1} ${y1+S} Z`;
-    return {clip:`M 0 0 ${right} H 0 Z`, body: top + " " + bot, tab: tabp, edge, tfill}; };
+    return {clip:`M 0 0 ${right} H 0 Z`, body: top + " " + bot, full: `M ${W-R-1} 0.6 ${right.replace(/^H \S+ /, "")}`, tab: tabp, edge, tfill}; };
   window.__railOutline = (W, H) => outline(W, H).clip;
   // displacement map that follows the menu's real outline (body + tab), so the lens bends at every edge
   window.__railShapeMap = (w, h, band) => { try{
@@ -5799,7 +5808,7 @@ if("serviceWorker" in navigator){
     const box = rail.getBoundingClientRect(), W = Math.round(box.width - T), H = Math.round(box.height); if(W < 100 || H < 200) return;
     const o = outline(W, H);
     rail.style.setProperty("--rail-clip", `path("${o.clip}")`);
-    rim.setAttribute("viewBox", `0 0 ${W+T} ${H}`); rim.style.width = (W+T) + "px"; rim.style.height = H + "px"; rim.querySelector(".rim-body").setAttribute("d", o.body); rim.querySelector(".rim-tab").setAttribute("d", o.tab); rim.querySelector(".rim-edge").setAttribute("d", o.edge); rim.querySelector(".rim-tabfill").setAttribute("d", o.tfill);
+    rim.setAttribute("viewBox", `0 0 ${W+T} ${H}`); rim.style.width = (W+T) + "px"; rim.style.height = H + "px"; rim.querySelector(".rim-body").setAttribute("d", o.full); rim.querySelector(".rim-tab").setAttribute("d", o.tab); rim.querySelector(".rim-edge").setAttribute("d", o.edge); rim.querySelector(".rim-tabfill").setAttribute("d", o.tfill);
   }
   // drags move the menu by inline transform: mirror it on the rim in the same frame
   new MutationObserver(() => { const t = rail.style.getPropertyValue("transform"); if(t) rim.style.setProperty("transform", t, "important"); else rim.style.removeProperty("transform"); }).observe(rail, {attributes:true, attributeFilter:["style"]});
@@ -5810,7 +5819,7 @@ if("serviceWorker" in navigator){
 
 // Version check: whenever the app is opened or brought back to the front, ask GitHub for the latest version number.
 // If it is newer than what is running, reload (straight away if nothing is open, otherwise offer a button).
-window.APP_VERSION = "20261107110103";
+window.APP_VERSION = "20261107110448";
 (function(){
   let busy = false, shown = false;
   function bar(v){ if(shown) return; shown = true; const b = document.createElement("button"); b.className = "upd-bar"; b.textContent = "New version ready — tap to update"; b.onclick = () => go(v); document.body.appendChild(b); }
