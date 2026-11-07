@@ -2308,6 +2308,40 @@ html.lg.lg-off body.dark .rail,html.lg.lg-off body.dark main > .head{background:
   html.lg body .nav-pill{border-radius:13px}
   html.lg body .nav{gap:2px!important}
 }
+
+/* desktop top bar floats in place like the phone's: it never slides, the page scrolls under its glass */
+@media (min-width:761px){ html.lg body main > .head{top:12px!important} }
+@media (min-width:761px){ html.lg-lite body main > .head{-webkit-backdrop-filter:blur(18px) saturate(180%)!important;backdrop-filter:blur(18px) saturate(180%)!important} }
+/* desktop top bar floats above the scrolling page (like the phone's), so the page can blur and bend beneath it */
+@media (min-width:761px){
+  html.lg body.lg-fixhead main > .head{position:fixed!important;top:var(--hd-t,20px)!important;left:var(--hd-l)!important;width:var(--hd-w)!important;right:auto!important;margin:0!important;z-index:30!important}
+  html.lg body.lg-fixhead main{padding-top:calc(var(--hd-h,96px) + var(--hd-t,20px) + 4px)!important;scroll-padding-top:calc(var(--hd-h,96px) + 32px)}
+}
+/* icon chip sits with an even inset (same gap top, left and bottom) and corners concentric with the selection droplet */
+html.lg body .rail .nav a{padding:6px 12px 6px 6px!important;border-radius:17px!important}
+html.lg body .rail .nav a svg{padding:7px!important;border-radius:11px!important}
+html.lg body .nav-pill{border-radius:17px!important}
+@media (min-width:761px){
+  html.lg body .rail .nav a{padding:5px 10px 5px 5px!important;border-radius:14px!important}
+  html.lg body .rail .nav a svg{padding:5.5px!important;border-radius:9px!important}
+  html.lg body .nav-pill{border-radius:14px!important}
+}
+
+/* 13 — floating day bar (Attendance / Check-ins on phones): under the side menu and pop-ups, same glass as the top and bottom bars */
+html.lg body .dbfloat{z-index:58!important;background:var(--lg-fill)!important;border:0!important;box-shadow:var(--lg-ink-shadow),var(--lg-rim)!important;isolation:isolate;
+  -webkit-backdrop-filter:var(--lg-blur)!important;backdrop-filter:var(--lg-blur)!important}
+html.lg body .dbfloat::after{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;z-index:3;padding:1.2px;
+  background:linear-gradient(var(--lg-a),rgba(255,255,255,.95),rgba(255,255,255,.18) 26%,rgba(255,255,255,0) 50%,rgba(255,255,255,.18) 74%,rgba(255,255,255,.75));
+  -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;opacity:.9}
+html.lg body.dark .dbfloat::after{opacity:.35}
+html.lg body .dbfloat .db-arrow{position:relative;z-index:2;background:radial-gradient(120% 90% at 32% 12%,rgba(255,255,255,.6),rgba(255,255,255,0) 52%),rgba(255,255,255,.22)!important;
+  box-shadow:0 4px 10px -6px rgba(15,30,70,.35),var(--lg-rim)!important;transition:transform .35s cubic-bezier(.2,1.6,.4,1)}
+html.lg body.dark .dbfloat .db-arrow{background:radial-gradient(120% 90% at 32% 12%,rgba(255,255,255,.14),rgba(255,255,255,0) 52%),rgba(255,255,255,.06)!important}
+html.lg body .dbfloat .db-arrow:active{transform:scale(1.08)}
+html.lg body .dbfloat .dbf-day{position:relative;z-index:2}
+body.navopen .dbfloat,body:has(#overlay .scrim) .dbfloat{display:none!important}
+html.lg.lg-off body .dbfloat{-webkit-backdrop-filter:none!important;backdrop-filter:none!important;background:rgba(255,255,255,.97)!important}
+html.lg.lg-off body.dark .dbfloat{background:rgba(28,30,38,.98)!important}
 </style>
 </head>
 <body>
@@ -5200,7 +5234,10 @@ if("serviceWorker" in navigator){
     const mt = document.querySelector(".mtop"); if(mt && phone && mt.offsetWidth) refract(mt, "lg-mtop");
     const bg = document.getElementById("navToggle"); if(bg && phone && bg.offsetWidth) refract(bg, "lg-burger");
     const rl = document.getElementById("rail"); if(rl && rl.offsetWidth) refract(rl, phone ? "lg-rail-m" : "lg-rail", phone ? 16 : 2.5);
-    const hd = document.querySelector("main > .head"); if(hd && !phone && hd.offsetWidth) refract(hd, "lg-head"); }
+    const hd = document.querySelector("main > .head"); if(hd && !phone && hd.offsetWidth) refract(hd, "lg-head", 12);
+    const df = document.getElementById("dbFloat"); if(df && !df.hidden && df.offsetWidth) refract(df, "lg-dbf"); }
+  // the floating day bar is created and shown on demand: lens it when it appears
+  new MutationObserver(ms => { for(const m of ms) for(const n of m.addedNodes) if(n.id === "dbFloat") new MutationObserver(() => requestAnimationFrame(refractAll)).observe(n, {attributes:true, attributeFilter:["hidden"]}); }).observe(document.body, {childList:true});
   // the desktop top bar is redrawn with each page; re-apply its lens (cached, so this is cheap)
   new MutationObserver(() => requestAnimationFrame(refractAll)).observe(document.querySelector("main") || document.body, {childList:true});
   let rz = 0; addEventListener("resize", () => { clearTimeout(rz); rz = setTimeout(() => { lensed.clear(); refractAll(); placePill(true); }, 150); });
@@ -5235,7 +5272,7 @@ if("serviceWorker" in navigator){
   // ---- 4. page entrance: staggered rise when the section changes (not on every data refresh) ----
   let wantIn = true, wantAt = performance.now();
   addEventListener("hashchange", () => { wantIn = true; wantAt = performance.now(); });
-  document.addEventListener("click", e => { if(e.target.closest("[data-go],[data-v],.tabbar a,#nav a,[data-act='tab-more']")){ wantIn = true; wantAt = performance.now(); } }, true);
+  document.addEventListener("click", e => { if(e.target.closest(".seg,.dots,input,select,textarea,label")) return; const t = e.target.closest("[data-go],a[data-v],.tabbar a,#nav a,[data-act='tab-more']"); if(t){ wantIn = true; wantAt = performance.now(); } }, true);
   const countUp = el => { const m = /^(\D*)([\d,]+(?:\.\d+)?)(\D*)$/.exec(el.textContent.trim()); if(!m) return; const end = parseFloat(m[2].replace(/,/g,"")); if(!(end > 0) || end > 1e7) return;
     const dec = (m[2].split(".")[1] || "").length, comma = m[2].includes(","), t0 = performance.now(), dur = 750;
     const fmt = v => { let s = v.toFixed(dec); if(comma) s = Number(s).toLocaleString("en-IN", {minimumFractionDigits:dec, maximumFractionDigits:dec}); return m[1] + s + m[3]; };
@@ -5281,7 +5318,9 @@ if("serviceWorker" in navigator){
     const at = `${x},${y},${w},${h},${on.dataset.v || ""}`; if(cur === at) return;
     pill.dataset.at = at; pill.dataset.v = on.dataset.v || "";
     pill.style.width = w + "px"; pill.style.height = h + "px"; pill.style.transform = `translate(${x}px,${y}px)`;
-    const from = cur ? cur.split(",").map(Number) : (prev && [prev.x, prev.y, prev.w, prev.h]);
+    let from = cur ? cur.split(",").map(Number) : (prev && [prev.x, prev.y, prev.w, prev.h]);
+    let resume = 0;
+    if(!cur && prev && prev.run && performance.now() - prev.run.t0 < 460 && prev.x === x && prev.y === y){ from = prev.run.from; resume = performance.now() - prev.run.t0; }   // redrawn mid-glide: carry on
     if(from && !reduceMotion && root.dataset.glass !== "off" && (from[0] !== x || from[1] !== y)){
       const dx = x - from[0], sx = Math.min(1.35, 1 + Math.abs(dx) / Math.max(w, 30) * .18);
       pill.animate([
@@ -5289,18 +5328,15 @@ if("serviceWorker" in navigator){
         {transform:`translate(${from[0] + dx * .5}px,${from[1] + (y - from[1]) * .5}px) scaleY(${(1 / sx).toFixed(3)})`, width:Math.round((from[2] + w) / 2 * sx) + "px", height:h + "px", offset:.35},
         {transform:`translate(${x}px,${y}px)`, width:w + "px", height:h + "px"}
       ], {duration:460, easing:SPRING});
+      if(resume){ try{ pill.getAnimations().forEach(an => an.currentTime = resume); }catch(_){} }
+      mem.set(key, {x, y, w, h, run:{from, t0:performance.now() - resume}}); pill.classList.add("on"); return;
     }
-    mem.set(key, {x, y, w, h}); pill.classList.add("on");
+    mem.set(key, {x, y, w, h, run: prev && prev.run && prev.x === x && prev.y === y ? prev.run : null}); pill.classList.add("on");
   }
   let queued = false;
   function syncAll(){ queued = false; document.querySelectorAll(".seg, .dots").forEach(sync); if(mem.size > 400) mem.clear(); }
   const q = () => { if(!queued){ queued = true; requestAnimationFrame(syncAll); } };
-  // move the droplet the moment a toggle is tapped (the data save and redraw follow)
-  document.addEventListener("pointerdown", e => { const b = e.target.closest(".seg > button, .dots > button"); if(!b || b.disabled) return;
-    const seg = b.parentNode, attr = b.hasAttribute("aria-selected") ? "aria-selected" : "aria-pressed";
-    if(b.getAttribute(attr) === "true") return;
-    if(seg.closest("[data-ro]") || document.body.classList.contains("ro")) return;
-    [...seg.children].forEach(x => { if(x.tagName === "BUTTON") x.setAttribute(attr, String(x === b)); }); }, true);
+  // (no early move on touch: a toggle changes only on a real tap, never at the start of a scroll)
   new MutationObserver(q).observe(document.body, {childList:true, subtree:true, attributes:true, attributeFilter:["aria-pressed","aria-selected"]});
   addEventListener("resize", q);
   q();
@@ -5339,9 +5375,35 @@ if("serviceWorker" in navigator){
   setTimeout(() => place(false), 300); setTimeout(() => place(false), 1500);
 })();
 
+// ===================== desktop: float the top bar over the scrolling page =====================
+(function(){
+  const root = document.documentElement; if(!root.classList.contains("lg")) return;
+  const body = document.body, main = document.querySelector("main"); if(!main) return;
+  const phone = () => matchMedia("(max-width:760px)").matches;
+  let busy = false;
+  function layout(){
+    busy = false;
+    const head = main.querySelector(":scope > .head");
+    if(phone() || !head){ body.classList.remove("lg-fixhead"); return; }
+    const was = body.classList.contains("lg-fixhead");
+    if(!was){ body.classList.add("lg-fixhead"); }
+    const cs = getComputedStyle(main), r = main.getBoundingClientRect();
+    const pl = parseFloat(cs.paddingLeft) || 0, pr = parseFloat(cs.paddingRight) || 0;
+    const left = Math.round(r.left + pl), width = Math.round(main.clientWidth - pl - pr);
+    const top = Math.max(12, Math.round(r.top + 12));
+    root.style.setProperty("--hd-l", left + "px"); root.style.setProperty("--hd-w", width + "px"); root.style.setProperty("--hd-t", top + "px");
+    root.style.setProperty("--hd-h", head.offsetHeight + "px");
+  }
+  const q = () => { if(!busy){ busy = true; requestAnimationFrame(layout); } };
+  new MutationObserver(q).observe(main, {childList:true});
+  try{ new ResizeObserver(q).observe(main); }catch(_){}
+  addEventListener("resize", q);
+  q(); setTimeout(q, 600); setTimeout(q, 1600);
+})();
+
 // Version check: whenever the app is opened or brought back to the front, ask GitHub for the latest version number.
 // If it is newer than what is running, reload (straight away if nothing is open, otherwise offer a button).
-window.APP_VERSION = "20261107053613";
+window.APP_VERSION = "20261107055338";
 (function(){
   let busy = false, shown = false;
   function bar(v){ if(shown) return; shown = true; const b = document.createElement("button"); b.className = "upd-bar"; b.textContent = "New version ready — tap to update"; b.onclick = () => go(v); document.body.appendChild(b); }
