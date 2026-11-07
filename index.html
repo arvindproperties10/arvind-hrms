@@ -2528,30 +2528,36 @@ html.lg-lite body .rail{-webkit-backdrop-filter:blur(18px) saturate(190%)!import
 /* optical centring: the round emblem's curved left edge reads as extra space, so the logo sits 2px left of the exact centre */
 @media (max-width:760px){ body.has-tabbar .mtop{padding:8px 26px 8px 22px!important} }
 
-/* 19 — desktop: the logo and brand name made of glass (the logo's shape cut from frosted, refracting glass with a lit edge) */
+/* 19 — desktop: the logo as moulded glass — its own colours, with a lit bevel, bright rim and a moving sheen */
 .glass-logo{display:none}
 @media (min-width:761px){
   html.lg body .rail .brand.has-glass > .logo-full{display:none!important}
-  html.lg body .rail .glass-logo{display:block;position:relative;width:100%;aspect-ratio:900/253;
-    filter:drop-shadow(0 1px 0 rgba(255,255,255,.95)) drop-shadow(0 -1px 0 rgba(255,255,255,.5)) drop-shadow(0 3px 5px rgba(10,40,110,.28)) drop-shadow(0 0 1px rgba(30,70,150,.45))}
-  html.lg body .rail .glass-logo > i{position:absolute;inset:0;-webkit-mask:var(--logo) center/contain no-repeat;mask:var(--logo) center/contain no-repeat}
-  /* the glass body: frosted, refracting what's behind, with a faint gold tint inside the emblem */
-  html.lg body .rail .glass-logo > .gl-body{-webkit-backdrop-filter:blur(3px) saturate(220%) brightness(1.12);backdrop-filter:blur(3px) saturate(220%) brightness(1.12);
-    background:linear-gradient(170deg,rgba(255,255,255,.62) 0%,rgba(225,238,255,.34) 45%,rgba(190,215,250,.42) 55%,rgba(255,255,255,.55) 100%)}
-  html.lg body .rail .glass-logo > .gl-tint{background:var(--logo) center/contain no-repeat;opacity:.22;mix-blend-mode:multiply;-webkit-mask:none;mask:none}
-  /* light catching the glass: a moving sheen and a bright top band */
-  html.lg body .rail .glass-logo > .gl-shine{background:linear-gradient(var(--lg-a,135deg),rgba(255,255,255,0) 30%,rgba(255,255,255,.95) 46%,rgba(255,255,255,0) 58%),
-      linear-gradient(180deg,rgba(255,255,255,.7) 0%,rgba(255,255,255,0) 38%);mix-blend-mode:screen}
-  html.lg body.dark .rail .glass-logo{filter:drop-shadow(0 1px 0 rgba(255,255,255,.45)) drop-shadow(0 0 1px rgba(160,200,255,.6)) drop-shadow(0 4px 8px rgba(0,0,0,.8))}
-  html.lg body.dark .rail .glass-logo > .gl-body{background:linear-gradient(170deg,rgba(255,255,255,.34) 0%,rgba(120,160,230,.16) 45%,rgba(90,140,220,.22) 55%,rgba(255,255,255,.3) 100%)}
-  html.lg body.dark .rail .glass-logo > .gl-tint{opacity:.35;mix-blend-mode:screen}
-  html.lg body.dark .rail .glass-logo > .gl-shine{opacity:.6}
+  html.lg body .rail .glass-logo{display:block;position:relative;width:100%;aspect-ratio:900/253;filter:drop-shadow(0 2px 2px rgba(20,40,90,.25)) drop-shadow(0 6px 10px rgba(20,40,90,.18))}
+  html.lg body .rail .glass-logo > .gl-base{display:block;width:100%;height:100%;filter:url(#glassBevel)}
+  html.lg body .rail .glass-logo > .gl-shine{position:absolute;inset:0;pointer-events:none;-webkit-mask:var(--logo) center/contain no-repeat;mask:var(--logo) center/contain no-repeat;mix-blend-mode:screen;opacity:.55;
+    background:linear-gradient(var(--lg-a,135deg),rgba(255,255,255,0) 34%,rgba(255,255,255,.9) 47%,rgba(255,255,255,0) 56%)}
+  html.lg body.dark .rail .glass-logo{filter:drop-shadow(0 0 1px rgba(255,255,255,.35)) drop-shadow(0 4px 8px rgba(0,0,0,.8))}
 }
-@media (min-width:761px){
-  html.lg body:not(.dark) .rail .glass-logo{filter:drop-shadow(0 1px 0 rgba(255,255,255,1)) drop-shadow(0 0 .6px rgba(20,50,120,.75)) drop-shadow(0 3px 6px rgba(10,40,110,.35))}
-  html.lg body:not(.dark) .rail .glass-logo > .gl-body{background:linear-gradient(170deg,rgba(255,255,255,.55) 0%,rgba(170,200,240,.45) 44%,rgba(90,130,200,.5) 56%,rgba(200,220,250,.5) 100%)}
-  html.lg body:not(.dark) .rail .glass-logo > .gl-tint{opacity:.42}
+/* 20 — the pull tab is part of the side menu's own glass: the menu's outline includes the tab (one surface, one lens, one rim) */
+.rail-rim{display:none}
+@media (max-width:760px){
+  html.lg body.has-tabbar .rail{width:calc(min(300px,84vw) + 28px)!important;padding-right:calc(16px + 28px)!important;border-radius:0!important;
+    clip-path:var(--rail-clip,none);transform:translateX(calc(-100% + 28px))!important;box-shadow:none!important;transition:transform .32s cubic-bezier(.2,.8,.2,1)!important}
+  html.lg body.has-tabbar.navopen .rail{transform:none!important}
+  html.lg body.has-tabbar .rail::after,html.lg body.has-tabbar .rail::before{display:none!important}
+  html.lg body.has-tabbar .rail-rim{display:block;position:fixed;left:0;top:0;height:100%;width:calc(min(300px,84vw) + 28px);pointer-events:none;z-index:71;overflow:visible;
+    transform:translateX(calc(-100% + 28px));transition:transform .32s cubic-bezier(.2,.8,.2,1);filter:drop-shadow(10px 0 16px rgba(15,30,70,.22))}
+  html.lg body.has-tabbar.navopen .rail-rim{transform:none}
+  body.navpull-drag .rail-rim{transition:none!important}
+  /* the old separate tab becomes just the grab area and grip line */
+  html.lg body.has-tabbar .navpull{width:28px!important;height:84px!important;margin-top:-42px!important;background:transparent!important;box-shadow:none!important;
+    -webkit-backdrop-filter:none!important;backdrop-filter:none!important;border-radius:0!important}
+  html.lg body.has-tabbar .navpull::after{display:none!important}
+  html.lg body.has-tabbar.navopen .navpull{transform:translateX(var(--rail-w,300px))!important}
+  html.lg body.has-tabbar .navpull::before{margin-left:-4px!important}
+  body:has(#overlay .scrim) .rail-rim{display:none!important}
 }
+@media (max-width:760px){ html.lg body.has-tabbar .navpull{z-index:72!important} }
 </style>
 </head>
 <body>
@@ -5629,8 +5635,8 @@ if("serviceWorker" in navigator){
   document.body.appendChild(tab);
   const isOpen = () => document.body.classList.contains("navopen");
   const setOpen = want => { if(want !== isOpen()) tog.click(); tab.setAttribute("aria-label", want ? "Push back the menu" : "Pull out the menu"); };
-  const railW = () => rail.getBoundingClientRect().width || 300;
-  const syncW = () => document.documentElement.style.setProperty("--rail-w", Math.round(rail.getBoundingClientRect().width) + "px");
+  const railW = () => (rail.getBoundingClientRect().width || 328) - (document.documentElement.classList.contains("lg") && matchMedia("(max-width:760px)").matches ? 28 : 0);
+  const syncW = () => document.documentElement.style.setProperty("--rail-w", Math.round(railW()) + "px");
   new MutationObserver(() => setTimeout(syncW, 450)).observe(document.body, {attributes:true, attributeFilter:["class"]});
   let drag = null;
   function start(e){
@@ -5683,7 +5689,7 @@ if("serviceWorker" in navigator){
     const t = e.touches[0];
     if(t.clientX < EDGE || t.clientX > innerWidth - EDGE) return;
     if(e.target.closest("input,textarea,select,.seg,.dots,.navpull,[contenteditable]") || scrollsX(e.target)) return;
-    g = {x0:t.clientX, y0:t.clientY, t0:performance.now(), open:isOpen(), lock:null, w:rail.getBoundingClientRect().width || 300};
+    g = {x0:t.clientX, y0:t.clientY, t0:performance.now(), open:isOpen(), lock:null, w:(rail.getBoundingClientRect().width || 328) - (document.documentElement.classList.contains("lg") ? 28 : 0)};
   }, {passive:true});
   document.addEventListener("touchmove", e => {
     if(!g) return;
@@ -5718,13 +5724,48 @@ if("serviceWorker" in navigator){
   const brand = document.querySelector(".rail .brand"), img = brand && brand.querySelector(".logo-full:not(.logo-dark)"); if(!img) return;
   const g = document.createElement("div"); g.className = "glass-logo"; g.setAttribute("role","img"); g.setAttribute("aria-label", img.alt || "Srigandha Properties");
   g.style.setProperty("--logo", `url("${img.src}")`);
-  g.innerHTML = '<i class="gl-body"></i><i class="gl-tint"></i><i class="gl-shine"></i>';
+  // glass like a moulded letter: the logo keeps its own colours; a lit bevel (specular lighting on its shape) and a moving sheen make it read as glass
+  g.innerHTML = '<svg width="0" height="0" style="position:absolute" aria-hidden="true"><filter id="glassBevel" x="-8%" y="-15%" width="116%" height="130%" color-interpolation-filters="sRGB">'
+    + '<feGaussianBlur in="SourceAlpha" stdDeviation="1.3" result="b"/>'
+    + '<feSpecularLighting in="b" surfaceScale="3.2" specularConstant="1.05" specularExponent="24" lighting-color="#ffffff" result="spec"><feDistantLight azimuth="225" elevation="42"/></feSpecularLighting>'
+    + '<feComposite in="spec" in2="SourceAlpha" operator="in" result="specIn"/>'
+    + '<feSpecularLighting in="b" surfaceScale="3.2" specularConstant=".55" specularExponent="10" lighting-color="#ffe7c9" result="spec2"><feDistantLight azimuth="45" elevation="30"/></feSpecularLighting>'
+    + '<feComposite in="spec2" in2="SourceAlpha" operator="in" result="spec2In"/>'
+    + '<feMorphology in="SourceAlpha" operator="erode" radius=".7" result="er"/><feComposite in="SourceAlpha" in2="er" operator="out" result="rim"/>'
+    + '<feFlood flood-color="#ffffff" flood-opacity=".4"/><feComposite in2="rim" operator="in" result="rimLit"/>'
+    + '<feMerge><feMergeNode in="SourceGraphic"/><feMergeNode in="spec2In"/><feMergeNode in="specIn"/><feMergeNode in="rimLit"/></feMerge></filter></svg>'
+    + `<img class="gl-base" src="${img.src}" alt="">` + '<i class="gl-shine"></i>';
   brand.insertBefore(g, img); brand.classList.add("has-glass");
+})();
+
+// ===================== side menu outline with the pull tab built in (clip path + rim) =====================
+(function(){
+  const root = document.documentElement; if(!root.classList.contains("lg")) return;
+  const rail = document.getElementById("rail"); if(!rail) return;
+  const NS = "http://www.w3.org/2000/svg", T = 28, TH = 84, R = 24, S = 10, TR = 13;
+  const rim = document.createElementNS(NS, "svg"); rim.setAttribute("class", "rail-rim"); rim.setAttribute("aria-hidden", "true");
+  rim.innerHTML = '<defs><linearGradient id="railRimG" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".95"/><stop offset=".45" stop-color="#fff" stop-opacity=".35"/><stop offset="1" stop-color="#fff" stop-opacity=".75"/></linearGradient></defs><path fill="none" stroke="url(#railRimG)" stroke-width="1.3"/>';
+  document.body.appendChild(rim);
+  const outline = (W, H, open) => { const y0 = H/2 - TH/2, y1 = H/2 + TH/2;
+    const right = `H ${W-R} A ${R} ${R} 0 0 1 ${W} ${R} V ${y0-S} A ${S} ${S} 0 0 0 ${W+S} ${y0} H ${W+T-TR} A ${TR} ${TR} 0 0 1 ${W+T} ${y0+TR} V ${y1-TR} A ${TR} ${TR} 0 0 1 ${W+T-TR} ${y1} H ${W+S} A ${S} ${S} 0 0 0 ${W} ${y1+S} V ${H-R} A ${R} ${R} 0 0 1 ${W-R} ${H}`;
+    return {clip:`M 0 0 ${right} H 0 Z`, rim:`M ${W-R-1} 0.6 ${right.replace(/^H \S+/, "")}`}; };
+  function draw(){
+    if(!matchMedia("(max-width:760px)").matches || !document.body.classList.contains("has-tabbar")){ rail.style.removeProperty("--rail-clip"); return; }
+    const box = rail.getBoundingClientRect(), W = Math.round(box.width - T), H = Math.round(box.height); if(W < 100 || H < 200) return;
+    const o = outline(W, H);
+    rail.style.setProperty("--rail-clip", `path("${o.clip}")`);
+    rim.setAttribute("viewBox", `0 0 ${W+T} ${H}`); rim.style.width = (W+T) + "px"; rim.style.height = H + "px"; rim.querySelector("path").setAttribute("d", o.rim);
+  }
+  // drags move the menu by inline transform: mirror it on the rim in the same frame
+  new MutationObserver(() => { const t = rail.style.getPropertyValue("transform"); if(t) rim.style.setProperty("transform", t, "important"); else rim.style.removeProperty("transform"); }).observe(rail, {attributes:true, attributeFilter:["style"]});
+  addEventListener("resize", () => requestAnimationFrame(draw));
+  draw(); setTimeout(draw, 500); setTimeout(draw, 1500);
+  new MutationObserver(() => requestAnimationFrame(draw)).observe(document.body, {attributes:true, attributeFilter:["class"]});
 })();
 
 // Version check: whenever the app is opened or brought back to the front, ask GitHub for the latest version number.
 // If it is newer than what is running, reload (straight away if nothing is open, otherwise offer a button).
-window.APP_VERSION = "20261107092802";
+window.APP_VERSION = "20261107093156";
 (function(){
   let busy = false, shown = false;
   function bar(v){ if(shown) return; shown = true; const b = document.createElement("button"); b.className = "upd-bar"; b.textContent = "New version ready — tap to update"; b.onclick = () => go(v); document.body.appendChild(b); }
