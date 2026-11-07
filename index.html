@@ -5184,7 +5184,7 @@ document.addEventListener("keydown", ev => { if(ev.key==="Escape" && document.bo
 document.getElementById("rail").addEventListener("click", ev => { if(isPhone() && ev.target.closest("#nav a")) setNav(false); });
 addEventListener("resize", () => { if(!isPhone()) setNav(false); });
 (() => { let sx=0, sy=0, track=false, fromEdge=false;
-  addEventListener("touchstart", e => { if(!isPhone()) return; const t=e.touches[0]; sx=t.clientX; sy=t.clientY; fromEdge = sx < 22 && !document.body.classList.contains("navopen"); track = fromEdge || document.body.classList.contains("navopen"); }, {passive:true});
+  addEventListener("touchstart", e => { if(!isPhone()) return; const t=e.touches[0]; sx=t.clientX; sy=t.clientY; fromEdge = false; track = fromEdge || document.body.classList.contains("navopen"); }, {passive:true});
   addEventListener("touchend", e => { if(!track) return; track=false; const t=e.changedTouches[0], dx=t.clientX-sx, dy=t.clientY-sy; if(Math.abs(dx) < 50 || Math.abs(dy) > Math.abs(dx)) return;
     if(fromEdge && dx > 0) setNav(true); else if(!fromEdge && dx < 0) setNav(false); }, {passive:true});
 })();
@@ -5600,9 +5600,51 @@ if("serviceWorker" in navigator){
   new MutationObserver(() => tab.setAttribute("aria-label", isOpen() ? "Push back the menu" : "Pull out the menu")).observe(document.body, {attributes:true, attributeFilter:["class"]});
 })();
 
+// ===================== phone: swipe right anywhere to pull out the menu, swipe left to send it back =====================
+// (starts away from the screen edge, so Android's own edge "back" gesture is left alone)
+(function(){
+  const rail = document.getElementById("rail"), tog = document.getElementById("navToggle"); if(!rail || !tog) return;
+  const phone = () => matchMedia("(max-width:760px)").matches && document.body.classList.contains("has-tabbar");
+  const isOpen = () => document.body.classList.contains("navopen");
+  const EDGE = 28;   // ignore touches this close to either edge (the system back gesture lives there)
+  const scrollsX = el => { for(let e = el; e && e !== document.body; e = e.parentElement){ const c = getComputedStyle(e); if(/(auto|scroll)/.test(c.overflowX) && e.scrollWidth > e.clientWidth + 2) return true; } return false; };
+  let g = null;
+  document.addEventListener("touchstart", e => {
+    if(!phone() || e.touches.length !== 1 || document.querySelector("#overlay .scrim")) return;
+    const t = e.touches[0];
+    if(t.clientX < EDGE || t.clientX > innerWidth - EDGE) return;
+    if(e.target.closest("input,textarea,select,.seg,.dots,.navpull,[contenteditable]") || scrollsX(e.target)) return;
+    g = {x0:t.clientX, y0:t.clientY, t0:performance.now(), open:isOpen(), lock:null, w:rail.getBoundingClientRect().width || 300};
+  }, {passive:true});
+  document.addEventListener("touchmove", e => {
+    if(!g) return;
+    const t = e.touches[0], dx = t.clientX - g.x0, dy = t.clientY - g.y0;
+    if(!g.lock){
+      if(Math.abs(dx) < 10 && Math.abs(dy) < 10) return;
+      g.lock = (Math.abs(dx) > Math.abs(dy) * 1.4 && (g.open ? dx < 0 : dx > 0)) ? "x" : "no";
+      if(g.lock === "x"){ document.body.classList.add("navpull-drag"); if(!g.open) rail.style.visibility = "visible"; }
+    }
+    if(g.lock !== "x") return;
+    if(e.cancelable) e.preventDefault();
+    const pos = Math.max(0, Math.min(g.w, (g.open ? g.w : 0) + dx));
+    rail.style.transform = `translateX(${pos - g.w}px)`;
+    g.pos = pos; g.lastX = t.clientX;
+  }, {passive:false});
+  const end = () => {
+    if(!g) return; const d = g; g = null;
+    if(d.lock !== "x") return;
+    document.body.classList.remove("navpull-drag"); rail.style.transform = ""; rail.style.visibility = "";
+    const v = ((d.lastX ?? d.x0) - d.x0) / Math.max(1, performance.now() - d.t0);
+    const want = Math.abs(v) > .45 ? v > 0 : (d.pos || 0) > d.w * .4;
+    if(want !== isOpen()) tog.click();
+  };
+  document.addEventListener("touchend", end, {passive:true});
+  document.addEventListener("touchcancel", end, {passive:true});
+})();
+
 // Version check: whenever the app is opened or brought back to the front, ask GitHub for the latest version number.
 // If it is newer than what is running, reload (straight away if nothing is open, otherwise offer a button).
-window.APP_VERSION = "20261107075354";
+window.APP_VERSION = "20261107075913";
 (function(){
   let busy = false, shown = false;
   function bar(v){ if(shown) return; shown = true; const b = document.createElement("button"); b.className = "upd-bar"; b.textContent = "New version ready — tap to update"; b.onclick = () => go(v); document.body.appendChild(b); }
