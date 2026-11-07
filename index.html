@@ -2436,6 +2436,20 @@ html.lg body.dark .rail .nav a[aria-current="page"]{color:#8cc8ff!important}
 /* dark: menu button without the white gloss */
 html.lg body.dark .mt-burger::before{display:none!important}
 html.lg body.dark .mt-burger{background:rgba(0,0,0,.4)!important}
+
+/* 17 — the whole side menu = the bottom bar's glass (phone and desktop), including the boxes inside it */
+html.lg body .rail{background:var(--lg-fill)!important;-webkit-backdrop-filter:var(--lg-blur)!important;backdrop-filter:var(--lg-blur)!important;
+  box-shadow:var(--lg-ink-shadow),var(--lg-rim)!important}
+@media (max-width:760px){ html.lg body .rail,html.lg body.dark .rail{background:var(--lg-fill)!important;-webkit-backdrop-filter:var(--lg-blur)!important;backdrop-filter:var(--lg-blur)!important} }
+html.lg body.dark .rail{background:var(--lg-fill)!important}
+/* boxes inside: clear glass capsules with the same rim, no solid fill */
+html.lg body .rail .sessbox,html.lg body .rail .themesw,html.lg body .rail .inst-menu,html.lg body .rail [data-install],html.lg body .rail .gate{
+  background:rgba(255,255,255,.14)!important;border:0!important;
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.55),inset 1px 1.5px 0 -.5px rgba(255,255,255,.9),0 6px 16px -10px rgba(15,30,70,.3)!important;
+  -webkit-backdrop-filter:none!important;backdrop-filter:none!important}
+html.lg body.dark .rail .sessbox,html.lg body.dark .rail .themesw,html.lg body.dark .rail .inst-menu,html.lg body.dark .rail [data-install],html.lg body.dark .rail .gate{
+  background:rgba(255,255,255,.04)!important;box-shadow:inset 0 0 0 1px rgba(255,255,255,.16),inset 0 1px 0 rgba(255,255,255,.12)!important}
+html.lg body .rail .sessbox::before,html.lg body .rail .sessbox::after,html.lg body .rail .themesw::before,html.lg body .rail .themesw::after{display:none!important}
 </style>
 </head>
 <body>
@@ -5328,7 +5342,7 @@ if("serviceWorker" in navigator){
     const phone = matchMedia("(max-width:760px)").matches;
     const mt = document.querySelector(".mtop"); if(mt && phone && mt.offsetWidth) refract(mt, "lg-mtop");
     const bg = document.getElementById("navToggle"); if(bg && phone && bg.offsetWidth) refract(bg, "lg-burger");
-    const rl = document.getElementById("rail"); if(rl && rl.offsetWidth) refract(rl, phone ? "lg-rail-m" : "lg-rail", phone ? 16 : 2.5);
+    const rl = document.getElementById("rail"); if(rl && rl.offsetWidth) refract(rl, phone ? "lg-rail-m" : "lg-rail");   /* same lens and blur as the bottom bar */
     const hd = document.querySelector("main > .head"); if(hd && !phone && hd.offsetWidth) refract(hd, "lg-head");
     const df = document.getElementById("dbFloat"); if(df && !df.hidden && df.offsetWidth) refract(df, "lg-dbf"); }
   // pop-up panels: lens the edge too (with a deep blur), each time one opens
@@ -5507,7 +5521,7 @@ if("serviceWorker" in navigator){
 
 // Version check: whenever the app is opened or brought back to the front, ask GitHub for the latest version number.
 // If it is newer than what is running, reload (straight away if nothing is open, otherwise offer a button).
-window.APP_VERSION = "20261107065843";
+window.APP_VERSION = "20261107070413";
 (function(){
   let busy = false, shown = false;
   function bar(v){ if(shown) return; shown = true; const b = document.createElement("button"); b.className = "upd-bar"; b.textContent = "New version ready — tap to update"; b.onclick = () => go(v); document.body.appendChild(b); }
