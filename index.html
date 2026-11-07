@@ -2346,6 +2346,21 @@ html.lg.lg-off body.dark .dbfloat{background:rgba(28,30,38,.98)!important}
   html.lg body main > .head{background:var(--lg-fill)!important;-webkit-backdrop-filter:var(--lg-blur)!important;backdrop-filter:var(--lg-blur)!important;box-shadow:var(--lg-ink-shadow),var(--lg-rim)!important}
 }
 
+
+/* 15 — pop-up panels and side sheets (e.g. a person's incentive calculation): frosted Liquid Glass.
+   Same lens edge and light rim as the bars, but a deep blur so the page behind reads as colour, never as text. */
+html.lg body #overlay .drawer,html.lg body #overlay .modal{
+  background:radial-gradient(130% 60% at 50% 0%,rgba(255,255,255,.55),rgba(255,255,255,0) 60%),linear-gradient(180deg,rgba(250,252,255,.88),rgba(240,246,255,.84))!important;
+  -webkit-backdrop-filter:blur(30px) saturate(190%) brightness(1.04)!important;backdrop-filter:blur(30px) saturate(190%) brightness(1.04)!important;
+  box-shadow:0 30px 70px -20px rgba(10,20,50,.45),var(--lg-rim)!important;isolation:isolate}
+html.lg body.dark #overlay .drawer,html.lg body.dark #overlay .modal{background:radial-gradient(130% 60% at 50% 0%,rgba(255,255,255,.07),rgba(255,255,255,0) 60%),linear-gradient(180deg,rgba(34,36,46,.90),rgba(22,24,32,.88))!important}
+html.lg body #overlay .scrim{background:rgba(10,18,40,.38)!important}
+html.lg body #overlay .drawer::after,html.lg body #overlay .modal::after{content:""!important;display:block!important;position:absolute;inset:0;border-radius:inherit;pointer-events:none;z-index:5;padding:1.2px;
+  background:linear-gradient(var(--lg-a),rgba(255,255,255,.95),rgba(255,255,255,.18) 22%,rgba(255,255,255,0) 50%,rgba(255,255,255,.18) 78%,rgba(255,255,255,.7))!important;
+  -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;opacity:.9}
+html.lg body.dark #overlay .drawer::after,html.lg body.dark #overlay .modal::after{opacity:.3}
+html.lg.lg-off body #overlay .drawer,html.lg.lg-off body #overlay .modal{-webkit-backdrop-filter:none!important;backdrop-filter:none!important;background:#fff!important}
+html.lg.lg-off body.dark #overlay .drawer,html.lg.lg-off body.dark #overlay .modal{background:#1c1e26!important}
 </style>
 </head>
 <body>
@@ -5241,6 +5256,9 @@ if("serviceWorker" in navigator){
     const rl = document.getElementById("rail"); if(rl && rl.offsetWidth) refract(rl, phone ? "lg-rail-m" : "lg-rail", phone ? 16 : 2.5);
     const hd = document.querySelector("main > .head"); if(hd && !phone && hd.offsetWidth) refract(hd, "lg-head");
     const df = document.getElementById("dbFloat"); if(df && !df.hidden && df.offsetWidth) refract(df, "lg-dbf"); }
+  // pop-up panels: lens the edge too (with a deep blur), each time one opens
+  const ov = document.getElementById("overlay");
+  if(ov) new MutationObserver(() => requestAnimationFrame(() => { const sh = ov.querySelector(".drawer, .modal"); if(sh && sh.offsetWidth) refract(sh, "lg-sheet", 30); })).observe(ov, {childList:true});
   // the floating day bar is created and shown on demand: lens it when it appears
   new MutationObserver(ms => { for(const m of ms) for(const n of m.addedNodes) if(n.id === "dbFloat") new MutationObserver(() => requestAnimationFrame(refractAll)).observe(n, {attributes:true, attributeFilter:["hidden"]}); }).observe(document.body, {childList:true});
   // the desktop top bar is redrawn with each page; re-apply its lens (cached, so this is cheap)
@@ -5408,7 +5426,7 @@ if("serviceWorker" in navigator){
 
 // Version check: whenever the app is opened or brought back to the front, ask GitHub for the latest version number.
 // If it is newer than what is running, reload (straight away if nothing is open, otherwise offer a button).
-window.APP_VERSION = "20261107061430";
+window.APP_VERSION = "20261107063522";
 (function(){
   let busy = false, shown = false;
   function bar(v){ if(shown) return; shown = true; const b = document.createElement("button"); b.className = "upd-bar"; b.textContent = "New version ready — tap to update"; b.onclick = () => go(v); document.body.appendChild(b); }
