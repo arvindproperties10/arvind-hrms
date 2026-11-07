@@ -2346,6 +2346,28 @@ html.lg.lg-off body.dark .dbfloat{background:rgba(28,30,38,.98)!important}
 @media (min-width:761px){
   html.lg body main > .head{background:var(--lg-fill)!important;-webkit-backdrop-filter:var(--lg-blur)!important;backdrop-filter:var(--lg-blur)!important;box-shadow:var(--lg-ink-shadow),var(--lg-rim)!important}
 }
+
+/* 14 — glass on glass: cards inside cards get their own depth (incentives teams, person tiles, and anywhere panels nest) */
+/* level 2: a tinted glass tray set into the panel */
+html.lg body .panel .panel{border:0!important;border-radius:22px!important;
+  background:linear-gradient(180deg,rgba(255,255,255,.55) 0%,rgba(255,255,255,0) 38%),linear-gradient(165deg,rgba(236,244,255,.72),rgba(220,233,252,.46))!important;
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.95),inset 0 1.5px 0 rgba(255,255,255,1),inset 0 -10px 24px -18px rgba(30,90,200,.25),0 12px 28px -20px rgba(16,42,94,.5),0 0 0 .5px rgba(16,42,94,.10)!important}
+/* level 3: raised clear-glass cards sitting on the tray */
+html.lg body .panel .panel .panel{border-radius:18px!important;
+  background:linear-gradient(180deg,rgba(255,255,255,.96),rgba(255,255,255,.74))!important;
+  box-shadow:0 8px 18px -12px rgba(16,42,94,.45),0 1px 3px -1px rgba(16,42,94,.12),inset 0 0 0 1px rgba(255,255,255,1),inset 0 -4px 10px -8px rgba(30,90,200,.18),0 0 0 .5px rgba(16,42,94,.09)!important;
+  transition:transform .4s cubic-bezier(.2,1.5,.4,1),box-shadow .3s}
+html.lg body .panel .teamtile{cursor:pointer}
+@media (hover:hover){ html.lg body .panel .teamtile:hover{transform:translateY(-3px);box-shadow:0 16px 28px -14px rgba(16,42,94,.5),0 2px 6px -2px rgba(16,42,94,.14),inset 0 0 0 1px rgba(255,255,255,1),0 0 0 .5px rgba(16,42,94,.1)!important} }
+html.lg body .panel .teamtile:active{transform:scale(.97)}
+html.lg body .panel .panel::before,html.lg body .panel .panel::after{display:none!important}
+/* dark */
+html.lg body.dark .panel .panel{background:linear-gradient(180deg,rgba(255,255,255,.06) 0%,rgba(255,255,255,0) 38%),linear-gradient(165deg,rgba(60,90,140,.30),rgba(30,45,80,.22))!important;
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.10),inset 0 1px 0 rgba(255,255,255,.14),0 12px 28px -18px rgba(0,0,0,.7)!important}
+html.lg body.dark .panel .panel .panel{background:linear-gradient(180deg,rgba(255,255,255,.10),rgba(255,255,255,.04))!important;
+  box-shadow:0 8px 18px -12px rgba(0,0,0,.7),inset 0 0 0 1px rgba(255,255,255,.12),inset 0 1px 0 rgba(255,255,255,.16)!important}
+/* the rate and summary chips get a light glass edge so they don't float loose */
+html.lg body .slabs .pill,html.lg body main > .head ~ .chips .pill,html.lg body .sumchips .pill{box-shadow:inset 0 0 0 1px rgba(255,255,255,.8),0 2px 6px -4px rgba(16,42,94,.3)}
 </style>
 </head>
 <body>
@@ -5407,7 +5429,7 @@ if("serviceWorker" in navigator){
 
 // Version check: whenever the app is opened or brought back to the front, ask GitHub for the latest version number.
 // If it is newer than what is running, reload (straight away if nothing is open, otherwise offer a button).
-window.APP_VERSION = "20261107055939";
+window.APP_VERSION = "20261107060212";
 (function(){
   let busy = false, shown = false;
   function bar(v){ if(shown) return; shown = true; const b = document.createElement("button"); b.className = "upd-bar"; b.textContent = "New version ready — tap to update"; b.onclick = () => go(v); document.body.appendChild(b); }
