@@ -2692,6 +2692,25 @@ html.lg body.dark .pill.leave{background:transparent!important;color:#fca5a5!imp
   html body.has-tabbar main > .head .tools:has(#empQ) select:first-of-type{flex-basis:0%!important}
   html body.has-tabbar main > .head .tools:has(#empQ)::after{content:"";order:2;flex-basis:100%;height:0}
 }
+
+
+/* Check-ins: compact cards */
+.ci-cards .cicard{gap:3px!important;padding:9px 2px!important;display:grid!important;grid-template-columns:minmax(0,1fr) auto;align-items:center}
+.ci-cards .cicard > .cc-head{grid-column:1/-1;grid-template-columns:32px minmax(0,1fr) auto!important;gap:9px!important}
+.ci-cards .cicard .cc-head .av{width:32px!important;height:32px!important;font-size:11.5px!important}
+.ci-cards .cicard .cc-name b{line-height:1.2}
+.ci-cards .cicard .cc-name small{line-height:1.2;font-size:11.5px!important}
+.ci-cards .cicard > .cc-times{grid-column:1/-1;flex-wrap:nowrap!important;gap:12px!important;padding-left:41px!important;font-size:13.5px!important;line-height:1.35;white-space:nowrap;overflow:hidden}
+.ci-cards .cicard > .cc-times small{font-size:9.5px!important;margin-right:2px!important}
+.ci-cards .cicard > .cc-sub{grid-column:1/-1;padding-left:41px!important;font-size:11.5px!important;line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ci-cards .cicard > .cc-flags{grid-column:1;padding-left:41px!important;gap:3px 9px!important;font-size:12px}
+.ci-cards .cicard > .cc-flags .tag{font-size:11.5px!important}
+.ci-cards .cicard > .cc-acts{grid-column:2;padding-left:0!important;gap:5px!important;justify-content:flex-end}
+.ci-cards .cicard > .cc-sub + .cc-acts{grid-column:1/-1;padding-left:41px!important;justify-content:flex-start}
+.ci-cards .cicard .cc-acts .btn{min-height:26px!important;height:26px;padding:0 10px!important;font-size:12px!important}
+.ci-cards .cicard > .cc-times{gap:10px!important;font-size:13px!important}
+.ci-cards .cicard > .cc-times .cc-wk{font-size:0!important}
+.ci-cards .cicard > .cc-times .cc-wk::before{content:"⏱";font-size:11px;margin-right:2px}
 </style>
 </head>
 <body>
@@ -3718,7 +3737,7 @@ function goLiveDrawer(){
 function ciCard(e, d){
   const c = ciFor(e.id, d), v = ciEval(c), st = statusOn(e.id, d), hr = S.att[d]?.marks?.[e.id];
   const tag = st==="P" ? (v && v.late && !hr ? `<span class="tag warn">Late</span>` : `<span class="tag ok">Present</span>`) : st==="HD" ? `<span class="tag warn">Half day</span>` : st==="A" ? `<span class="tag bad">Absent</span>` : st==="L" ? `<span class="tag leave">Leave</span>` : `<span class="tag">Not in yet</span>`;
-  const line = c ? `<div class="cc-times"><span><small>In</small> ${tmIST(c.in.t)}</span><span><small>Out</small> ${c.out ? tmIST(c.out.t) : "—"}</span>${c.out && v ? `<span><small>Worked</small> ${m2hm(Math.max(0, v.outM - v.inM))}</span>` : ""}</div>
+  const line = c ? `<div class="cc-times"><span><small>In</small> ${tmIST(c.in.t)}</span><span><small>Out</small> ${c.out ? tmIST(c.out.t) : "—"}</span>${c.out && v ? `<span><small class="cc-wk">Worked</small> ${m2hm(Math.max(0, v.outM - v.inM))}</span>` : ""}</div>
     <div class="cc-sub">${esc(placeLbl(c.in))}${c.in.manual ? " · added by permission" : c.in.back ? ` · backdated from ${tmIST(c.in.orig)}` : c.in.place==="field" ? ` · ${(c.in.dist/1000).toFixed(1)} km from office` : c.in.dist!=null ? ` · ${c.in.dist} m` : ""}${c.in.acc!=null ? ` · GPS ±${c.in.acc} m` : ""}${hr ? " · status set by HR" : ""}</div>` : (hr ? `<div class="cc-sub">Marked by HR</div>` : "");
   const flags = c ? [v.early ? `<span class="tag warn">Short hours</span>` : "", v.noOut && d < today ? `<span class="tag bad">No check-out</span>` : "", v.lowAcc ? `<span class="tag">Rough GPS</span>` : ""].filter(Boolean).join("") : "";
   const acts = c ? `<div class="cc-acts">${forgiveCtl(e.id, d, v)}${c.in.manual ? "" : `<button class="btn small" data-selfie="${d}_${e.id}" data-name="${esc(e.name)}">Selfie</button>`}${c.in.lat!=null ? `<a class="btn small ghost" href="https://www.google.com/maps?q=${c.in.lat},${c.in.lng}" target="_blank" rel="noopener">Map</a>` : ""}</div>` : "";
@@ -5909,7 +5928,7 @@ if("serviceWorker" in navigator){
 
 // Version check: whenever the app is opened or brought back to the front, ask GitHub for the latest version number.
 // If it is newer than what is running, reload (straight away if nothing is open, otherwise offer a button).
-window.APP_VERSION = "20261108061412";
+window.APP_VERSION = "20261108061803";
 (function(){
   let busy = false, shown = false;
   function bar(v){ if(shown) return; shown = true; const b = document.createElement("button"); b.className = "upd-bar"; b.textContent = "New version ready — tap to update"; b.onclick = () => go(v); document.body.appendChild(b); }
