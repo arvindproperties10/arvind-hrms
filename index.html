@@ -2774,6 +2774,25 @@ html body .tablewrap table.t-emp td:not(:first-child):not(:last-child):not(.num)
   html body.has-tabbar main > .head .tools:has(.datebar) .datebar button{flex:none;width:30px!important;min-width:30px!important;height:30px!important}
   html body.has-tabbar main > .head .tools:has(.datebar) [data-act="att-all"]{padding:0 11px!important;font-size:12.5px!important}
 }
+/* Employees controls: a geometric plus (exactly centred) and one consistent chevron on every filter */
+@media (max-width:760px){
+  html body.has-tabbar main > .head .tools:has(#empQ) [data-act="new-emp"]{display:block!important;padding:0!important}
+  html body.has-tabbar main > .head .tools:has(#empQ) [data-act="new-emp"]::before,html body.has-tabbar main > .head .tools:has(#empQ) [data-act="new-emp"]::after{
+    content:""!important;position:absolute;left:50%;top:50%;width:16px;height:2.2px;margin:-1.1px 0 0 -8px;border-radius:2px;background:currentColor;font-size:0;line-height:0}
+  html body.has-tabbar main > .head .tools:has(#empQ) [data-act="new-emp"]::after{transform:rotate(90deg)}
+}
+.head .tools:has(#empQ) select{-webkit-appearance:none!important;appearance:none!important;padding-right:30px!important;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M3 4.5 6 7.5 9 4.5' fill='none' stroke='%236b7280' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")!important;
+  background-repeat:no-repeat!important;background-position:right 12px center!important;background-size:12px 12px!important;text-overflow:ellipsis}
+body.dark .head .tools:has(#empQ) select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M3 4.5 6 7.5 9 4.5' fill='none' stroke='%23b4b4bc' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")!important}
+@media (max-width:760px){ html body.has-tabbar main > .head .tools:has(#empQ) select{padding:0 28px 0 12px!important;background-position:right 11px center!important} }
+/* the same chevron on every dropdown in the app, placed identically */
+html.lg body select:not([multiple]){-webkit-appearance:none!important;appearance:none!important;padding-right:30px!important;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M3 4.5 6 7.5 9 4.5' fill='none' stroke='%236b7280' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")!important;
+  background-repeat:no-repeat!important;background-position:right 11px center!important;background-size:12px 12px!important}
+html.lg body.dark select:not([multiple]){background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M3 4.5 6 7.5 9 4.5' fill='none' stroke='%23b4b4bc' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")!important}
+@media (min-width:761px){ html body .tablewrap table.t-emp th.num,html body .tablewrap table.t-emp td:nth-child(8){text-align:right!important;padding-right:20px!important} }
+@media (min-width:761px){ html body .tablewrap table.t-emp th.num:not(:first-child):not(:last-child):not(.x),html body .tablewrap table.t-emp td:nth-child(8):not(:first-child):not(:last-child):not(.x){text-align:right!important;padding-right:20px!important} }
 </style>
 </head>
 <body>
@@ -5991,7 +6010,7 @@ if("serviceWorker" in navigator){
 
 // Version check: whenever the app is opened or brought back to the front, ask GitHub for the latest version number.
 // If it is newer than what is running, reload (straight away if nothing is open, otherwise offer a button).
-window.APP_VERSION = "20261108062401";
+window.APP_VERSION = "20261108062751";
 (function(){
   let busy = false, shown = false;
   function bar(v){ if(shown) return; shown = true; const b = document.createElement("button"); b.className = "upd-bar"; b.textContent = "New version ready — tap to update"; b.onclick = () => go(v); document.body.appendChild(b); }
