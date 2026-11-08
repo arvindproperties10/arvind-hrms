@@ -2666,6 +2666,9 @@ html.lg body.dark .pill.leave{background:transparent!important;color:#fca5a5!imp
   html.lg body.has-tabbar .navpull,html.lg body.has-tabbar .navpull:active{width:18px!important}
   html.lg body.has-tabbar .navpull::before{left:5px!important;width:2.5px!important}
 }
+/* Overview tiles: no arrow after the label (the whole tile is tappable and presses in) */
+.kpi-link .k::after{content:none!important;display:none!important}
+.kpi-link{cursor:pointer}
 </style>
 </head>
 <body>
@@ -5883,7 +5886,7 @@ if("serviceWorker" in navigator){
 
 // Version check: whenever the app is opened or brought back to the front, ask GitHub for the latest version number.
 // If it is newer than what is running, reload (straight away if nothing is open, otherwise offer a button).
-window.APP_VERSION = "20261108060717";
+window.APP_VERSION = "20261108061016";
 (function(){
   let busy = false, shown = false;
   function bar(v){ if(shown) return; shown = true; const b = document.createElement("button"); b.className = "upd-bar"; b.textContent = "New version ready — tap to update"; b.onclick = () => go(v); document.body.appendChild(b); }
