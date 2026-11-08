@@ -2711,6 +2711,69 @@ html.lg body.dark .pill.leave{background:transparent!important;color:#fca5a5!imp
 .ci-cards .cicard > .cc-times{gap:10px!important;font-size:13px!important}
 .ci-cards .cicard > .cc-times .cc-wk{font-size:0!important}
 .ci-cards .cicard > .cc-times .cc-wk::before{content:"⏱";font-size:11px;margin-right:2px}
+
+/* Employees table: one alignment system — text columns left (header and cells), pay right, status centred; sort arrows inline */
+table.t-emp th,table.t-emp td{text-align:left!important;vertical-align:middle!important}
+table.t-emp th.num,table.t-emp td.num{text-align:right!important}
+table.t-emp th:last-child,table.t-emp td:last-child{text-align:center!important}
+table.t-emp th{white-space:nowrap!important}
+table.t-emp th *{display:inline!important}
+table.t-emp th .sortarr,table.t-emp th [class*="sort"]{margin-left:4px}
+table.t-emp td .who{justify-content:flex-start}
+table.t-emp td.code,table.t-emp td:nth-child(2){font-variant-numeric:tabular-nums}
+@media (max-width:760px){
+  table.t-emp td .who b{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block;max-width:40vw}
+  table.t-emp td .who small{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block;max-width:40vw}
+  table.t-emp td{line-height:1.3!important}
+}
+@media (max-width:760px){
+  html body.has-tabbar table.t-emp{table-layout:fixed;width:100%!important}
+  html body.has-tabbar table.t-emp th,html body.has-tabbar table.t-emp td{text-align:left!important;padding-left:8px!important;padding-right:8px!important}
+  html body.has-tabbar table.t-emp th:first-child,html body.has-tabbar table.t-emp td:first-child{width:46%;padding-left:16px!important}
+  html body.has-tabbar table.t-emp th:last-child,html body.has-tabbar table.t-emp td:last-child{width:76px;text-align:center!important;padding-right:12px!important}
+  html body.has-tabbar table.t-emp th{white-space:nowrap!important;font-size:13px!important}
+  html body.has-tabbar table.t-emp th *{display:inline!important;margin-left:3px}
+  html body.has-tabbar table.t-emp td .who b,html body.has-tabbar table.t-emp td .who small{max-width:none}
+  html body.has-tabbar table.t-emp td .who > div{min-width:0}
+  html body.has-tabbar table.t-emp td .pill{font-size:12px!important;padding:2px 9px!important}
+}
+html body.has-tabbar .tablewrap table.t-emp td:not(:first-child):not(:last-child),html body.has-tabbar .tablewrap table.t-emp th:not(:first-child):not(:last-child),
+html body .tablewrap table.t-emp td:not(:first-child):not(:last-child):not(.num),html body .tablewrap table.t-emp th:not(:first-child):not(:last-child):not(.num){text-align:left!important}
+@media (max-width:760px){ html body.has-tabbar .tablewrap table.t-emp td:not(:first-child):not(:last-child){font-size:13px!important;line-height:1.3!important} }
+@media (max-width:760px){ html body.has-tabbar main .tablewrap table.t-emp tbody td:nth-child(n+2):not(:last-child){font-size:12.5px!important;line-height:1.3!important} }
+
+/* Attendance (phone): compact rows — name and the toggle on one line; status label dropped (the toggle shows it) */
+@media (max-width:760px){
+  .att-cards .cicard{display:grid!important;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:4px 8px!important;padding:8px 2px!important}
+  .att-cards .cicard > .cc-head{grid-column:1;grid-row:1;grid-template-columns:30px minmax(0,1fr)!important;gap:8px!important}
+  .att-cards .cicard > .cc-head .pill{display:none!important}
+  .att-cards .cicard .cc-head .av{width:30px!important;height:30px!important;font-size:11px!important}
+  .att-cards .cicard .cc-name b{font-size:14px!important;line-height:1.2}
+  .att-cards .cicard .cc-name small{font-size:11px!important;line-height:1.2}
+  .att-cards .cicard > .cc-seg{grid-column:2;grid-row:1;margin:0!important;padding:3px!important;width:auto!important}
+  html.lg body .att-cards .cicard > .cc-seg > button{flex:0 0 auto!important;padding:5px 9px!important;font-size:12px!important;min-height:0!important;min-width:0!important}
+  .att-cards .cicard > .cc-sub,.att-cards .cicard > .cc-acts{grid-column:1/-1;padding-left:38px!important;margin:0!important;font-size:11px!important}
+  .att-cards .cicard > .cc-acts .btn{min-height:26px!important;height:26px;padding:0 10px!important;font-size:12px!important}
+  /* header: date bar and "Mark rest present" share a row; summary strip slimmer */
+  body.has-tabbar main > .head .tools:has(.datebar):has([data-act="att-all"]){flex-wrap:nowrap!important}
+  body.has-tabbar main > .head .tools:has(.datebar) [data-act="att-all"]{flex:0 0 auto!important;padding:0 12px!important;font-size:13px!important;height:40px;min-height:40px!important}
+  body.has-tabbar main > .head .tools:has(.datebar) .datebar{flex:1 1 0!important;min-width:0}
+  body.has-tabbar .sumstrip{padding:8px 6px!important}
+  body.has-tabbar .sumstrip b{font-size:19px!important}
+  body.has-tabbar .sumstrip span{font-size:11px!important}
+}
+@media (max-width:760px){ body.has-tabbar main > .head .tools:has(.datebar) > *{flex-basis:auto!important} body.has-tabbar main > .head .tools:has(.datebar) .datebar{flex:1 1 0%!important} }
+@media (max-width:760px){
+  html body.has-tabbar main > .head .tools:has(.datebar) [data-act="att-all"]{width:auto!important;max-width:none!important;flex:0 0 auto!important;white-space:nowrap}
+  html body.has-tabbar main > .head .tools:has(.datebar) .datebar{flex:1 1 0%!important;width:auto!important;min-width:150px!important}
+}
+@media (max-width:760px){
+  html body.has-tabbar main > .head .tools:has(.datebar) .datebar{gap:2px!important;padding:0 4px!important;overflow:hidden}
+  html body.has-tabbar main > .head .tools:has(.datebar) .datebar .db-label{font-size:13.5px!important;gap:4px!important;padding:0 2px!important;min-width:0}
+  html body.has-tabbar main > .head .tools:has(.datebar) .datebar .db-label svg{display:none}
+  html body.has-tabbar main > .head .tools:has(.datebar) .datebar button{flex:none;width:30px!important;min-width:30px!important;height:30px!important}
+  html body.has-tabbar main > .head .tools:has(.datebar) [data-act="att-all"]{padding:0 11px!important;font-size:12.5px!important}
+}
 </style>
 </head>
 <body>
@@ -5928,7 +5991,7 @@ if("serviceWorker" in navigator){
 
 // Version check: whenever the app is opened or brought back to the front, ask GitHub for the latest version number.
 // If it is newer than what is running, reload (straight away if nothing is open, otherwise offer a button).
-window.APP_VERSION = "20261108061803";
+window.APP_VERSION = "20261108062401";
 (function(){
   let busy = false, shown = false;
   function bar(v){ if(shown) return; shown = true; const b = document.createElement("button"); b.className = "upd-bar"; b.textContent = "New version ready — tap to update"; b.onclick = () => go(v); document.body.appendChild(b); }
