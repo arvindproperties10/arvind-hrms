@@ -5819,16 +5819,17 @@ if("serviceWorker" in navigator){
 (function(){
   const root = document.documentElement; if(!root.classList.contains("lg")) return;
   const rail = document.getElementById("rail"); if(!rail) return;
-  const NS = "http://www.w3.org/2000/svg", T = 14, TH = 96, R = 24, S = 0, TR = 7;
+  const NS = "http://www.w3.org/2000/svg", T = 14, TH = 66, R = 24, S = 0, TR = 7, L = 26;
   const rim = document.createElementNS(NS, "svg"); rim.setAttribute("class", "rail-rim"); rim.setAttribute("aria-hidden", "true");
   rim.innerHTML = '<defs><linearGradient id="railRimG" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".95"/><stop offset=".45" stop-color="#fff" stop-opacity=".35"/><stop offset="1" stop-color="#fff" stop-opacity=".75"/></linearGradient></defs><linearGradient id="railTabG" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".55"/><stop offset=".5" stop-color="#fff" stop-opacity=".08"/><stop offset="1" stop-color="#fff" stop-opacity=".3"/></linearGradient><linearGradient id="railTopG" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#fff" stop-opacity="0"/><stop offset=".55" stop-color="#fff" stop-opacity=".75"/><stop offset="1" stop-color="#fff" stop-opacity=".95"/></linearGradient><path class="rim-tabfill" stroke="none" fill="url(#railTabG)"/><path class="rim-body" fill="none" stroke="url(#railRimG)" stroke-width="1.3"/><path class="rim-edge" fill="none" stroke="url(#railTopG)" stroke-width="1.3"/><path class="rim-tab" fill="none" stroke="url(#railRimG)" stroke-width="1.3"/>';
   document.body.appendChild(rim);
   const outline = (W, H, open) => { const y0 = H/2 - TH/2, y1 = H/2 + TH/2;
-    const right = `H ${W-R} A ${R} ${R} 0 0 1 ${W} ${R} V ${y0-S} A ${S} ${S} 0 0 0 ${W+S} ${y0} H ${W+T-TR} A ${TR} ${TR} 0 0 1 ${W+T} ${y0+TR} V ${y1-TR} A ${TR} ${TR} 0 0 1 ${W+T-TR} ${y1} H ${W+S} A ${S} ${S} 0 0 0 ${W} ${y1+S} V ${H-R} A ${R} ${R} 0 0 1 ${W-R} ${H}`;
-    const top = `M ${W-R-1} 0.6 A ${R} ${R} 0 0 1 ${W} ${R} V ${y0-S}`, bot = `M ${W} ${y1+S} V ${H-R} A ${R} ${R} 0 0 1 ${W-R} ${H}`;
-    const tabp = `M ${W} ${y0-S} A ${S} ${S} 0 0 0 ${W+S} ${y0} H ${W+T-TR} A ${TR} ${TR} 0 0 1 ${W+T} ${y0+TR} V ${y1-TR} A ${TR} ${TR} 0 0 1 ${W+T-TR} ${y1} H ${W+S} A ${S} ${S} 0 0 0 ${W} ${y1+S}`;
+    const bump = `C ${W} ${y0-L*.42} ${W+T} ${y0-L*.58} ${W+T} ${y0} V ${y1} C ${W+T} ${y1+L*.58} ${W} ${y1+L*.42} ${W} ${y1+L}`;
+    const right = `H ${W-R} A ${R} ${R} 0 0 1 ${W} ${R} V ${y0-L} ${bump} V ${H-R} A ${R} ${R} 0 0 1 ${W-R} ${H}`;
+    const top = `M ${W-R-1} 0.6 A ${R} ${R} 0 0 1 ${W} ${R} V ${y0-L}`, bot = `M ${W} ${y1+L} V ${H-R} A ${R} ${R} 0 0 1 ${W-R} ${H}`;
+    const tabp = `M ${W} ${y0-L} ${bump}`;
     const edge = `M 0 0.6 H ${W-R-1} M ${W-R} ${H-0.6} H 0`;
-    const tfill = `M ${W-1} ${y0-S} A ${S} ${S} 0 0 0 ${W+S} ${y0} H ${W+T-TR} A ${TR} ${TR} 0 0 1 ${W+T} ${y0+TR} V ${y1-TR} A ${TR} ${TR} 0 0 1 ${W+T-TR} ${y1} H ${W+S} A ${S} ${S} 0 0 0 ${W-1} ${y1+S} Z`;
+    const tfill = `M ${W-1} ${y0-L} ${bump} Z`;
     return {clip:`M 0 0 ${right} H 0 Z`, body: top + " " + bot, full: `M ${W-R-1} 0.6 ${right.replace(/^H \S+ /, "")}`, tab: tabp, edge, tfill}; };
   window.__railOutline = (W, H) => outline(W, H).clip;
   // displacement map that follows the menu's real outline (body + tab), so the lens bends at every edge
@@ -5871,7 +5872,7 @@ if("serviceWorker" in navigator){
 
 // Version check: whenever the app is opened or brought back to the front, ask GitHub for the latest version number.
 // If it is newer than what is running, reload (straight away if nothing is open, otherwise offer a button).
-window.APP_VERSION = "20261108060109";
+window.APP_VERSION = "20261108060501";
 (function(){
   let busy = false, shown = false;
   function bar(v){ if(shown) return; shown = true; const b = document.createElement("button"); b.className = "upd-bar"; b.textContent = "New version ready — tap to update"; b.onclick = () => go(v); document.body.appendChild(b); }
