@@ -2793,6 +2793,25 @@ html.lg body select:not([multiple]){-webkit-appearance:none!important;appearance
 html.lg body.dark select:not([multiple]){background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M3 4.5 6 7.5 9 4.5' fill='none' stroke='%23b4b4bc' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")!important}
 @media (min-width:761px){ html body .tablewrap table.t-emp th.num,html body .tablewrap table.t-emp td:nth-child(8){text-align:right!important;padding-right:20px!important} }
 @media (min-width:761px){ html body .tablewrap table.t-emp th.num:not(:first-child):not(:last-child):not(.x),html body .tablewrap table.t-emp td:nth-child(8):not(:first-child):not(:last-child):not(.x){text-align:right!important;padding-right:20px!important} }
+
+/* Check-ins: Settings becomes a small round gear beside the date bar */
+[data-act="golive-open"]{font-size:0!important;width:40px!important;min-width:40px!important;max-width:40px!important;height:40px!important;min-height:40px!important;padding:0!important;border-radius:50%!important;flex:0 0 40px!important;position:relative}
+[data-act="golive-open"]::after{content:"";position:absolute;inset:0;margin:auto;width:20px;height:20px;background:var(--accent,#0071e3);-webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='3'/%3E%3Cpath d='M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z'/%3E%3C/svg%3E") center/contain no-repeat;mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='3'/%3E%3Cpath d='M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z'/%3E%3C/svg%3E") center/contain no-repeat}
+body.dark [data-act="golive-open"]::after{background:#8cc8ff}
+@media (max-width:760px){ html body.has-tabbar main > .head .tools:has([data-act="golive-open"]){flex-wrap:nowrap!important} html body.has-tabbar main > .head .tools:has([data-act="golive-open"]) .datebar{flex:1 1 0%!important;width:auto!important;min-width:0!important} }
+
+/* dark mode on phones: the page header has no box (as in light mode), so nothing overlaps or looks offset */
+@media (max-width:760px){
+  html.lg body.dark.has-tabbar main > .head{background:none!important;border:0!important;box-shadow:none!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important}
+  html.lg body.dark.has-tabbar main > .head::before,html.lg body.dark.has-tabbar main > .head::after{display:none!important}
+}
+/* dark tables: the border sits inside the rounded box (no edge running past the corners) */
+html.lg body.dark .tablewrap{overflow:hidden!important;border-radius:22px}
+html.lg body.dark .tablewrap table{border-collapse:separate!important;border-spacing:0}
+html.lg body.dark .tablewrap thead th{border-top:0!important}
+
+/* dark: table and card edges drawn on top of their rows, so the outline is unbroken at the corners */
+html.lg body.dark .tablewrap,html.lg body.dark .panel:not(.panel .panel){outline:1px solid rgba(255,255,255,.16);outline-offset:-1px}
 </style>
 </head>
 <body>
@@ -6010,7 +6029,7 @@ if("serviceWorker" in navigator){
 
 // Version check: whenever the app is opened or brought back to the front, ask GitHub for the latest version number.
 // If it is newer than what is running, reload (straight away if nothing is open, otherwise offer a button).
-window.APP_VERSION = "20261108062751";
+window.APP_VERSION = "20261108063607";
 (function(){
   let busy = false, shown = false;
   function bar(v){ if(shown) return; shown = true; const b = document.createElement("button"); b.className = "upd-bar"; b.textContent = "New version ready — tap to update"; b.onclick = () => go(v); document.body.appendChild(b); }
