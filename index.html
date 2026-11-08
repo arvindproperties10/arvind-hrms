@@ -2812,6 +2812,13 @@ html.lg body.dark .tablewrap thead th{border-top:0!important}
 
 /* dark: table and card edges drawn on top of their rows, so the outline is unbroken at the corners */
 html.lg body.dark .tablewrap,html.lg body.dark .panel:not(.panel .panel){outline:1px solid rgba(255,255,255,.16);outline-offset:-1px}
+
+/* Date fields on Android: hide the phone's own date text and arrow so only our label shows */
+.dpwrap > input{-webkit-appearance:none!important;appearance:none!important;-webkit-text-fill-color:transparent!important;color:transparent!important;text-shadow:none!important}
+.dpwrap > input::-webkit-date-and-time-value{opacity:0!important;color:transparent!important;-webkit-text-fill-color:transparent!important}
+.dpwrap > input::-webkit-datetime-edit,.dpwrap > input::-webkit-datetime-edit-fields-wrapper{opacity:0!important;color:transparent!important}
+.dpwrap > input::-webkit-inner-spin-button,.dpwrap > input::-webkit-clear-button{display:none!important;-webkit-appearance:none!important}
+.dpwrap > input{min-height:44px}
 </style>
 </head>
 <body>
@@ -6029,7 +6036,7 @@ if("serviceWorker" in navigator){
 
 // Version check: whenever the app is opened or brought back to the front, ask GitHub for the latest version number.
 // If it is newer than what is running, reload (straight away if nothing is open, otherwise offer a button).
-window.APP_VERSION = "20261108063607";
+window.APP_VERSION = "20261108102228";
 (function(){
   let busy = false, shown = false;
   function bar(v){ if(shown) return; shown = true; const b = document.createElement("button"); b.className = "upd-bar"; b.textContent = "New version ready — tap to update"; b.onclick = () => go(v); document.body.appendChild(b); }
