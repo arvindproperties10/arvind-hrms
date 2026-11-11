@@ -2819,6 +2819,11 @@ html.lg body.dark .tablewrap,html.lg body.dark .panel:not(.panel .panel){outline
 .dpwrap > input::-webkit-datetime-edit,.dpwrap > input::-webkit-datetime-edit-fields-wrapper{opacity:0!important;color:transparent!important}
 .dpwrap > input::-webkit-inner-spin-button,.dpwrap > input::-webkit-clear-button{display:none!important;-webkit-appearance:none!important}
 .dpwrap > input{min-height:44px}
+
+/* Desktop: lists never shrink to a sliver on short screens; the page scrolls instead */
+@media (min-width:761px){
+  #main .tablewrap.fill{min-height:min(440px,62vh)}
+}
 .person .ps-num{display:block;font-size:12.5px;color:var(--accent);text-decoration:none;margin-top:2px;font-variant-numeric:tabular-nums}
 .ci-cards .cicard > .cc-foot{grid-column:1/-1;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:6px 10px;padding-left:41px;min-width:0}
 .ci-cards .cicard > .cc-foot > .cc-flags{padding-left:0!important;display:flex;flex-wrap:wrap;gap:3px 9px;font-size:12px;min-width:0}
@@ -6044,9 +6049,27 @@ if("serviceWorker" in navigator){
   if(main) main.addEventListener("scroll", on, {passive:true}); addEventListener("scroll", on, {passive:true});
 })();
 
+// Desktop: the mouse wheel scrolls the list even when the pointer is over the header, tiles or notes.
+// (Lists scroll inside their own box on wide screens; without this the wheel did nothing unless the pointer was on the list.)
+(() => {
+  document.addEventListener("wheel", ev => {
+    if(ev.ctrlKey || ev.defaultPrevented || matchMedia("(max-width:760px)").matches) return;
+    const t = ev.target; if(!t || !t.closest || t.closest("#overlay,.drawer,#rail,.inst-sheet,.dp-pop,select,textarea")) return;
+    const main = document.getElementById("main"); if(!main) return;
+    const dy = ev.deltaMode === 1 ? ev.deltaY * 32 : ev.deltaMode === 2 ? ev.deltaY * main.clientHeight : ev.deltaY;
+    if(!dy || Math.abs(ev.deltaX) > Math.abs(dy)) return;
+    const can = el => { const o = getComputedStyle(el).overflowY; return (o === "auto" || o === "scroll") && el.scrollHeight > el.clientHeight + 1 && (dy > 0 ? el.scrollTop + el.clientHeight < el.scrollHeight - 1 : el.scrollTop > 0); };
+    // the browser scrolls a box itself when the pointer is inside it, unless the pointer is on a pinned (fixed) bar such as the page header
+    for(let e = t; e && e !== document.documentElement; e = e.parentElement){ if(can(e)) return; if(getComputedStyle(e).position === "fixed") break; }
+    if(can(main)){ main.scrollTop += dy; ev.preventDefault(); return; }
+    const c = [...main.querySelectorAll(".tablewrap,.scrollbox,.slide")].filter(e => e.offsetParent && can(e)).sort((a, b) => b.clientHeight * b.clientWidth - a.clientHeight * a.clientWidth)[0];
+    if(c){ c.scrollTop += dy; ev.preventDefault(); }
+  }, {passive:false});
+})();
+
 // Version check: whenever the app is opened or brought back to the front, ask GitHub for the latest version number.
 // If it is newer than what is running, reload (straight away if nothing is open, otherwise offer a button).
-window.APP_VERSION = "20261111053039";
+window.APP_VERSION = "20261111065252";
 (function(){
   let busy = false, shown = false;
   function bar(v){ if(shown) return; shown = true; const b = document.createElement("button"); b.className = "upd-bar"; b.textContent = "New version ready — tap to update"; b.onclick = () => go(v); document.body.appendChild(b); }
