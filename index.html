@@ -4774,7 +4774,7 @@ payroll(){
   const T = rows.reduce((t,{p})=>{ for(const k of ["gross","lopAmt","net"]) t[k]=(t[k]||0)+(p[k]||0); return t; },{});
   const unm = final ? 0 : rows.reduce((s,r)=>s+(r.p.unmarked||0),0);
   const noSal = rows.filter(r=>!r.p.hasSalary).length;
-  const tools = `${monthBar(ym, "pay")}<button class="btn" data-act="settings">Payroll settings</button><button class="btn" data-act="export">Export CSV</button>` +
+  const tools = `${monthBar(ym, "pay")}<button class="btn" data-act="settings">Payroll settings</button><button class="btn" data-act="export">Export PDF</button>` +
     (final ? `<button class="btn" data-act="run-reopen">Reopen</button>` : `<button class="btn primary" data-act="run-final" ${rows.length?"":"disabled"}>Finalize payroll</button>`);
   let notes = "";
   if(final) notes += `<div class="banner info"><span><span class="pill ok">Finalized</span>&nbsp; Locked on ${fmtD(run.finalizedAt.slice(0,10))}. Later attendance or leave changes won't alter these figures. Reopen to recalculate.</span></div>`;
@@ -4801,7 +4801,7 @@ incentives(){
   const si = Math.max(0, slides.findIndex(x=>x.key===UI.incSlide)), cur = slides[si];
   const T = list.reduce((t,e)=>{ const c=incFor(ym,e.id); t.total+=c.total; t.sqft+=c.sqft; t.visits+=c.visits; return t; }, {total:0, sqft:0, visits:0});
   const missing = slides.filter(x => x.key!=="Tele Calling" && !R0.sqft[x.key] && x.people.some(e => !(e.id in R0.sqftEmp)));
-  const tools = `${monthBar(ym, "inc")}<button class="btn" data-act="inc-rates">Incentive rates</button><button class="btn" data-act="inc-export">Export CSV</button>` + (done ? `<button class="btn" data-act="inc-reopen">Reopen</button>` : `<button class="btn primary" data-act="inc-complete" ${list.length?"":"disabled"}>Finalize incentives</button>`);
+  const tools = `${monthBar(ym, "inc")}<button class="btn" data-act="inc-rates">Incentive rates</button><button class="btn" data-act="inc-export">Export PDF</button>` + (done ? `<button class="btn" data-act="inc-reopen">Reopen</button>` : `<button class="btn primary" data-act="inc-complete" ${list.length?"":"disabled"}>Finalize incentives</button>`);
   let body = "";
   if(cur){
     const dir = UI.incDir || "";
@@ -5205,6 +5205,59 @@ function slipDrawer(id){
   <footer><button class="btn" data-act="close">Close</button><button class="btn primary" data-act="slip-pdf" data-id="${id}">Download payslip</button></footer>`);
 }
 
+// ---------- payroll / incentive report as a PDF (A4 landscape table) ----------
+async function tablePdf({title, sub, head, rows, total, align, widths, filename, btn}){
+  if(!downloads){ toast("Downloads aren't available in this view."); return; }
+  const lbl = btn ? btn.textContent : ""; if(btn){ btn.disabled = true; btn.textContent = "Preparing…"; }
+  const done = () => { if(btn){ btn.disabled = false; btn.textContent = lbl; } };
+  let jsPDF; try{ jsPDF = await loadJsPDF(); }catch(_){ done(); toast("Couldn't load the PDF maker. Check the connection and try again."); return; }
+  const doc = new jsPDF({unit:"mm", format:"a4", orientation:"landscape"}); const W = 297, H = 210, M = 12;
+  const blue = [0,113,227], ink = [29,29,31], mute = [110,110,115], line = [222,226,232], soft = [240,245,253];
+  const tw = widths.reduce((a,b)=>a+b,0), k = (W - 2*M) / tw, cw = widths.map(w => w*k);
+  const fit = (t, w) => { t = String(t ?? ""); if(doc.getTextWidth(t) <= w) return t; while(t.length > 1 && doc.getTextWidth(t + "…") > w) t = t.slice(0, -1); return t + "…"; };
+  const logo = document.querySelector(".logo-full")?.src || document.querySelector(".logo-mark")?.src;
+  let page = 0, y = 0;
+  const header = () => { page++; y = M;
+    let lh = 0; if(logo && logo.startsWith("data:image")){ try{ const ip = doc.getImageProperties(logo); const lw = Math.min(46, 14*ip.width/ip.height); lh = lw*ip.height/ip.width; doc.addImage(logo, "PNG", M, y, lw, lh); }catch(_){ lh = 0; } }
+    if(!lh){ doc.setFont("helvetica","bold"); doc.setFontSize(15); doc.setTextColor(...ink); doc.text("Srigandha Properties", M, y+7); lh = 9; }
+    doc.setFont("helvetica","bold"); doc.setFontSize(15); doc.setTextColor(...blue); doc.text(title, W-M, y+6, {align:"right"});
+    doc.setFont("helvetica","normal"); doc.setFontSize(9.5); doc.setTextColor(...mute); doc.text(sub, W-M, y+11.5, {align:"right"});
+    y += Math.max(lh, 13) + 5;
+    doc.setFillColor(...soft); doc.rect(M, y, W-2*M, 8, "F");
+    doc.setFont("helvetica","bold"); doc.setFontSize(8.5); doc.setTextColor(...ink);
+    let x = M; head.forEach((h, i) => { const r = align[i] === "r"; doc.text(fit(h, cw[i]-3), r ? x+cw[i]-1.5 : x+1.5, y+5.4, {align: r ? "right" : "left"}); x += cw[i]; });
+    y += 8; };
+  const row = (cells, bold) => { if(y > H - M - 12){ footer(); doc.addPage(); header(); }
+    doc.setFont("helvetica", bold ? "bold" : "normal"); doc.setFontSize(8.5); doc.setTextColor(...ink);
+    let x = M; cells.forEach((c, i) => { const r = align[i] === "r"; doc.text(fit(c, cw[i]-3), r ? x+cw[i]-1.5 : x+1.5, y+5, {align: r ? "right" : "left"}); x += cw[i]; });
+    y += 7; doc.setDrawColor(...line); doc.setLineWidth(.2); doc.line(M, y, W-M, y); };
+  const footer = () => { doc.setFont("helvetica","normal"); doc.setFontSize(8); doc.setTextColor(...mute);
+    doc.text(`Srigandha Properties · Generated ${fmtD(today)}`, M, H-6); doc.text(`Page ${page}`, W-M, H-6, {align:"right"}); };
+  header(); rows.forEach(r => row(r)); if(total){ if(y > H - M - 12){ footer(); doc.addPage(); header(); } doc.setFillColor(...soft); doc.rect(M, y, W-2*M, 7, "F"); row(total, true); }
+  footer();
+  try{ await downloads.save({filename, data:doc.output("blob")}); toast("PDF downloaded"); }catch(e){ if(e?.code!=="cancelled") toast("The file wasn't saved."); }
+  done();
+}
+const rs = n => "Rs " + Math.round(+n||0).toLocaleString("en-IN");
+async function exportPayPdf(btn){
+  const ym = UI.payMonth, list = payList(ym); const fin = runFinal(ym);
+  const rows = list.map(({e,p}) => [e.code||"", e.name, e.dept||"", `${p.paid} / ${p.working}`, String(p.lop||0), p.gross ? rs(p.gross) : "Not set", p.lopAmt ? "- " + rs(p.lopAmt) : "-", rs(p.net)]);
+  const sum = k => list.reduce((t,{p}) => t + (+p[k]||0), 0);
+  await tablePdf({title:"PAYROLL", sub:`${monthName(ym)} · ${fin ? "Final" : "Draft"} · ${list.length} employees`, btn,
+    head:["Employee ID","Name","Role","Paid days","LOP","Monthly pay","LOP deduction","Net pay"], widths:[20,40,46,20,12,26,26,26], align:["l","l","l","r","r","r","r","r"],
+    rows, total:["","Total","","","",rs(sum("gross")),"- " + rs(sum("lopAmt")),rs(sum("net"))], filename:`srigandha-payroll-${ym}.pdf`});
+}
+async function exportIncPdf(btn){
+  const ym = UI.incMonth, list = incList(ym); const own = isOwnerV;
+  const data = list.map(e => ({e, c:incFor(ym, e.id)}));
+  const rows = data.map(({e,c}) => [e.code||"", e.name, e.dept||"", S.emps[e.reportsTo]?.name||"", String(c.visits||0), String(c.sqft||0), rs(c.vAmt), rs(c.sAmt), (c.adj ? (c.adj>0?"+ ":"- ")+rs(Math.abs(c.adj)) : "-"), rs((c.bonus||0)+(c.overall||0)), rs(c.total)]);
+  const sum = f => data.reduce((t,{c}) => t + (+f(c)||0), 0);
+  await tablePdf({title:"INCENTIVES", sub:`${monthName(ym)} · paid on ${fmtD(incDue(ym))} · ${incDone(ym) ? "Final" : "Draft"}`, btn,
+    head:["Emp ID","Name","Role","Team leader","Visits","Sq ft","Visit amount","Sq ft amount","Adjustment","Bonus","Incentive"], widths:[16,32,44,26,12,14,22,22,20,18,22], align:["l","l","l","l","r","r","r","r","r","r","r"],
+    rows, total:["","Total","","",String(sum(c=>c.visits)),String(sum(c=>c.sqft)),rs(sum(c=>c.vAmt)),rs(sum(c=>c.sAmt)),rs(sum(c=>c.adj)),rs(sum(c=>(c.bonus||0)+(c.overall||0))),rs(sum(c=>c.total))], filename:`srigandha-incentives-${ym}.pdf`});
+  void own;
+}
+
 // ---------- payslip PDF ----------
 let JSPDF = null;
 async function loadJsPDF(){
@@ -5525,7 +5578,7 @@ document.addEventListener("click", async ev => {
   else if(a==="punch-in"||a==="punch-out"){ t.disabled=true; await punch(a==="punch-in"?"in":"out"); render(); }
   else if(a==="reg-prev"||a==="reg-next"){ const s=stepDay(UI.regDate, a==="reg-prev"?-1:1); UI.regDate = s>today ? today : s; render(); }
   else if(a==="reg-today"){ UI.regDate=today; render(); }
-  else if(a==="export") exportCsv();
+  else if(a==="export") exportPayPdf(t);
   else if(a==="u-new") userNewDrawer(t.dataset.kind);
   else if(a==="u-save") saveNewUser(t);
   else if(a==="u-bulk") bulkLogins(t);
@@ -5568,7 +5621,7 @@ document.addEventListener("click", async ev => {
   else if(a==="inc-complete"){ const act=document.activeElement; if(act && /^inc[vsan]_/.test(act.id)) await saveInc(act.id, act.value); await setIncStatus("complete"); }
   else if(a==="inc-rates") ratesDrawer();
   else if(a==="save-rates") saveRates();
-  else if(a==="inc-export") exportInc();
+  else if(a==="inc-export") exportIncPdf(t);
   else if(a==="reg-import") importDrawer();
   else if(a==="reg-save") saveImport(t);
   else if(a==="inc-reopen") setIncStatus("open");
@@ -6191,7 +6244,7 @@ if("serviceWorker" in navigator){
 
 // Version check: whenever the app is opened or brought back to the front, ask GitHub for the latest version number.
 // If it is newer than what is running, reload (straight away if nothing is open, otherwise offer a button).
-window.APP_VERSION = "20261111084410";
+window.APP_VERSION = "20261111085853";
 (function(){
   let busy = false, shown = false;
   function bar(v){ if(shown) return; shown = true; const b = document.createElement("button"); b.className = "upd-bar"; b.textContent = "New version ready — tap to update"; b.onclick = () => go(v); document.body.appendChild(b); }
