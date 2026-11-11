@@ -3139,10 +3139,12 @@ function writeDay(date, patch){
 async function markAtt(date, id, v){
   if(!db) return;
   const cur = S.att[date]?.marks?.[id];
+  if((v==="P" || cur==="P") && !isOwnerV){ toast("Only an administrator can mark or remove Present."); return; }
   return writeDay(date, {marks:{[id]: cur===v ? null : v}}).catch(fail);
 }
 async function markAll(date){
   if(!db) return;
+  if(!isOwnerV){ toast("Only an administrator can mark Present."); return; }
   const cur = S.att[date]?.marks||{}; const add = {}; let n=0;
   for(const e of activeEmps(date)){ if(cur[e.id]) continue; if(leaveOn(e.id,date)) add[e.id]="L"; else { add[e.id]="P"; n++; } }
   if(!n){ toast("Everyone already has a mark for this day."); return; }
@@ -3894,7 +3896,7 @@ function ciCard(e, d){
 function attCard(e, d, canMark){
   const c = ciFor(e.id, d), cv = ciEval(c), s = S.att[d]?.marks?.[e.id] || (leaveOn(e.id,d) ? "L" : null), shown = statusOn(e.id, d);
   return `<div class="cicard"><div class="cc-head"><span class="av">${esc(initials(e.name))}</span><div class="cc-name"><b>${esc(e.name)}</b><small>${c ? `In ${tmIST(c.in.t)}${c.out ? ` · Out ${tmIST(c.out.t)}` : ""} · ${esc(placeLbl(c.in))}` : esc(e.designation || e.dept || "")}</small></div>${statusPill(shown)}</div>
-    <div class="seg cc-seg" role="group" aria-label="Attendance for ${esc(e.name)}">${MARKS.map(([v,t]) => `<button data-att="${e.id}" data-v="${v}" aria-pressed="${s===v}" title="${t}" ${canMark ? "" : "disabled"}>${v==="HD" ? `<span class="lbl-long">Half day</span><span class="lbl-short">Half</span>` : t}</button>`).join("")}</div>
+    <div class="seg cc-seg" role="group" aria-label="Attendance for ${esc(e.name)}">${MARKS.map(([v,t]) => `<button data-att="${e.id}" data-v="${v}" aria-pressed="${s===v}" title="${v==="P" && !isOwnerV ? "Only an administrator can mark Present" : t}" ${canMark && (v!=="P" || isOwnerV) ? "" : "disabled"}>${v==="HD" ? `<span class="lbl-long">Half day</span><span class="lbl-short">Half</span>` : t}</button>`).join("")}</div>
     ${!s && shown ? `<div class="cc-sub">${c ? "Status from check-in" : "No check-in"}${cv && cv.late ? " · late" : cv && cv.forgiven ? " · late forgiven" : ""}</div>` : ""}${forgiveCtl(e.id, d, cv) ? `<div class="cc-acts">${forgiveCtl(e.id, d, cv)}</div>` : ""}</div>`;
 }
 
@@ -4663,9 +4665,9 @@ attendance(){
   const d = UI.attDate; const list = activeEmps(d);
   ensureMonth(d.slice(0,7)); const c={P:0,HD:0,A:0,L:0,U:0}; list.forEach(e=>{ const s=statusOn(e.id,d); c[s||"U"]++; });
   const future = d > today;
-  const tools = `${dateBar("attDate", d, "att")}${canWrite?`<button class="btn primary" data-act="att-all" ${future?"disabled":""}>Mark rest present</button>`:""}`;
+  const tools = `${dateBar("attDate", d, "att")}${canWrite && isOwnerV?`<button class="btn primary" data-act="att-all" ${future?"disabled":""}>Mark rest present</button>`:""}`;
   const rows = list.map(e => { const s = S.att[d]?.marks?.[e.id] || (leaveOn(e.id,d)?"L":null); const lv=leaveOn(e.id,d); const c = ciFor(e.id,d), cv = ciEval(c); const shown = statusOn(e.id,d);
-    return `<tr><td>${who(e, e.dept)}</td><td>${c?`${tmIST(c.in.t)}${c.out?` – ${tmIST(c.out.t)}`:""}<div class="note">${esc(placeLbl(c.in))}</div>`:`<span class="note">—</span>`}</td><td><div class="seg" role="group" aria-label="Attendance for ${esc(e.name)}">${MARKS.map(([v,t])=>`<button data-att="${e.id}" data-v="${v}" aria-pressed="${s===v}" title="${t}" ${!canWrite||future?"disabled":""}>${v}</button>`).join("")}</div></td><td>${statusPill(shown)}${!s && shown ? `<div class="note" style="margin-top:3px">${c?"From check-in":"No check-in"}</div>`:""}${ciFlags(c, cv, d)}${lv?`<div class="note" style="margin-top:3px">Leave approved${ledger(e.id).unpaid.has(d)?" · unpaid, no balance left":""}</div>`:""}</td></tr>`; }).join("");
+    return `<tr><td>${who(e, e.dept)}</td><td>${c?`${tmIST(c.in.t)}${c.out?` – ${tmIST(c.out.t)}`:""}<div class="note">${esc(placeLbl(c.in))}</div>`:`<span class="note">—</span>`}</td><td><div class="seg" role="group" aria-label="Attendance for ${esc(e.name)}">${MARKS.map(([v,t])=>`<button data-att="${e.id}" data-v="${v}" aria-pressed="${s===v}" title="${v==="P" && !isOwnerV ? "Only an administrator can mark Present" : t}" ${!canWrite||future||(v==="P" && !isOwnerV)?"disabled":""}>${v}</button>`).join("")}</div></td><td>${statusPill(shown)}${!s && shown ? `<div class="note" style="margin-top:3px">${c?"From check-in":"No check-in"}</div>`:""}${ciFlags(c, cv, d)}${lv?`<div class="note" style="margin-top:3px">Leave approved${ledger(e.id).unpaid.has(d)?" · unpaid, no balance left":""}</div>`:""}</td></tr>`; }).join("");
   return head("Attendance", parse(d).toLocaleDateString("en-IN",{weekday:"long",day:"numeric",month:"long",year:"numeric"}) + (isOff(d)?` · <span class="pill sample">${offLabel(d)}</span>`:""), tools) +
    `<div class="sumstrip ci-sum"><div><b>${c.P}</b><span>Present</span></div><div><b>${c.HD}</b><span>Half day</span></div><div><b>${c.A}</b><span>Absent</span></div><div><b>${c.U}</b><span>Not marked</span></div></div><div class="attsum"><span class="pill ok">${c.P} present</span><span class="pill warn">${c.HD} half day</span><span class="pill bad">${c.A} absent</span><span class="pill leave">${c.L} on leave</span><span class="pill mute">${c.U} not marked</span></div>
    <div class="panel daypanel att-cards">${list.map(e => attCard(e, d, canWrite && !future)).join("") || `<p class="empty">No active employees on this date.</p>`}</div><div class="tablewrap fill stickyhead att-table"><table class="t-att"><thead><tr><th>Employee</th><th>Check-in</th><th>Mark</th><th>Status</th></tr></thead><tbody>${rows || `<tr><td colspan="4" class="empty">No active employees on this date.</td></tr>`}</tbody></table></div>
@@ -6093,7 +6095,7 @@ if("serviceWorker" in navigator){
 
 // Version check: whenever the app is opened or brought back to the front, ask GitHub for the latest version number.
 // If it is newer than what is running, reload (straight away if nothing is open, otherwise offer a button).
-window.APP_VERSION = "20261111071713";
+window.APP_VERSION = "20261111072255";
 (function(){
   let busy = false, shown = false;
   function bar(v){ if(shown) return; shown = true; const b = document.createElement("button"); b.className = "upd-bar"; b.textContent = "New version ready — tap to update"; b.onclick = () => go(v); document.body.appendChild(b); }
