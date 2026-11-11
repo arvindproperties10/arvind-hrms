@@ -2820,6 +2820,11 @@ html.lg body.dark .tablewrap,html.lg body.dark .panel:not(.panel .panel){outline
 .dpwrap > input::-webkit-inner-spin-button,.dpwrap > input::-webkit-clear-button{display:none!important;-webkit-appearance:none!important}
 .dpwrap > input{min-height:44px}
 .person .ps-num{display:block;font-size:12.5px;color:var(--accent);text-decoration:none;margin-top:2px;font-variant-numeric:tabular-nums}
+.ci-cards .cicard > .cc-foot{grid-column:1/-1;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:6px 10px;padding-left:41px;min-width:0}
+.ci-cards .cicard > .cc-foot > .cc-flags{padding-left:0!important;display:flex;flex-wrap:wrap;gap:3px 9px;font-size:12px;min-width:0}
+.ci-cards .cicard > .cc-foot > .cc-acts{padding-left:0!important;margin-left:auto;display:flex;flex-wrap:nowrap;gap:6px!important;justify-content:flex-end}
+.ci-cards .cicard > .cc-foot .cc-acts .btn{min-height:28px!important;height:28px;padding:0 11px!important;font-size:12px!important;flex:none;white-space:nowrap}
+.ci-cards .cicard > .cc-foot .cc-acts .btn.ghost{border:1px solid var(--line,rgba(0,0,0,.12))!important}
 </style>
 </head>
 <body>
@@ -3850,7 +3855,7 @@ function ciCard(e, d){
     <div class="cc-sub">${esc(placeLbl(c.in))}${c.in.manual ? " · added by permission" : c.in.back ? ` · backdated from ${tmIST(c.in.orig)}` : c.in.place==="field" ? ` · ${(c.in.dist/1000).toFixed(1)} km from office` : c.in.dist!=null ? ` · ${c.in.dist} m` : ""}${c.in.acc!=null ? ` · GPS ±${c.in.acc} m` : ""}${hr ? " · status set by HR" : ""}</div>` : (hr ? `<div class="cc-sub">Marked by HR</div>` : "");
   const flags = c ? [v.early ? `<span class="tag warn">Short hours</span>` : "", v.noOut && d < today ? `<span class="tag bad">No check-out</span>` : "", v.lowAcc ? `<span class="tag">Rough GPS</span>` : ""].filter(Boolean).join("") : "";
   const acts = c ? `<div class="cc-acts">${forgiveCtl(e.id, d, v)}${c.in.manual ? "" : `<button class="btn small" data-selfie="${d}_${e.id}" data-name="${esc(e.name)}">Selfie</button>`}${c.in.lat!=null ? `<a class="btn small ghost" href="https://www.google.com/maps?q=${c.in.lat},${c.in.lng}" target="_blank" rel="noopener">Map</a>` : ""}</div>` : "";
-  return `<div class="cicard"><div class="cc-head"><span class="av">${esc(initials(e.name))}</span><div class="cc-name"><b>${esc(e.name)}</b><small>${esc(e.designation || e.dept || "")}</small></div>${tag}</div>${line}${flags ? `<div class="cc-flags">${flags}</div>` : ""}${acts}</div>`;
+  return `<div class="cicard"><div class="cc-head"><span class="av">${esc(initials(e.name))}</span><div class="cc-name"><b>${esc(e.name)}</b><small>${esc(e.designation || e.dept || "")}</small></div>${tag}</div>${line}${flags || acts ? `<div class="cc-foot">${flags ? `<div class="cc-flags">${flags}</div>` : ""}${acts}</div>` : ""}</div>`;
 }
 // one employee's attendance row for HR on phones (with the mark buttons)
 function attCard(e, d, canMark){
@@ -6037,7 +6042,7 @@ if("serviceWorker" in navigator){
 
 // Version check: whenever the app is opened or brought back to the front, ask GitHub for the latest version number.
 // If it is newer than what is running, reload (straight away if nothing is open, otherwise offer a button).
-window.APP_VERSION = "20261108122757";
+window.APP_VERSION = "20261111052616";
 (function(){
   let busy = false, shown = false;
   function bar(v){ if(shown) return; shown = true; const b = document.createElement("button"); b.className = "upd-bar"; b.textContent = "New version ready — tap to update"; b.onclick = () => go(v); document.body.appendChild(b); }
