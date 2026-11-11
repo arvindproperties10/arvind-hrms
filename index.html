@@ -2848,6 +2848,38 @@ html.lg body.dark .tablewrap,html.lg body.dark .panel:not(.panel .panel){outline
   /* team cards: number and birthday on one line */
   .person .ps-num,.person .ps-bday{display:inline-block!important;margin-right:12px}
 }
+
+/* Employees: phone and birthday (replaces the Team directory for administrators) */
+table.t-emp .ec-tel{display:block;color:var(--accent);text-decoration:none;font-variant-numeric:tabular-nums;white-space:nowrap;font-size:13px}
+table.t-emp .ec-bd{display:block;font-size:12px;opacity:.75;white-space:nowrap;margin-top:2px}
+table.t-emp .emp-contact{display:none}
+@media (max-width:760px){
+  table.t-emp .emp-contact{display:flex;flex-wrap:wrap;gap:2px 10px;padding:4px 0 0 46px}
+  table.t-emp .emp-contact .ec-tel{font-size:12.5px;padding:4px 0}
+  table.t-emp .emp-contact .ec-bd{font-size:12px;padding:4px 0;margin:0}
+}
+@media (max-width:760px){
+  /* phone: the role is already under the name, so the Role column gives way to phone and birthday */
+  html body.has-tabbar .tablewrap table.t-emp th:nth-child(3),html body.has-tabbar .tablewrap table.t-emp td:nth-child(3){display:none!important}
+  html body.has-tabbar table.t-emp th:first-child,html body.has-tabbar table.t-emp td:first-child{width:auto!important}
+  table.t-emp .emp-contact{flex-wrap:nowrap;gap:0 12px;padding:2px 0 0 46px}
+  table.t-emp .emp-contact .ec-tel{padding:7px 0}
+  table.t-emp .emp-contact .ec-bd{padding:7px 0}
+}
+@media (min-width:761px){
+  html body .tablewrap table.t-emp td:nth-child(6),html body .tablewrap table.t-emp td:nth-child(7){white-space:nowrap}
+  html body .tablewrap table.t-emp th,html body .tablewrap table.t-emp td{padding-left:10px!important;padding-right:10px!important}
+  html body .tablewrap table.t-emp td:nth-child(3){max-width:170px}
+}
+@media (min-width:761px) and (max-width:1599px){
+  /* laptops: Reporting authority repeats the team leader for almost everyone; it stays in the employee's record */
+  html body .tablewrap table.t-emp th:nth-child(5),html body .tablewrap table.t-emp td:nth-child(5){display:none}
+}
+@media (min-width:761px) and (max-width:1599px){
+  html body .tablewrap table.t-emp td:nth-child(3){max-width:150px;font-size:13px}
+  html body .tablewrap table.t-emp th,html body .tablewrap table.t-emp td{padding-left:8px!important;padding-right:8px!important}
+  html body .tablewrap table.t-emp td:nth-child(4),html body .tablewrap table.t-emp td:nth-child(6),html body .tablewrap table.t-emp td:nth-child(7){font-size:13px}
+}
 .person .ps-num{display:block;font-size:12.5px;color:var(--accent);text-decoration:none;margin-top:2px;font-variant-numeric:tabular-nums}
 .ci-cards .cicard > .cc-foot{grid-column:1/-1;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:6px 10px;padding-left:41px;min-width:0}
 .ci-cards .cicard > .cc-foot > .cc-flags{padding-left:0!important;display:flex;flex-wrap:wrap;gap:3px 9px;font-size:12px;min-width:0}
@@ -2943,7 +2975,8 @@ function perm(v){
   if(v==="myinc") return "none";   // incentives show on the Pay screen and payslip instead
   if(SELF_VIEWS.includes(v)) return myEmp() ? "edit" : "none";
   if(v==="selftest") return "edit";
-  if(v==="team") return (myEmp() || isStaffU()) ? "edit" : "none";
+  if(v==="team"){ if(isOwnerV || (isStaffU() && (ME.perms?.employees || "none") !== "none")) return "none";   // Employees already shows phone and birthday
+    return (myEmp() || isStaffU()) ? "edit" : "none"; }
   if(isOwnerV) return "edit";
   if(v==="access" || !isStaffU()) return "none";
   if(v==="checkins") return ME.perms?.checkins || ME.perms?.attendance || "none";
@@ -4655,9 +4688,11 @@ employees(){
     ${canWrite?`<button class="btn primary" data-act="new-emp">Add employee</button>`:""}`;
   const rows = list.map(e => { const st=e.status||"Active"; const s=S.sal[e.id]; const g=s?monthlyPay(s):null;
     const tl = S.emps[e.reportsTo];
-    return `<tr class="click" data-emp="${e.id}"><td>${who(e)}</td><td class="code">${esc(e.code)}</td><td>${esc(e.dept)}</td><td>${isTL(e)?`<span class="pill sample">Leads ${Object.values(S.emps).filter(x=>x.reportsTo===e.id && x.status!=="Exited").length}</span>`:tl?esc(tl.name):`<span class="note">—</span>`}</td><td>${repName(e)?esc(repName(e)):`<span class="note">—</span>`}</td><td>${esc(e.location||"")}</td><td>${fmtD(e.joined)}</td>${isAdmin?`<td class="num">${g!=null?inr(g):"—"}</td>`:""}<td><span class="pill ${st==="Active"?"ok":st==="On notice"?"warn":"mute"}">${st}</span></td></tr>`; }).join("");
+    const ph = e.companyPhone || e.phone || "", tel = ph.replace(/[^0-9+]/g,""), bd = e.dob && e.dob.length===10 ? parse(e.dob).toLocaleDateString("en-IN",{day:"numeric",month:"short",year:"numeric"}) : "";
+    const contact = `${ph ? `<a class="ec-tel" href="tel:${esc(tel)}" onclick="event.stopPropagation()">📞 ${esc(ph)}</a>` : ""}${bd ? `<span class="ec-bd">🎂 ${bd}</span>` : ""}`;
+    return `<tr class="click" data-emp="${e.id}"><td>${who(e)}${contact ? `<div class="emp-contact">${contact}</div>` : ""}</td><td class="code">${esc(e.code)}</td><td>${esc(e.dept)}</td><td>${isTL(e)?`<span class="pill sample">Leads ${Object.values(S.emps).filter(x=>x.reportsTo===e.id && x.status!=="Exited").length}</span>`:tl?esc(tl.name):`<span class="note">—</span>`}</td><td>${repName(e)?esc(repName(e)):`<span class="note">—</span>`}</td><td>${esc(e.location||"")}</td><td>${fmtD(e.joined)}</td>${isAdmin?`<td class="num">${g!=null?inr(g):"—"}</td>`:""}<td class="ec-col">${contact || `<span class="note">—</span>`}</td><td><span class="pill ${st==="Active"?"ok":st==="On notice"?"warn":"mute"}">${st}</span></td></tr>`; }).join("");
   return head("Employees", `${list.length} shown`, tools) +
-   `<div class="tablewrap fill stickyhead"><table class="t-emp"><thead><tr><th>Employee</th><th>Employee ID</th><th>Role</th><th>Team leader</th><th>Reporting authority</th><th>Location</th><th>Joined</th>${isAdmin?`<th class="num">Monthly pay</th>`:""}<th>Status</th></tr></thead><tbody>${rows || `<tr><td colspan="9" class="empty">No employees match these filters.</td></tr>`}</tbody></table></div>`;
+   `<div class="tablewrap fill stickyhead"><table class="t-emp"><thead><tr><th>Employee</th><th>Employee ID</th><th>Role</th><th>Team leader</th><th>Reporting authority</th><th>Location</th><th>Joined</th>${isAdmin?`<th class="num">Monthly pay</th>`:""}<th>Contact</th><th>Status</th></tr></thead><tbody>${rows || `<tr><td colspan="10" class="empty">No employees match these filters.</td></tr>`}</tbody></table></div>`;
 },
 
 attendance(){
@@ -6095,7 +6130,7 @@ if("serviceWorker" in navigator){
 
 // Version check: whenever the app is opened or brought back to the front, ask GitHub for the latest version number.
 // If it is newer than what is running, reload (straight away if nothing is open, otherwise offer a button).
-window.APP_VERSION = "20261111072255";
+window.APP_VERSION = "20261111081803";
 (function(){
   let busy = false, shown = false;
   function bar(v){ if(shown) return; shown = true; const b = document.createElement("button"); b.className = "upd-bar"; b.textContent = "New version ready — tap to update"; b.onclick = () => go(v); document.body.appendChild(b); }
