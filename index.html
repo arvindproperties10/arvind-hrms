@@ -4680,7 +4680,7 @@ leave(){
   const pendN = Object.values(S.leaves).filter(x=>x.status==="pending").length + pendingPerms().length;
   return head("Leave", `${canApprove() && pendN ? `<b>${pendN} waiting for your approval</b> · ` : ""}1 paid leave a month from ${monthName(LEAVE_START)}. Unused days carry forward; leave beyond the balance is loss of pay. Tuesdays and company holidays don't count.`, tools) +
    `<div class="leavegrid fill"><div class="panel lg-req"><h2>${f==="all"?"All requests":f[0].toUpperCase()+f.slice(1)+" requests"}</h2><div class="scrollbox">${all.length? all.map(x => x._perm ? permRow(x) : reqRow(x)).join("") : `<p class="empty">No ${f==="all"?"":f} requests.</p>`}</div></div>
-   <div class="panel lg-bal" style="padding:0;overflow:hidden"><div style="padding:16px 18px 4px"><h2>Paid leave balances</h2></div><div class="scrollbox stickyhead" style="overflow:auto"><table><thead><tr><th>Employee</th><th class="num">Earned</th><th class="num">Used</th><th class="num" title="Balance"><span class="lbl-long">Balance</span><span class="lbl-short">Left</span></th><th class="num" title="Unpaid days this month (leave beyond the balance, and absent days)"><span class="lbl-long">Unpaid this month</span><span class="lbl-short">Unpaid</span></th><th class="num" title="Comp offs available"><span class="lbl-long">Comp off</span><span class="lbl-short">C/off</span></th></tr></thead><tbody>${balRows||`<tr><td colspan="6" class="empty">No staff yet.</td></tr>`}</tbody></table></div></div>${holidaysPanel()}</div>`;
+   <div class="panel lg-bal" style="padding:0;overflow:hidden"><div style="padding:16px 18px 4px"><h2>Paid leave balances</h2></div><div class="scrollbox stickyhead" style="overflow:auto"><table><thead><tr><th>Employee</th><th class="num">Earned</th><th class="num">Used</th><th class="num" title="Balance"><span class="lbl-long">Balance</span><span class="lbl-short">Left</span></th><th class="num" title="Loss of pay days this month (leave beyond the balance, and absent days)"><span class="lbl-long">LOP</span><span class="lbl-short">LOP</span></th><th class="num" title="Comp offs available"><span class="lbl-long">Comp off</span><span class="lbl-short">C/off</span></th></tr></thead><tbody>${balRows||`<tr><td colspan="6" class="empty">No staff yet.</td></tr>`}</tbody></table></div></div>${holidaysPanel()}</div>`;
 },
 
 payroll(){
@@ -6093,7 +6093,7 @@ if("serviceWorker" in navigator){
 
 // Version check: whenever the app is opened or brought back to the front, ask GitHub for the latest version number.
 // If it is newer than what is running, reload (straight away if nothing is open, otherwise offer a button).
-window.APP_VERSION = "20261111070358";
+window.APP_VERSION = "20261111071713";
 (function(){
   let busy = false, shown = false;
   function bar(v){ if(shown) return; shown = true; const b = document.createElement("button"); b.className = "upd-bar"; b.textContent = "New version ready — tap to update"; b.onclick = () => go(v); document.body.appendChild(b); }
