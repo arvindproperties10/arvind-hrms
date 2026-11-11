@@ -2825,6 +2825,10 @@ html.lg body.dark .tablewrap,html.lg body.dark .panel:not(.panel .panel){outline
 .ci-cards .cicard > .cc-foot > .cc-acts{padding-left:0!important;margin-left:auto;display:flex;flex-wrap:nowrap;gap:6px!important;justify-content:flex-end}
 .ci-cards .cicard > .cc-foot .cc-acts .btn{min-height:28px!important;height:28px;padding:0 11px!important;font-size:12px!important;flex:none;white-space:nowrap}
 .ci-cards .cicard > .cc-foot .cc-acts .btn.ghost{border:1px solid var(--line,rgba(0,0,0,.12))!important}
+.ci-table td .acts{display:flex;gap:8px;align-items:center;justify-content:flex-end;flex-wrap:nowrap}
+.ci-table td .acts .btn{white-space:nowrap;flex:none}
+.ci-table td .acts .btn.ghost{border:1px solid var(--line,rgba(0,0,0,.12))!important}
+.ci-table td:has(> .acts){width:1%;white-space:nowrap}
 </style>
 </head>
 <body>
@@ -6042,7 +6046,7 @@ if("serviceWorker" in navigator){
 
 // Version check: whenever the app is opened or brought back to the front, ask GitHub for the latest version number.
 // If it is newer than what is running, reload (straight away if nothing is open, otherwise offer a button).
-window.APP_VERSION = "20261111052616";
+window.APP_VERSION = "20261111053039";
 (function(){
   let busy = false, shown = false;
   function bar(v){ if(shown) return; shown = true; const b = document.createElement("button"); b.className = "upd-bar"; b.textContent = "New version ready — tap to update"; b.onclick = () => go(v); document.body.appendChild(b); }
