@@ -2825,6 +2825,29 @@ html.lg body.dark .tablewrap,html.lg body.dark .panel:not(.panel .panel){outline
 @media (min-width:761px){
   #main .tablewrap.fill{min-height:min(440px,62vh)}
 }
+
+/* ---- Friendliness pass: phone ---- */
+@media (max-width:760px){
+  /* nothing tappable is shorter than 34px */
+  body.has-tabbar #main .btn.small,body.has-tabbar #main .dr-ask,body.has-tabbar #main .seg > button,body.has-tabbar #main select{min-height:34px!important}
+  .ci-cards .cicard > .cc-foot .cc-acts .btn,.att-cards .cicard > .cc-acts .btn{height:34px!important;min-height:34px!important}
+  body.has-tabbar #main .datebar .db-arrow,body.has-tabbar #main .datebar .db-reset{min-width:34px;min-height:34px}
+  body.has-tabbar #main .sect-link{display:inline-block;padding:8px 0 8px 14px}
+  .person .ps-num{padding:3px 0}
+  /* attendance: full names, taller toggle */
+  .att-cards .cicard .cc-name b,.att-cards .cicard .cc-name small{white-space:normal!important;overflow:visible!important;text-overflow:clip!important}
+  html.lg body .att-cards .cicard > .cc-seg > button{padding:8px 8px!important;min-height:34px!important}
+  /* payroll / incentives header: month across the top, two secondary buttons side by side, main action full width */
+  body.has-tabbar main > .head .tools:has([data-act="export"]){display:grid!important;grid-template-columns:1fr 1fr;gap:8px!important}
+  body.has-tabbar main > .head .tools:has([data-act="export"]) > .monthbar,body.has-tabbar main > .head .tools:has([data-act="export"]) > .btn.primary{grid-column:1/-1}
+  body.has-tabbar main > .head .tools:has([data-act="export"]) > .btn{width:auto!important;min-width:0}
+  /* leave balances and team: full names */
+  .lg-bal td:first-child b,.person .ps-meta{white-space:normal!important;overflow:visible!important;text-overflow:clip!important}
+  /* comp-off strip fills the row like the paid-leave strip */
+  .sumstrip.co-strip{display:grid!important;grid-auto-flow:column;grid-auto-columns:1fr;grid-template-columns:none!important}
+  /* team cards: number and birthday on one line */
+  .person .ps-num,.person .ps-bday{display:inline-block!important;margin-right:12px}
+}
 .person .ps-num{display:block;font-size:12.5px;color:var(--accent);text-decoration:none;margin-top:2px;font-variant-numeric:tabular-nums}
 .ci-cards .cicard > .cc-foot{grid-column:1/-1;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:6px 10px;padding-left:41px;min-width:0}
 .ci-cards .cicard > .cc-foot > .cc-flags{padding-left:0!important;display:flex;flex-wrap:wrap;gap:3px 9px;font-size:12px;min-width:0}
@@ -3771,7 +3794,7 @@ myatt(){
 myleave(){
   const id = myEmp(); const L = ledger(id);
   const mine = Object.entries(S.leaves).map(([k,l]) => ({id:k, ...l})).filter(l => l.empId===id).sort((a,b) => (b.from||"").localeCompare(a.from||""));
-  const row = l => `<div class="lvrow"><div class="lv-main"><b>${isCompLeave(l) ? "Comp off · " : ""}${fmtDs(l.from)}${l.to!==l.from?` – ${fmtDs(l.to)}`:""}</b><small>${l.days} day${l.days===1?"":"s"}${l.reason?` · ${esc(l.reason)}`:""}</small></div><div class="lv-side">${l.status==="pending" ? `<span class="tag warn">Pending</span><button class="btn small ghost" data-mlcancel="${l.id}">Withdraw</button>` : `<span class="tag ${l.status==="approved"?"ok":"bad"}">${l.status==="approved"?"Approved":"Rejected"}</span>`}</div></div>`;
+  const row = l => `<div class="lvrow"><div class="lv-main"><b>${isCompLeave(l) ? "Comp off · " : ""}${fmtDs(l.from)}${l.to!==l.from?` – ${fmtDs(l.to)}`:""}</b><small>${l.days} day${l.days===1?"":"s"}${l.reason?` · ${esc(l.reason)}`:""}</small></div><div class="lv-side">${l.status==="pending" ? `<span class="tag warn">Pending</span><button class="btn small" data-mlcancel="${l.id}">Withdraw</button>` : `<span class="tag ${l.status==="approved"?"ok":"bad"}">${l.status==="approved"?"Approved":"Rejected"}</span>`}</div></div>`;
   const tab = UI.mlTab || "leave";
   const tabs = `<div class="seg mp-tabs" role="tablist"><button data-mltab="leave" aria-pressed="${tab==="leave"}">Leave</button><button data-mltab="perm" aria-pressed="${tab==="perm"}">Permission${permList().some(p=>p.empId===id&&p.status==="pending")?` <span class="mp-dot"></span>`:""}</button></div>`;
   if(tab==="perm") return head("Leave", "") + tabs +
@@ -3779,8 +3802,8 @@ myleave(){
   return head("Leave", "") + tabs +
     `<div class="sumstrip three"><div><b>${L.balance}</b><span>Available</span></div><div><b>${L.accrued}</b><span>Earned</span></div><div><b>${L.used}</b><span>Used${L.booked?` · ${L.booked} booked`:""}</span></div></div>
     <p class="hint">${L.waiting ? `Paid leave starts in <b>${monthName(L.eligYm)}</b>, after your first 3 months. Leave before then is unpaid.` : "You earn 1 paid leave every month. Unused days carry forward."}</p>
-    <div class="sumstrip co-strip"><div><b>${L.co.free}</b><span>Comp offs available</span></div><div><b>${L.co.earned}</b><span>Earned</span></div><div><b>${L.co.used + L.co.booked}</b><span>Used</span></div></div>
-    <p class="hint">Working on a weekly off or company holiday (checked in on the app, or marked Present by HR) earns 1 comp off. A comp off covers any leave in the same month — even leave taken before you earned it — and one earned in the last week can be used until that Sunday${L.co.next ? ` — use by <b>${fmtDs(L.co.next)}</b>` : ""}. When you take leave, comp offs are used first, then paid leave.</p>
+    <div class="sumstrip co-strip"><div><b>${L.co.free}</b><span>Comp offs</span></div><div><b>${L.co.earned}</b><span>Earned</span></div><div><b>${L.co.used + L.co.booked}</b><span>Used</span></div></div>
+    <p class="hint">Work on a weekly off or company holiday to earn 1 comp off. It covers leave in the same month, and one earned in the last week can be used until that Sunday${L.co.next ? ` — use by <b>${fmtDs(L.co.next)}</b>` : ""}. When you take leave, comp offs are used first, then paid leave.</p>
     <h2 class="sect-h">Apply</h2>
     <div class="panel lv-form"><div class="lv-dates"><div class="field"><label for="ml_from">From</label><input type="date" id="ml_from" min="${today}" value="${today}"></div><div class="field"><label for="ml_to">To</label><input type="date" id="ml_to" min="${today}" value="${today}"></div></div>
       <div class="field"><label for="ml_reason">Reason <span class="opt">optional</span></label><textarea id="ml_reason" rows="2" placeholder="e.g. Family function"></textarea></div>
@@ -3831,7 +3854,7 @@ team(){
   const order = ["Team leaders","Sales","Tele-calling","Reception","Administration","Accounts","Housekeeping","Others"];
   const keys = Object.keys(groups).sort((a,b) => (order.indexOf(a)<0?99:order.indexOf(a)) - (order.indexOf(b)<0?99:order.indexOf(b)) || a.localeCompare(b));
   const card = d => `<div class="person"><span class="av">${esc(initials(d.name))}</span><div class="ps-mid"><b>${esc(d.name)}${d.id===myEmp()?` <span class="pill mute">You</span>`:""}</b><small>${esc(d.designation || d.dept || "")}</small><small class="ps-meta">${[d.code, d.team ? `${esc(d.team)}'s team` : "", esc(d.location||"")].filter(Boolean).join(" · ")}</small>${(d.phone||d.companyPhone) ? `<a class="ps-num" href="tel:${esc((d.phone||d.companyPhone).replace(/[^0-9+]/g,""))}">📞 ${esc(d.phone||d.companyPhone)}</a>` : ""}${(d.dob||d.bday) ? `<small class="ps-bday">🎂 ${d.dob && d.dob.length===10 ? new Date(d.dob+"T00:00:00").toLocaleDateString("en-IN",{day:"numeric",month:"short",year:"numeric"}) : bdayTxt(d.bday)}${(d.bday||"")===today.slice(5) ? " · today!" : ""}</small>` : ""}</div>${(d.phone||d.companyPhone) ? `<a class="ps-call" href="tel:${esc((d.phone||d.companyPhone).replace(/[^0-9+]/g,""))}" aria-label="Call ${esc(d.name)}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4h3l1.6 4-2 1.3a11 11 0 0 0 5.1 5.1l1.3-2 4 1.6v3a2 2 0 0 1-2.2 2A16 16 0 0 1 3 6.2 2 2 0 0 1 5 4z"/></svg></a>` : ""}</div>`;
-  return head("Team", `${all.length} people at Srigandha Properties`) +
+  return head("Team", `${all.length} ${all.length===1 ? "person" : "people"} at Srigandha Properties`) +
     `<div class="teamsearch"><input type="search" id="teamQ" placeholder="Search name, role or team" value="${esc(UI.teamQ||"")}" autocomplete="off"></div>` +
     (keys.length ? keys.map(k => `<div class="panel daypanel"><h2 class="grp-h">${esc(k)} <span>${groups[k].length}</span></h2>${groups[k].sort((a,b)=>a.name.localeCompare(b.name)).map(card).join("")}</div>`).join("") : `<div class="panel"><p class="empty">No one matches that search.</p></div>`) +
     `<p class="hint">Pay, attendance and leave stay private.</p>`;
@@ -3871,7 +3894,7 @@ function ciCard(e, d){
 function attCard(e, d, canMark){
   const c = ciFor(e.id, d), cv = ciEval(c), s = S.att[d]?.marks?.[e.id] || (leaveOn(e.id,d) ? "L" : null), shown = statusOn(e.id, d);
   return `<div class="cicard"><div class="cc-head"><span class="av">${esc(initials(e.name))}</span><div class="cc-name"><b>${esc(e.name)}</b><small>${c ? `In ${tmIST(c.in.t)}${c.out ? ` · Out ${tmIST(c.out.t)}` : ""} · ${esc(placeLbl(c.in))}` : esc(e.designation || e.dept || "")}</small></div>${statusPill(shown)}</div>
-    <div class="seg cc-seg" role="group" aria-label="Attendance for ${esc(e.name)}">${MARKS.map(([v,t]) => `<button data-att="${e.id}" data-v="${v}" aria-pressed="${s===v}" title="${t}" ${canMark ? "" : "disabled"}>${t}</button>`).join("")}</div>
+    <div class="seg cc-seg" role="group" aria-label="Attendance for ${esc(e.name)}">${MARKS.map(([v,t]) => `<button data-att="${e.id}" data-v="${v}" aria-pressed="${s===v}" title="${t}" ${canMark ? "" : "disabled"}>${v==="HD" ? `<span class="lbl-long">Half day</span><span class="lbl-short">Half</span>` : t}</button>`).join("")}</div>
     ${!s && shown ? `<div class="cc-sub">${c ? "Status from check-in" : "No check-in"}${cv && cv.late ? " · late" : cv && cv.forgiven ? " · late forgiven" : ""}</div>` : ""}${forgiveCtl(e.id, d, cv) ? `<div class="cc-acts">${forgiveCtl(e.id, d, cv)}</div>` : ""}</div>`;
 }
 
@@ -4041,7 +4064,7 @@ function permForm(){
 function myPermRows(id){
   const mine = permList().filter(p => p.empId===id && p.type!=="forgive").sort((a,b) => (b.date||"").localeCompare(a.date||"") || (b.at||"").localeCompare(a.at||""));
   if(!mine.length) return `<p class="empty">No permission requests yet.</p>`;
-  return mine.map(p => `<div class="lvrow"><div class="lv-main"><b>${PERM_TYPES[p.type]} · ${fmtDs(p.date)}</b><small>${permWhat(p)}${p.reason ? ` · ${esc(p.reason)}` : ""}</small></div><div class="lv-side">${p.status==="pending" ? `<span class="tag warn">Pending</span><button class="btn small ghost" data-mpcancel="${p.id}">Withdraw</button>` : `<span class="tag ${p.status==="approved"?"ok":"bad"}">${p.status==="approved"?"Approved":"Rejected"}</span>`}</div></div>`).join("");
+  return mine.map(p => `<div class="lvrow"><div class="lv-main"><b>${PERM_TYPES[p.type]} · ${fmtDs(p.date)}</b><small>${permWhat(p)}${p.reason ? ` · ${esc(p.reason)}` : ""}</small></div><div class="lv-side">${p.status==="pending" ? `<span class="tag warn">Pending</span><button class="btn small" data-mpcancel="${p.id}">Withdraw</button>` : `<span class="tag ${p.status==="approved"?"ok":"bad"}">${p.status==="approved"?"Approved":"Rejected"}</span>`}</div></div>`).join("");
 }
 async function permSend(btn){
   const id = myEmp(); const t = UI.mpType || "late"; let w = PERM_WIN[t];
@@ -6070,7 +6093,7 @@ if("serviceWorker" in navigator){
 
 // Version check: whenever the app is opened or brought back to the front, ask GitHub for the latest version number.
 // If it is newer than what is running, reload (straight away if nothing is open, otherwise offer a button).
-window.APP_VERSION = "20261111070003";
+window.APP_VERSION = "20261111070358";
 (function(){
   let busy = false, shown = false;
   function bar(v){ if(shown) return; shown = true; const b = document.createElement("button"); b.className = "upd-bar"; b.textContent = "New version ready — tap to update"; b.onclick = () => go(v); document.body.appendChild(b); }
