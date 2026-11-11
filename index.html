@@ -2880,6 +2880,28 @@ table.t-emp .emp-contact{display:none}
   html body .tablewrap table.t-emp th,html body .tablewrap table.t-emp td{padding-left:8px!important;padding-right:8px!important}
   html body .tablewrap table.t-emp td:nth-child(4),html body .tablewrap table.t-emp td:nth-child(6),html body .tablewrap table.t-emp td:nth-child(7){font-size:13px}
 }
+
+/* ---- Attendance + Check-ins merged (phone cards) ---- */
+@media (max-width:760px){
+  .day-cards .cicard{padding:10px 2px!important}
+  .day-cards .cicard > .cc-times,.day-cards .cicard > .cc-sub,.day-cards .cicard > .cc-foot{grid-column:1/-1;padding-left:38px!important;margin:0!important}
+  .day-cards .cicard > .cc-times{display:flex;gap:12px;flex-wrap:wrap;font-size:13.5px!important;font-weight:600;font-variant-numeric:tabular-nums;margin-top:2px!important}
+  .day-cards .cicard > .cc-times small{font-size:10.5px!important}
+  .day-cards .cicard > .cc-sub{font-size:11.5px!important;opacity:.8}
+  .day-cards .cicard > .cc-foot{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;justify-content:space-between;margin-top:2px!important}
+  .day-cards .cicard > .cc-foot > .cc-flags{display:flex;flex-wrap:wrap;gap:3px 9px;font-size:12px;padding:0!important}
+  .day-cards .cicard > .cc-foot > .cc-acts{display:flex;gap:6px;margin-left:auto;padding:0!important}
+  .day-cards .cicard > .cc-foot .btn{height:34px!important;min-height:34px!important;padding:0 11px!important;font-size:12px!important;white-space:nowrap}
+  .day-cards .cicard > .cc-foot .btn.ghost{border:1px solid var(--line,rgba(0,0,0,.12))!important}
+  /* header: date bar, Mark rest present and the settings gear share one row */
+  html body.has-tabbar main > .head .tools:has(.datebar):has([data-act="att-all"]):has([data-act="golive-open"]){flex-wrap:nowrap!important;gap:6px!important}
+  html body.has-tabbar main > .head .tools:has([data-act="att-all"]) [data-act="golive-open"]{flex:0 0 40px!important}
+}
+.mr-short{display:none}
+@media (max-width:760px){
+  .mr-long{display:none}.mr-short{display:inline}
+  .day-cards .cicard > .cc-times{flex-wrap:nowrap!important;gap:10px!important;font-size:13px!important;white-space:nowrap}
+}
 .person .ps-num{display:block;font-size:12.5px;color:var(--accent);text-decoration:none;margin-top:2px;font-variant-numeric:tabular-nums}
 .ci-cards .cicard > .cc-foot{grid-column:1/-1;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:6px 10px;padding-left:41px;min-width:0}
 .ci-cards .cicard > .cc-foot > .cc-flags{padding-left:0!important;display:flex;flex-wrap:wrap;gap:3px 9px;font-size:12px;min-width:0}
@@ -2964,7 +2986,7 @@ const monthName = ym => { const [y,m]=ym.split("-").map(Number); return new Date
 let db = null, userCap = null, downloads = null;
 let isAdmin = false, canWrite = false, connected = false, loaded = {emp:false}, myId = "";
 // ---- sign-in & per-section access (Firebase logins; the server rules enforce the same limits) ----
-const SECTIONS = [["dashboard","Overview"],["employees","Employees"],["attendance","Attendance"],["checkins","Check-ins"],["leave","Leave"],["payroll","Payroll"],["incentives","Incentives"]];
+const SECTIONS = [["dashboard","Overview"],["employees","Employees"],["attendance","Attendance"],["leave","Leave"],["payroll","Payroll"],["incentives","Incentives"]];
 const LEVELS = [["none","No access"],["view","View only"],["edit","Can edit"]];
 const SELF_VIEWS = ["checkin","myatt","myleave","myslips","myinc"];
 let isOwnerV = false, authReady = false, myName = "", ME = null, USERS = {};
@@ -2972,6 +2994,7 @@ const isStaffU = () => !!ME && ME.active!==false && (ME.role==="owner" || ME.rol
 const myEmp = () => (ME && ME.active!==false && ME.empId && S.emps[ME.empId]?.status!=="Exited") ? ME.empId : "";
 function perm(v){
   if(!ME || ME.active===false || ME.pending) return "none";
+  if(v==="checkins") return "none";   // merged into Attendance
   if(v==="myinc") return "none";   // incentives show on the Pay screen and payslip instead
   if(SELF_VIEWS.includes(v)) return myEmp() ? "edit" : "none";
   if(v==="selftest") return "edit";
@@ -2979,7 +3002,8 @@ function perm(v){
     return (myEmp() || isStaffU()) ? "edit" : "none"; }
   if(isOwnerV) return "edit";
   if(v==="access" || !isStaffU()) return "none";
-  if(v==="checkins") return ME.perms?.checkins || ME.perms?.attendance || "none";
+  if(v==="checkins") return "none";   // merged into Attendance
+  if(v==="attendance") return ME.perms?.attendance && ME.perms.attendance !== "none" ? ME.perms.attendance : (ME.perms?.checkins && ME.perms.checkins !== "none" ? "view" : "none");
   return ME.perms?.[v] || "none";
 }
 const canSee = v => perm(v)!=="none";
@@ -4697,16 +4721,31 @@ employees(){
 
 attendance(){
   if(!UI.attDate) return head("Attendance", "No date selected", dateBar("attDate", "", "att")) + `<div class="panel"><h2>Choose a date</h2><p class="empty">Pick a date in the bar above to mark or review attendance.</p><div><button class="btn primary" data-act="att-today">Go to today</button></div></div>`;
-  const d = UI.attDate; const list = activeEmps(d);
-  ensureMonth(d.slice(0,7)); const c={P:0,HD:0,A:0,L:0,U:0}; list.forEach(e=>{ const s=statusOn(e.id,d); c[s||"U"]++; });
-  const future = d > today;
-  const tools = `${dateBar("attDate", d, "att")}${canWrite && isOwnerV?`<button class="btn primary" data-act="att-all" ${future?"disabled":""}>Mark rest present</button>`:""}`;
-  const rows = list.map(e => { const s = S.att[d]?.marks?.[e.id] || (leaveOn(e.id,d)?"L":null); const lv=leaveOn(e.id,d); const c = ciFor(e.id,d), cv = ciEval(c); const shown = statusOn(e.id,d);
-    return `<tr><td>${who(e, e.dept)}</td><td>${c?`${tmIST(c.in.t)}${c.out?` – ${tmIST(c.out.t)}`:""}<div class="note">${esc(placeLbl(c.in))}</div>`:`<span class="note">—</span>`}</td><td><div class="seg" role="group" aria-label="Attendance for ${esc(e.name)}">${MARKS.map(([v,t])=>`<button data-att="${e.id}" data-v="${v}" aria-pressed="${s===v}" title="${v==="P" && !isOwnerV ? "Only an administrator can mark Present" : t}" ${!canWrite||future||(v==="P" && !isOwnerV)?"disabled":""}>${v}</button>`).join("")}</div></td><td>${statusPill(shown)}${!s && shown ? `<div class="note" style="margin-top:3px">${c?"From check-in":"No check-in"}</div>`:""}${ciFlags(c, cv, d)}${lv?`<div class="note" style="margin-top:3px">Leave approved${ledger(e.id).unpaid.has(d)?" · unpaid, no balance left":""}</div>`:""}</td></tr>`; }).join("");
-  return head("Attendance", parse(d).toLocaleDateString("en-IN",{weekday:"long",day:"numeric",month:"long",year:"numeric"}) + (isOff(d)?` · <span class="pill sample">${offLabel(d)}</span>`:""), tools) +
-   `<div class="sumstrip ci-sum"><div><b>${c.P}</b><span>Present</span></div><div><b>${c.HD}</b><span>Half day</span></div><div><b>${c.A}</b><span>Absent</span></div><div><b>${c.U}</b><span>Not marked</span></div></div><div class="attsum"><span class="pill ok">${c.P} present</span><span class="pill warn">${c.HD} half day</span><span class="pill bad">${c.A} absent</span><span class="pill leave">${c.L} on leave</span><span class="pill mute">${c.U} not marked</span></div>
-   <div class="panel daypanel att-cards">${list.map(e => attCard(e, d, canWrite && !future)).join("") || `<p class="empty">No active employees on this date.</p>`}</div><div class="tablewrap fill stickyhead att-table"><table class="t-att"><thead><tr><th>Employee</th><th>Check-in</th><th>Mark</th><th>Status</th></tr></thead><tbody>${rows || `<tr><td colspan="4" class="empty">No active employees on this date.</td></tr>`}</tbody></table></div>
-   <p class="note">P present · HD half day (half a day's pay is deducted) · A absent (loss of pay) · L leave. A mark set here overrides the check-in, including any late mark. Tap a selected mark again to clear it. Approved leave fills in on its own.</p>`;
+  const d = UI.attDate; const list = activeEmps(d).sort(byRank).sort((x, y) => { const cx = ciFor(x.id, d), cy = ciFor(y.id, d); return (!!cy - !!cx) || (cx && cy ? String(cx.in.t).localeCompare(String(cy.in.t)) : 0); });   // checked-in first, by time; the rest by rank
+  ensureMonth(d.slice(0,7)); const future = d > today;
+  const c = {P:0,HD:0,A:0,L:0,U:0}, k = {in:0, late:0, out:0};
+  const data = list.map(e => { const ci = ciFor(e.id,d), v = ciEval(ci), st = statusOn(e.id,d), mark = S.att[d]?.marks?.[e.id], lv = leaveOn(e.id,d);
+    c[st||"U"]++; if(ci){ k.in++; if(v.late && !mark) k.late++; if(ci.out) k.out++; } return {e, ci, v, st, mark, lv}; });
+  const seg = (e, s, long) => `<div class="seg${long ? " cc-seg" : ""}" role="group" aria-label="Attendance for ${esc(e.name)}">${MARKS.map(([m,t]) => `<button data-att="${e.id}" data-v="${m}" aria-pressed="${s===m}" title="${m==="P" && !isOwnerV ? "Only an administrator can mark Present" : t}" ${!canWrite||future||(m==="P" && !isOwnerV)?"disabled":""}>${long ? (m==="HD" ? `<span class="lbl-long">Half day</span><span class="lbl-short">Half</span>` : t) : m}</button>`).join("")}</div>`;
+  const selfie = (e, ci) => ci && !ci.in.manual ? `<button class="btn small" data-selfie="${d}_${e.id}" data-name="${esc(e.name)}">Selfie</button>` : "";
+  const map = ci => ci && ci.in.lat!=null ? `<a class="btn small ghost" href="https://www.google.com/maps?q=${ci.in.lat},${ci.in.lng}" target="_blank" rel="noopener">Map</a>` : "";
+  const place = ci => `${esc(placeLbl(ci.in))}${ci.in.manual ? " · added by permission" : ci.in.back ? ` · backdated from ${tmIST(ci.in.orig)}` : ci.in.place==="field" ? ` · ${(ci.in.dist/1000).toFixed(1)} km from office` : ci.in.dist!=null ? ` · ${ci.in.dist} m` : ""}${ci.in.acc!=null ? ` · ±${ci.in.acc} m` : ""}`;
+  const rows = data.map(({e, ci, v, st, mark, lv}) => { const s = mark || (lv ? "L" : null);
+    return `<tr><td>${who(e, e.dept)}</td><td>${ci ? `<b>${tmIST(ci.in.t)}</b><div class="note">${place(ci)}</div>` : `<span class="note">—</span>`}</td><td>${ci?.out ? `<b>${tmIST(ci.out.t)}</b><div class="note">${esc(placeName(ci.out.place))}${v ? ` · ${m2hm(Math.max(0, v.outM - v.inM))}` : ""}</div>` : `<span class="note">${ci ? "Not yet" : "—"}</span>`}</td><td>${seg(e, s, false)}</td><td>${statusPill(st)}${mark ? `<div class="note" style="margin-top:3px">Set by HR</div>` : st && !lv ? `<div class="note" style="margin-top:3px">${ci ? "From check-in" : "No check-in"}</div>` : ""}${ciFlags(ci, v, d)}${lv ? `<div class="note" style="margin-top:3px">Leave approved${ledger(e.id).unpaid.has(d) ? " · unpaid, no balance left" : ""}</div>` : ""}</td><td><div class="acts">${selfie(e, ci)}${map(ci)}</div></td></tr>`; }).join("");
+  const cards = data.map(({e, ci, v, st, mark, lv}) => { const s = mark || (lv ? "L" : null);
+    const tag = mark ? "" : st==="P" ? (v && v.late ? `<span class="tag warn">Late</span>` : "") : st==="HD" ? `<span class="tag warn">Half day</span>` : st==="A" ? `<span class="tag bad">Absent</span>` : "";
+    const flags = [tag, ci && v.early ? `<span class="tag warn">Short hours</span>` : "", ci && v.noOut && d < today ? `<span class="tag bad">No check-out</span>` : "", ci && v.lowAcc ? `<span class="tag">Rough GPS</span>` : "", mark ? `<span class="tag">Set by HR</span>` : "", lv && ledger(e.id).unpaid.has(d) ? `<span class="tag bad">Unpaid leave</span>` : ""].filter(Boolean).join("");
+    const acts = `${forgiveCtl(e.id, d, v) || ""}${selfie(e, ci)}${map(ci)}`;
+    return `<div class="cicard"><div class="cc-head"><span class="av">${esc(initials(e.name))}</span><div class="cc-name"><b>${esc(e.name)}</b><small>${esc(e.designation || e.dept || "")}</small></div></div>${seg(e, s, true)}
+      ${ci ? `<div class="cc-times"><span><small>In</small> ${tmIST(ci.in.t)}</span><span><small>Out</small> ${ci.out ? tmIST(ci.out.t) : "—"}</span>${ci.out && v ? `<span><small class="cc-wk">Worked</small> ${m2hm(Math.max(0, v.outM - v.inM))}</span>` : ""}</div><div class="cc-sub">${place(ci)}</div>` : ""}
+      ${flags || acts ? `<div class="cc-foot">${flags ? `<div class="cc-flags">${flags}</div>` : ""}${acts ? `<div class="cc-acts">${acts}</div>` : ""}</div>` : ""}</div>`; }).join("");
+  const tools = `${dateBar("attDate", d, "att")}${canWrite && isOwnerV ? `<button class="btn primary" data-act="att-all" ${future?"disabled":""}><span class="mr-long">Mark rest present</span><span class="mr-short">Mark rest</span></button>` : ""}<button class="btn" data-act="golive-open">Settings</button>`;
+  return head("Attendance", parse(d).toLocaleDateString("en-IN",{weekday:"long",day:"numeric",month:"long",year:"numeric"}) + (isOff(d) ? ` · <span class="pill sample">${offLabel(d)}</span>` : "") + (goLive() ? "" : ` · <span class="pill mute">Absent marking off</span>`), tools) +
+   `<div class="sumstrip ci-sum"><div><b>${k.in}<small>/${list.length}</small></b><span>Checked in</span></div><div><b>${k.late}</b><span>Late</span></div><div><b>${c.HD}</b><span>Half day</span></div><div><b>${c.U}</b><span>Not marked</span></div></div>
+   <div class="attsum"><span class="pill ok">${k.in} of ${list.length} checked in</span><span class="pill mute">${k.out} checked out</span><span class="pill warn">${k.late} late</span><span class="pill ok">${c.P} present</span><span class="pill warn">${c.HD} half day</span><span class="pill bad">${c.A} absent</span><span class="pill leave">${c.L} on leave</span><span class="pill mute">${c.U} not marked</span></div>
+   <div class="panel daypanel att-cards day-cards">${cards || `<p class="empty">No active employees on this date.</p>`}</div>
+   <div class="tablewrap fill stickyhead att-table ci-table"><table class="t-att"><thead><tr><th>Employee</th><th>Check-in</th><th>Check-out</th><th>Mark</th><th>Status</th><th></th></tr></thead><tbody>${rows || `<tr><td colspan="6" class="empty">No active employees on this date.</td></tr>`}</tbody></table></div>
+   <p class="note">P present · HD half day (half a day's pay is deducted) · L leave. A mark overrides the check-in, including any late mark, and only an administrator can mark Present. Tap a selected mark again to clear it. Approved leave fills in on its own.</p>`;
 },
 
 leave(){
@@ -5586,6 +5625,7 @@ document.addEventListener("keydown", async ev => {
 });
 
 Object.assign(VIEWS, MORE_VIEWS);
+const hzOld = () => { if(location.hash === "#checkins") location.replace("#attendance"); }; hzOld(); addEventListener("hashchange", hzOld);
 const VALID = ["dashboard","employees","attendance","leave","payroll","incentives","access","checkin","checkins","myatt","myleave","myslips","myinc","team","selftest"];
 // ---- phone: slide-out menu ----
 const isPhone = () => matchMedia("(max-width:760px)").matches;
@@ -6130,7 +6170,7 @@ if("serviceWorker" in navigator){
 
 // Version check: whenever the app is opened or brought back to the front, ask GitHub for the latest version number.
 // If it is newer than what is running, reload (straight away if nothing is open, otherwise offer a button).
-window.APP_VERSION = "20261111081803";
+window.APP_VERSION = "20261111082132";
 (function(){
   let busy = false, shown = false;
   function bar(v){ if(shown) return; shown = true; const b = document.createElement("button"); b.className = "upd-bar"; b.textContent = "New version ready — tap to update"; b.onclick = () => go(v); document.body.appendChild(b); }
