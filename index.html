@@ -2806,7 +2806,8 @@ body.dark [data-act="golive-open"]::after{background:#8cc8ff}
   html.lg body.dark.has-tabbar main > .head::before,html.lg body.dark.has-tabbar main > .head::after{display:none!important}
 }
 /* dark tables: the border sits inside the rounded box (no edge running past the corners) */
-html.lg body.dark .tablewrap{overflow:hidden!important;border-radius:22px}
+html.lg body.dark .tablewrap{border-radius:22px}
+@media (max-width:760px){html.lg body.dark .tablewrap{overflow:hidden!important}}
 html.lg body.dark .tablewrap table{border-collapse:separate!important;border-spacing:0}
 html.lg body.dark .tablewrap thead th{border-top:0!important}
 
@@ -6069,7 +6070,7 @@ if("serviceWorker" in navigator){
 
 // Version check: whenever the app is opened or brought back to the front, ask GitHub for the latest version number.
 // If it is newer than what is running, reload (straight away if nothing is open, otherwise offer a button).
-window.APP_VERSION = "20261111065252";
+window.APP_VERSION = "20261111070003";
 (function(){
   let busy = false, shown = false;
   function bar(v){ if(shown) return; shown = true; const b = document.createElement("button"); b.className = "upd-bar"; b.textContent = "New version ready — tap to update"; b.onclick = () => go(v); document.body.appendChild(b); }
