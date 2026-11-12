@@ -2909,6 +2909,24 @@ img.ck-selfie.big{cursor:zoom-in}
 .selfie-full{position:fixed;inset:0;z-index:100000;background:rgba(0,0,0,.94);display:grid;place-items:center;cursor:zoom-out;padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom)}
 .selfie-full img{width:100vw;height:100vh;height:100dvh;object-fit:contain;display:block}
 .selfie-x{position:fixed;top:calc(12px + env(safe-area-inset-top));right:12px;width:42px;height:42px;border-radius:50%;border:1px solid rgba(255,255,255,.3);background:rgba(30,30,30,.7);color:#fff;font-size:18px;cursor:pointer}
+
+/* ---- Incentives: name tiles in glacier-blue glass, team tiles and name tiles the same size ---- */
+html body .tiles:has(> .teamtile){align-items:stretch}
+html body .tiles > .teamtile{height:100%;display:flex;flex-direction:column}
+html body .tiles > .teamtile .tt-head{min-height:86px;align-content:start}
+html body .teamtile .pgrid{grid-auto-rows:1fr;align-items:stretch}
+html body .teamtile .pcard{height:100%;display:flex;flex-direction:column;justify-content:space-between;
+  background:linear-gradient(180deg,rgba(214,236,255,.88),rgba(168,210,250,.55))!important;
+  border:1px solid rgba(255,255,255,.85)!important;
+  box-shadow:0 6px 18px -10px rgba(0,60,160,.38),inset 0 1px 0 rgba(255,255,255,.95),inset 0 -8px 14px -10px rgba(0,90,200,.28)!important;
+  -webkit-backdrop-filter:blur(14px) saturate(170%);backdrop-filter:blur(14px) saturate(170%)}
+html body .teamtile .pcard:hover{filter:brightness(1.03)}
+html body .teamtile .pc-name b{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+html body .teamtile .pc-name small{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+html body .teamtile .pc-amt{margin-top:auto;border-top-color:rgba(0,90,200,.16)!important}
+html body.dark .teamtile .pcard{background:linear-gradient(180deg,rgba(150,205,255,.22),rgba(110,175,240,.10))!important;border-color:rgba(160,210,255,.28)!important;
+  box-shadow:0 6px 18px -10px rgba(0,0,0,.7),inset 0 1px 0 rgba(255,255,255,.14),inset 0 0 0 1px rgba(150,205,255,.08)!important}
+html body.dark .teamtile .pc-amt{border-top-color:rgba(160,210,255,.18)!important}
 .person .ps-num{display:block;font-size:12.5px;color:var(--accent);text-decoration:none;margin-top:2px;font-variant-numeric:tabular-nums}
 .ci-cards .cicard > .cc-foot{grid-column:1/-1;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:6px 10px;padding-left:41px;min-width:0}
 .ci-cards .cicard > .cc-foot > .cc-flags{padding-left:0!important;display:flex;flex-wrap:wrap;gap:3px 9px;font-size:12px;min-width:0}
@@ -6245,7 +6263,7 @@ if("serviceWorker" in navigator){
 
 // Version check: whenever the app is opened or brought back to the front, ask GitHub for the latest version number.
 // If it is newer than what is running, reload (straight away if nothing is open, otherwise offer a button).
-window.APP_VERSION = "20261112061831";
+window.APP_VERSION = "20261112062321";
 (function(){
   let busy = false, shown = false;
   function bar(v){ if(shown) return; shown = true; const b = document.createElement("button"); b.className = "upd-bar"; b.textContent = "New version ready — tap to update"; b.onclick = () => go(v); document.body.appendChild(b); }
