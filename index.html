@@ -2927,6 +2927,9 @@ html body .teamtile .pc-amt{margin-top:auto;border-top-color:rgba(0,90,200,.16)!
 html body.dark .teamtile .pcard{background:linear-gradient(180deg,rgba(150,205,255,.22),rgba(110,175,240,.10))!important;border-color:rgba(160,210,255,.28)!important;
   box-shadow:0 6px 18px -10px rgba(0,0,0,.7),inset 0 1px 0 rgba(255,255,255,.14),inset 0 0 0 1px rgba(150,205,255,.08)!important}
 html body.dark .teamtile .pc-amt{border-top-color:rgba(160,210,255,.18)!important}
+#incModal footer .inc-reset{margin-right:auto;color:#d70015}
+body.dark #incModal footer .inc-reset{color:#ff6961}
+#incModal footer .inc-reset.armed{background:#d70015!important;color:#fff!important;border-color:#d70015!important}
 .person .ps-num{display:block;font-size:12.5px;color:var(--accent);text-decoration:none;margin-top:2px;font-variant-numeric:tabular-nums}
 .ci-cards .cicard > .cc-foot{grid-column:1/-1;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:6px 10px;padding-left:41px;min-width:0}
 .ci-cards .cicard > .cc-foot > .cc-flags{padding-left:0!important;display:flex;flex-wrap:wrap;gap:3px 9px;font-size:12px;min-width:0}
@@ -4910,7 +4913,7 @@ function incModalHtml(id){
     </div>
     ${done ? `<p class="note" style="margin:0">This month is finalized. Reopen it to change figures.</p>` : `<p class="note" style="margin:0">Press Enter to save and move to the next box. On the last box, Enter moves to Done, and Enter again closes.</p>`}
   </div>
-  <footer>${peers.length>2?`<button class="btn" data-incopen="${prev.id}">‹ ${esc(prev.name)}</button>`:""}${peers.length>1?`<button class="btn" data-incopen="${next.id}">${esc(next.name)} ›</button>`:""}<button class="btn primary" id="incDoneBtn" data-act="close">Done</button></footer>`;
+  <footer>${done ? "" : `<button class="btn inc-reset" data-increset="${id}" title="Clear this month's visits, sq ft, adjustment and note for ${esc(e.name)}">Reset</button>`}${peers.length>2?`<button class="btn" data-incopen="${prev.id}">‹ ${esc(prev.name)}</button>`:""}${peers.length>1?`<button class="btn" data-incopen="${next.id}">${esc(next.name)} ›</button>`:""}<button class="btn primary" id="incDoneBtn" data-act="close">Done</button></footer>`;
 }
 
 function regPanel(ym, done){
@@ -5550,7 +5553,7 @@ async function clearSample(btn){
 document.addEventListener("click", async ev => {
   const rs = ev.target.closest("[data-reset]");
   if(rs){ const el = document.getElementById(rs.dataset.reset); if(el && !el.disabled){ el.value = rs.dataset.val; el.dispatchEvent(new Event("input",{bubbles:true})); el.dispatchEvent(new Event("change",{bubbles:true})); } return; }
-  const t = ev.target.closest("[data-act],[data-att],[data-leave],[data-emp],[data-slip],[data-lf],[data-go],[data-regdel],[data-incslide],[data-incopen],[data-uact],[data-holdel],[data-selfie],[data-myslip],[data-mlcancel],[data-umanage],[data-uopen],[data-upermset],[data-mptype],[data-mltab],[data-mpcancel],[data-mpquick],[data-permdec],[data-forgive],[data-unforgive],[data-mltype],[data-nav]"); if(!t) return;
+  const t = ev.target.closest("[data-act],[data-att],[data-leave],[data-emp],[data-slip],[data-lf],[data-go],[data-regdel],[data-incslide],[data-incopen],[data-increset],[data-uact],[data-holdel],[data-selfie],[data-myslip],[data-mlcancel],[data-umanage],[data-uopen],[data-upermset],[data-mptype],[data-mltab],[data-mpcancel],[data-mpquick],[data-permdec],[data-forgive],[data-unforgive],[data-mltype],[data-nav]"); if(!t) return;
   if(t.dataset.mltype){ UI.mlType = t.dataset.mltype; render(); return; }
   if(t.dataset.forgive){ forgiveLate(t); return; }
   if(t.dataset.unforgive){ unforgive(t); return; }
@@ -5568,6 +5571,14 @@ document.addEventListener("click", async ev => {
   if(t.dataset.holdel){ delHoliday(t, t.dataset.holdel); return; }
   if(t.dataset.uact){ userAction(t); return; }
   if(t.dataset.incslide){ if(t.dataset.incslide!==UI.incSlide){ UI.incDir = t.dataset.dir==="back" ? "in-back" : "in-fwd"; UI.incSlide = t.dataset.incslide; render(); } return; }
+  if(t.dataset.increset){ const id = t.dataset.increset, ym = UI.incMonth;
+    if(incDone(ym)){ toast("This month is finalized. Reopen it to change figures."); return; }
+    if(!t.classList.contains("armed")){ t.classList.add("armed"); t.textContent = "Tap again to reset"; clearTimeout(t._rt); t._rt = setTimeout(() => { if(t.isConnected){ t.classList.remove("armed"); t.textContent = "Reset"; } }, 3500); return; }
+    Object.keys(UI.incDraft).forEach(k => { if(k.endsWith("_" + id)) delete UI.incDraft[k]; });
+    const patch = {amounts:{[id]:{visits:0, sqft:0, adj:0, note:""}}, updatedAt:new Date().toISOString()};
+    S.inc[ym] = deepMerge(S.inc[ym], patch); flash = id; render(); incModal(id);
+    try{ await mergeWrite("inc/"+ym, db.collection("data/hr/incentives").doc(ym), patch, {month:ym, status:"open"}); toast(`${S.emps[id]?.name || "Figures"} reset for ${monthName(ym)}`); }catch(e){ fail(e); }
+    return; }
   if(t.dataset.incopen){ const act=document.activeElement; if(act && /^inc[vsan]_/.test(act.id)) await saveInc(act.id, act.value); incModal(t.dataset.incopen); return; }
   if(t.dataset.regdel){ delReg(t, t.dataset.regdel); return; }
   if(t.dataset.nav){ const [v, x] = t.dataset.nav.split(":"); if(v==="attendance") UI.attDate = today; if(v==="leave" && x) UI.leaveFilter = x; if(v==="employees"){ UI.empStatus = "Active"; UI.empQ = ""; UI.empDept = ""; UI.empTeam = ""; }
@@ -6263,7 +6274,7 @@ if("serviceWorker" in navigator){
 
 // Version check: whenever the app is opened or brought back to the front, ask GitHub for the latest version number.
 // If it is newer than what is running, reload (straight away if nothing is open, otherwise offer a button).
-window.APP_VERSION = "20261112062321";
+window.APP_VERSION = "20261112112008";
 (function(){
   let busy = false, shown = false;
   function bar(v){ if(shown) return; shown = true; const b = document.createElement("button"); b.className = "upd-bar"; b.textContent = "New version ready — tap to update"; b.onclick = () => go(v); document.body.appendChild(b); }
