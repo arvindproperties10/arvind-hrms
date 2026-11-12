@@ -2993,7 +2993,7 @@ const monthName = ym => { const [y,m]=ym.split("-").map(Number); return new Date
 let db = null, userCap = null, downloads = null;
 let isAdmin = false, canWrite = false, connected = false, loaded = {emp:false}, myId = "";
 // ---- sign-in & per-section access (Firebase logins; the server rules enforce the same limits) ----
-const SECTIONS = [["dashboard","Overview"],["employees","Employees"],["attendance","Attendance"],["leave","Leave"],["payroll","Payroll"],["incentives","Incentives"]];
+const SECTIONS = [["dashboard","Overview"],["employees","Employees"],["attendance","Attendance"],["leave","Leave"],["payroll","Payroll"]];   // Incentives is administrator-only, so it is not offered to HR logins
 const LEVELS = [["none","No access"],["view","View only"],["edit","Can edit"]];
 const SELF_VIEWS = ["checkin","myatt","myleave","myslips","myinc"];
 let isOwnerV = false, authReady = false, myName = "", ME = null, USERS = {};
@@ -3002,6 +3002,7 @@ const myEmp = () => (ME && ME.active!==false && ME.empId && S.emps[ME.empId]?.st
 function perm(v){
   if(!ME || ME.active===false || ME.pending) return "none";
   if(v==="checkins") return "none";   // merged into Attendance
+  if(v==="incentives") return isOwnerV ? "edit" : "none";
   if(v==="myinc") return "none";   // incentives show on the Pay screen and payslip instead
   if(SELF_VIEWS.includes(v)) return myEmp() ? "edit" : "none";
   if(v==="selftest") return "edit";
@@ -6244,7 +6245,7 @@ if("serviceWorker" in navigator){
 
 // Version check: whenever the app is opened or brought back to the front, ask GitHub for the latest version number.
 // If it is newer than what is running, reload (straight away if nothing is open, otherwise offer a button).
-window.APP_VERSION = "20261111085853";
+window.APP_VERSION = "20261112061831";
 (function(){
   let busy = false, shown = false;
   function bar(v){ if(shown) return; shown = true; const b = document.createElement("button"); b.className = "upd-bar"; b.textContent = "New version ready — tap to update"; b.onclick = () => go(v); document.body.appendChild(b); }
