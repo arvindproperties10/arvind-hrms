@@ -2934,6 +2934,21 @@ body.dark #incModal footer .inc-reset{color:#ff6961}
 .sf-fig{margin:0;flex:1 1 140px;max-width:220px;text-align:center}
 .sf-fig img{width:100%;height:auto}
 .sf-fig figcaption{font-size:12px;opacity:.7;margin-top:4px}
+
+/* LOP dates pop-up */
+button.lop-btn{border:0;font:inherit;cursor:pointer;min-width:34px;min-height:26px}
+button.lop-btn:hover{filter:brightness(1.08);text-decoration:underline}
+.lop-list{list-style:none;margin:0;padding:0}
+.lop-row{display:grid;grid-template-columns:62px 1fr auto;gap:10px;align-items:center;padding:9px 2px;border-bottom:1px solid var(--line,rgba(0,0,0,.08))}
+.lop-date b{display:block;font-size:14px}
+.lop-date small{display:block;font-size:11.5px;opacity:.65}
+.lop-why{font-size:13.5px}
+.lop-amt{font-weight:600;font-variant-numeric:tabular-nums;color:#d70015;white-space:nowrap}
+body.dark .lop-amt{color:#ff6961}
+body.dark .lop-row{border-bottom-color:rgba(255,255,255,.1)}
+.lop-total{display:flex;justify-content:space-between;align-items:center;padding:12px 2px 2px;font-size:15px}
+button.lop-mini{display:none}
+@media (max-width:760px){button.lop-mini{display:inline-flex;margin-top:4px;font-size:11.5px}}
 .person .ps-num{display:block;font-size:12.5px;color:var(--accent);text-decoration:none;margin-top:2px;font-variant-numeric:tabular-nums}
 .ci-cards .cicard > .cc-foot{grid-column:1/-1;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:6px 10px;padding-left:41px;min-width:0}
 .ci-cards .cicard > .cc-foot > .cc-flags{padding-left:0!important;display:flex;flex-wrap:wrap;gap:3px 9px;font-size:12px;min-width:0}
@@ -4793,7 +4808,7 @@ leave(){
   const f = UI.leaveFilter;
   const all = [...Object.entries(S.leaves).map(([id,l])=>({id,...l, _d:l.from})), ...permList().map(p=>({...p, _perm:true, _d:p.date}))].filter(l=>f==="all"||l.status===f).sort((a,b)=>(b._d||"").localeCompare(a._d||""));
   const tools = `<div class="seg" role="group" aria-label="Filter requests">${[["pending","Pending"],["approved","Approved"],["rejected","Rejected"],["all","All"]].map(([v,t])=>`<button data-lf="${v}" aria-pressed="${f===v}" style="${f===v?"background:var(--accent);color:var(--accent-ink)":""}">${t}</button>`).join("")}</div>${canWrite?`<button class="btn primary" data-act="new-leave">Apply for leave</button>`:""}`;
-  const balRows = activeEmps().sort((a,b)=>DEPTS.indexOf(a.dept)-DEPTS.indexOf(b.dept) || byRank(a,b)).map(e => { const L=ledger(e.id); return `<tr><td>${who(e, e.dept)}</td><td class="num">${L.accrued}</td><td class="num">${L.used}</td><td class="num"><b>${L.balance}</b>${L.booked?` <span class="note">(${L.booked} booked)</span>`:""}</td><td class="num">${L.unpaidMonth?`<span class="pill bad">${L.unpaidMonth}</span>`:"0"}</td><td class="num">${L.co.balance}</td></tr>`; }).join("");
+  const balRows = activeEmps().sort((a,b)=>DEPTS.indexOf(a.dept)-DEPTS.indexOf(b.dept) || byRank(a,b)).map(e => { const L=ledger(e.id); return `<tr><td>${who(e, e.dept)}</td><td class="num">${L.accrued}</td><td class="num">${L.used}</td><td class="num"><b>${L.balance}</b>${L.booked?` <span class="note">(${L.booked} booked)</span>`:""}</td><td class="num">${L.unpaidMonth?`<button type="button" class="pill bad lop-btn" data-lop="${e.id}" data-ym="${today.slice(0,7)}" title="See the dates">${L.unpaidMonth}</button>`:"0"}</td><td class="num">${L.co.balance}</td></tr>`; }).join("");
   const pendN = Object.values(S.leaves).filter(x=>x.status==="pending").length + pendingPerms().length;
   return head("Leave", `${canApprove() && pendN ? `<b>${pendN} waiting for your approval</b> · ` : ""}1 paid leave a month from ${monthName(LEAVE_START)}. Unused days carry forward; leave beyond the balance is loss of pay. Tuesdays and company holidays don't count.`, tools) +
    `<div class="leavegrid fill"><div class="panel lg-req"><h2>${f==="all"?"All requests":f[0].toUpperCase()+f.slice(1)+" requests"}</h2><div class="scrollbox">${all.length? all.map(x => x._perm ? permRow(x) : reqRow(x)).join("") : `<p class="empty">No ${f==="all"?"":f} requests.</p>`}</div></div>
@@ -4819,7 +4834,7 @@ payroll(){
   }
   return head("Payroll", `${monthName(ym)} · ${rows[0]?.p.working ?? 0} working days (Tuesdays off${(()=>{ const n = Object.keys(HOL).filter(d=>d.startsWith(ym) && parse(d).getDay()!==WEEKLY_OFF).length; return n ? `, ${n} company holiday${n>1?"s":""}` : ""; })()})`, tools) + notes +
    `<div class="tablewrap fill stickyhead"><table class="t-pay"><thead><tr><th>Employee</th><th class="num">Paid days</th><th class="num">LOP</th><th class="num">Monthly pay</th><th class="num">LOP deduction</th><th class="num">Net pay</th></tr></thead><tbody>
-   ${rows.map(({e,p})=>`<tr class="click" data-slip="${e.id}"><td>${who(e, e.dept)}</td><td class="num">${p.paid} / ${p.working}</td><td class="num">${p.lop?`<span class="pill bad" title="${p.leaveLop?p.leaveLop+" leave day(s) beyond balance":""}">${p.lop}</span>`:"0"}</td><td class="num">${p.hasSalary?inr(p.gross):`<span class="pill warn">Salary not set</span>`}</td><td class="num">${p.lopAmt?`−${inr(p.lopAmt)}`:"—"}</td><td class="num"><b>${inr(p.net)}</b></td></tr>`).join("") || `<tr><td colspan="6" class="empty">No employees on the rolls this month.</td></tr>`}
+   ${rows.map(({e,p})=>`<tr class="click" data-slip="${e.id}"><td>${who(e, e.dept)}</td><td class="num">${p.paid} / ${p.working}${p.lop?`<button type="button" class="pill bad lop-btn lop-mini" data-lop="${e.id}" data-ym="${ym}">LOP ${p.lop}</button>`:""}</td><td class="num">${p.lop?`<button type="button" class="pill bad lop-btn" data-lop="${e.id}" data-ym="${ym}" title="See the dates">${p.lop}</button>`:"0"}</td><td class="num">${p.hasSalary?inr(p.gross):`<span class="pill warn">Salary not set</span>`}</td><td class="num">${p.lopAmt?`−${inr(p.lopAmt)}`:"—"}</td><td class="num"><b>${inr(p.net)}</b></td></tr>`).join("") || `<tr><td colspan="6" class="empty">No employees on the rolls this month.</td></tr>`}
    </tbody>${rows.length?`<tfoot><tr><td>Total · ${rows.length} employees</td><td></td><td></td><td class="num">${inr(T.gross)}</td><td class="num">${T.lopAmt?`−${inr(T.lopAmt)}`:"—"}</td><td class="num">${inr(T.net)}</td></tr></tfoot>`:""}</table></div>
    <p class="note">Net pay is monthly pay × paid days ÷ working days. Absences, half days and leave beyond the paid-leave balance count as loss of pay. No PF, ESI or professional tax is deducted. Incentives are paid separately on the ${C.incDay}th. Select a row to see the payslip.</p>`;
 },
@@ -5292,6 +5307,30 @@ async function exportIncPdf(btn){
   void own;
 }
 
+// ---------- LOP days: which dates made up an employee's loss of pay ----------
+function lopDays(id, ym){
+  const [y,m] = ym.split("-").map(Number), dim = new Date(y,m,0).getDate(), e = S.emps[id] || {}, L = ledger(id), out = [];
+  for(let d=1; d<=dim; d++){
+    const ds = `${ym}-${pad(d)}`; if(isOff(ds) || ds > today) continue;
+    if(e.joined && ds < e.joined) continue; if(e.exitDate && ds > e.exitDate) continue;
+    const st = statusOn(id, ds); let amt = 0, why = "";
+    if(st==="A"){ amt = 1 - (L.cover[ds]||0); why = amt < 1 ? "Absent · part covered by a comp off" : "Absent"; }
+    else if(st==="HD"){ amt = .5 - (L.cover[ds]||0); why = "Half day"; }
+    else if(st==="L"){ amt = L.unpaidAmt[ds]||0; why = amt < 1 ? "Leave · part covered by balance" : "Leave · no balance left"; }
+    if(amt > 0) out.push({ds, amt, why});
+  }
+  const lates = latesIn(id, ym), lateLop = lateLopDays(lates);
+  return {days:out, lates, lateLop, total:out.reduce((t,x)=>t+x.amt,0) + lateLop};
+}
+function lopModal(id, ym){
+  const e = S.emps[id]; if(!e) return; const r = lopDays(id, ym);
+  const fmt = n => n === .5 ? "½" : String(n).replace(/\.5$/, "½").replace(/^0½$/, "½");
+  const rows = r.days.map(x => { const dt = parse(x.ds); return `<li class="lop-row"><span class="lop-date"><b>${dt.toLocaleDateString("en-IN",{day:"numeric",month:"short"})}</b><small>${dt.toLocaleDateString("en-IN",{weekday:"short"})}</small></span><span class="lop-why">${x.why}</span><span class="lop-amt">${fmt(x.amt)} day</span></li>`; }).join("");
+  const late = r.lateLop ? `<li class="lop-row"><span class="lop-date"><b>${r.lates}</b><small>late</small></span><span class="lop-why">Late marks this month</span><span class="lop-amt">${fmt(r.lateLop)} day</span></li>` : "";
+  $("#overlay").innerHTML = `<div class="scrim" data-act="close"></div><div class="modal sm" role="dialog" aria-modal="true" aria-labelledby="lopT"><header><div><h3 id="lopT" style="margin:0">${esc(e.name)}</h3><small class="note">Loss of pay · ${monthName(ym)}${ym === today.slice(0,7) ? " so far" : ""}</small></div><button class="btn ghost" data-act="close" aria-label="Close">✕</button></header>
+    <div class="body">${rows || late ? `<ul class="lop-list">${rows}${late}</ul><div class="lop-total"><span>Total</span><b>${fmt(r.total)} day${r.total === 1 ? "" : "s"}</b></div>` : `<p class="empty">No loss of pay days in ${monthName(ym)}.</p>`}</div></div>`;
+}
+
 // ---------- payslip PDF ----------
 let JSPDF = null;
 async function loadJsPDF(){
@@ -5565,7 +5604,7 @@ async function clearSample(btn){
 document.addEventListener("click", async ev => {
   const rs = ev.target.closest("[data-reset]");
   if(rs){ const el = document.getElementById(rs.dataset.reset); if(el && !el.disabled){ el.value = rs.dataset.val; el.dispatchEvent(new Event("input",{bubbles:true})); el.dispatchEvent(new Event("change",{bubbles:true})); } return; }
-  const t = ev.target.closest("[data-act],[data-att],[data-leave],[data-emp],[data-slip],[data-lf],[data-go],[data-regdel],[data-incslide],[data-incopen],[data-increset],[data-uact],[data-holdel],[data-selfie],[data-myslip],[data-mlcancel],[data-umanage],[data-uopen],[data-upermset],[data-mptype],[data-mltab],[data-mpcancel],[data-mpquick],[data-permdec],[data-forgive],[data-unforgive],[data-mltype],[data-nav]"); if(!t) return;
+  const t = ev.target.closest("[data-act],[data-att],[data-leave],[data-emp],[data-slip],[data-lf],[data-go],[data-regdel],[data-incslide],[data-incopen],[data-increset],[data-lop],[data-uact],[data-holdel],[data-selfie],[data-myslip],[data-mlcancel],[data-umanage],[data-uopen],[data-upermset],[data-mptype],[data-mltab],[data-mpcancel],[data-mpquick],[data-permdec],[data-forgive],[data-unforgive],[data-mltype],[data-nav]"); if(!t) return;
   if(t.dataset.mltype){ UI.mlType = t.dataset.mltype; render(); return; }
   if(t.dataset.forgive){ forgiveLate(t); return; }
   if(t.dataset.unforgive){ unforgive(t); return; }
@@ -5583,6 +5622,7 @@ document.addEventListener("click", async ev => {
   if(t.dataset.holdel){ delHoliday(t, t.dataset.holdel); return; }
   if(t.dataset.uact){ userAction(t); return; }
   if(t.dataset.incslide){ if(t.dataset.incslide!==UI.incSlide){ UI.incDir = t.dataset.dir==="back" ? "in-back" : "in-fwd"; UI.incSlide = t.dataset.incslide; render(); } return; }
+  if(t.dataset.lop){ lopModal(t.dataset.lop, t.dataset.ym || today.slice(0,7)); return; }
   if(t.dataset.increset){ const id = t.dataset.increset, ym = UI.incMonth;
     if(incDone(ym)){ toast("This month is finalized. Reopen it to change figures."); return; }
     if(!t.classList.contains("armed")){ t.classList.add("armed"); t.textContent = "Tap again to reset"; clearTimeout(t._rt); t._rt = setTimeout(() => { if(t.isConnected){ t.classList.remove("armed"); t.textContent = "Reset"; } }, 3500); return; }
@@ -6286,7 +6326,7 @@ if("serviceWorker" in navigator){
 
 // Version check: whenever the app is opened or brought back to the front, ask GitHub for the latest version number.
 // If it is newer than what is running, reload (straight away if nothing is open, otherwise offer a button).
-window.APP_VERSION = "20261113051741";
+window.APP_VERSION = "20261113062623";
 (function(){
   let busy = false, shown = false;
   function bar(v){ if(shown) return; shown = true; const b = document.createElement("button"); b.className = "upd-bar"; b.textContent = "New version ready — tap to update"; b.onclick = () => go(v); document.body.appendChild(b); }
