@@ -2970,6 +2970,13 @@ html body button.lop-btn.lop-mini{display:none!important}
   display:flex!important;flex-direction:column;overflow:hidden}
 #overlay .modal.lop-modal > header{flex:none}
 #overlay .modal.lop-modal > .body{flex:1 1 auto;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
+
+/* Users & access: "Edit access" is a proper pill button, same as Manage */
+html body button.uc-toggle{display:inline-flex!important;align-items:center;justify-content:center;width:auto!important;min-height:38px;padding:0 16px!important;border-radius:999px!important;
+  border:1px solid var(--line,rgba(0,0,0,.14))!important;background:transparent;font-size:14px!important;line-height:1;white-space:nowrap;box-sizing:border-box}
+@media (max-width:760px){ html body.has-tabbar button.uc-toggle{margin-left:0!important} }
+body.dark button.uc-toggle{border-color:rgba(255,255,255,.18)!important}
+html body #main button.btn.uc-toggle,html body.has-tabbar #main button.btn.ghost.uc-toggle{padding:0 18px!important;min-height:38px!important;height:38px;width:auto!important;margin-left:0!important}
 .person .ps-num{display:block;font-size:12.5px;color:var(--accent);text-decoration:none;margin-top:2px;font-variant-numeric:tabular-nums}
 .ci-cards .cicard > .cc-foot{grid-column:1/-1;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:6px 10px;padding-left:41px;min-width:0}
 .ci-cards .cicard > .cc-foot > .cc-flags{padding-left:0!important;display:flex;flex-wrap:wrap;gap:3px 9px;font-size:12px;min-width:0}
@@ -6355,7 +6362,7 @@ if("serviceWorker" in navigator){
 
 // Version check: whenever the app is opened or brought back to the front, ask GitHub for the latest version number.
 // If it is newer than what is running, reload (straight away if nothing is open, otherwise offer a button).
-window.APP_VERSION = "20261113065048";
+window.APP_VERSION = "20261113130421";
 (function(){
   let busy = false, shown = false;
   function bar(v){ if(shown) return; shown = true; const b = document.createElement("button"); b.className = "upd-bar"; b.textContent = "New version ready — tap to update"; b.onclick = () => go(v); document.body.appendChild(b); }
