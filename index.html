@@ -2949,6 +2949,11 @@ body.dark .lop-row{border-bottom-color:rgba(255,255,255,.1)}
 .lop-total{display:flex;justify-content:space-between;align-items:center;padding:12px 2px 2px;font-size:15px}
 button.lop-mini{display:none}
 @media (max-width:760px){button.lop-mini{display:inline-flex;margin-top:4px;font-size:11.5px}}
+.lop-sect + .lop-sect{margin-top:18px}
+.lop-sect h4{margin:0 0 2px;font-size:12px;letter-spacing:.06em;text-transform:uppercase;opacity:.6}
+.lop-amt.pl{color:var(--accent,#0071e3)}
+body.dark .lop-amt.pl{color:#64b5ff}
+.lop-bal{margin:14px 2px 0}
 .person .ps-num{display:block;font-size:12.5px;color:var(--accent);text-decoration:none;margin-top:2px;font-variant-numeric:tabular-nums}
 .ci-cards .cicard > .cc-foot{grid-column:1/-1;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:6px 10px;padding-left:41px;min-width:0}
 .ci-cards .cicard > .cc-foot > .cc-flags{padding-left:0!important;display:flex;flex-wrap:wrap;gap:3px 9px;font-size:12px;min-width:0}
@@ -3142,12 +3147,13 @@ function ledger(id){
   for(const l of Object.values(S.leaves)) if(l.empId===id && l.status==="approved" && l.to && l.to.slice(0,7) > end) end = l.to.slice(0,7);
   for(const d of Object.keys(S.att)) if(d.slice(0,7) > end && S.att[d]?.marks?.[id]==="L") end = d.slice(0,7);
   if(UI.payMonth > end) end = UI.payMonth;
+  const coDay = {}, plDay = {};
   const unpaid = new Set(); let bal = 0, accruedNow = 0, usedNow = 0, unpaidNow = 0, unpaidMonth = 0, booked = 0;
   // one day off: need 1 (leave / absent) or ½ (half day). Returns what wasn't covered.
   function settle(ds, st0, take){
     const need = st0 === "HD" ? .5 : 1; let rem = need;
-    const co = takeCo(ds, rem); rem -= co; if(ds <= today) coUsedNow += co; else coBooked += co;
-    if(rem > 0) rem -= take(rem, st0);
+    const co = takeCo(ds, rem); rem -= co; if(ds <= today) coUsedNow += co; else coBooked += co; if(co > 0) coDay[ds] = co;
+    if(rem > 0){ const tk = take(rem, st0); rem -= tk; if(tk > 0) plDay[ds] = tk; }
     cover[ds] = need - rem;
     if(rem > 0 && ds.slice(0,7) === nowYm && ds <= today) unpaidMonth += rem;   // this month so far, absences included (matches payroll)
     if(st0 === "A"){ if(cover[ds] > 0) coCover.add(ds); return; }   // absences: only comp offs / optional holiday cover them; the rest is loss of pay
@@ -3178,7 +3184,7 @@ function ledger(id){
       settle(ds, st0, (want, st) => { if(st === "A") return 0; const p = halves(bal, want); if(p > 0){ bal -= p; if(ym <= nowYm) usedNow += p; else booked += p; } return p; });
     }
   }
-  return LEDGER[id] = {start, eligYm, waiting: eligYm > nowYm, cover, unpaidAmt, coCover, halfCover, halfUnpaid, preUsed, optUsed, accrued:accruedNow, used:usedNow, balance:accruedNow-usedNow, booked, unpaid, unpaidNow, unpaidMonth,
+  return LEDGER[id] = {coDay, plDay, start, eligYm, waiting: eligYm > nowYm, cover, unpaidAmt, coCover, halfCover, halfUnpaid, preUsed, optUsed, accrued:accruedNow, used:usedNow, balance:accruedNow-usedNow, booked, unpaid, unpaidNow, unpaidMonth,
     co:(() => { const live = credits.filter(c => c.exp >= today);   // comp offs still usable today
       const free = live.filter(c => c.left > 0); const next = free.map(c => c.exp).sort()[0] || ""; const left = free.reduce((n, c) => n + c.left, 0);
       return {earned:live.length, used:live.reduce((n, c) => n + (1 - c.left), 0), booked:0, balance:left, free:left, dates:coDates, next, credits}; })()};
@@ -5309,7 +5315,7 @@ async function exportIncPdf(btn){
 
 // ---------- LOP days: which dates made up an employee's loss of pay ----------
 function lopDays(id, ym){
-  const [y,m] = ym.split("-").map(Number), dim = new Date(y,m,0).getDate(), e = S.emps[id] || {}, L = ledger(id), out = [];
+  const [y,m] = ym.split("-").map(Number), dim = new Date(y,m,0).getDate(), e = S.emps[id] || {}, L = ledger(id), out = [], pl = [], co = [];
   for(let d=1; d<=dim; d++){
     const ds = `${ym}-${pad(d)}`; if(isOff(ds) || ds > today) continue;
     if(e.joined && ds < e.joined) continue; if(e.exitDate && ds > e.exitDate) continue;
@@ -5318,17 +5324,22 @@ function lopDays(id, ym){
     else if(st==="HD"){ amt = .5 - (L.cover[ds]||0); why = "Half day"; }
     else if(st==="L"){ amt = L.unpaidAmt[ds]||0; why = amt < 1 ? "Leave · part covered by balance" : "Leave · no balance left"; }
     if(amt > 0) out.push({ds, amt, why});
+    if(L.plDay[ds] > 0) pl.push({ds, amt:L.plDay[ds], why: st==="HD" ? "Half day" : st==="A" ? "Absent" : "Leave"});
+    if(L.coDay[ds] > 0) co.push({ds, amt:L.coDay[ds], why: st==="HD" ? "Half day" : st==="A" ? "Absent" : "Leave"});
   }
   const lates = latesIn(id, ym), lateLop = lateLopDays(lates);
-  return {days:out, lates, lateLop, total:out.reduce((t,x)=>t+x.amt,0) + lateLop};
+  return {days:out, pl, co, lates, lateLop, total:out.reduce((t,x)=>t+x.amt,0) + lateLop, plTotal:pl.reduce((t,x)=>t+x.amt,0), coTotal:co.reduce((t,x)=>t+x.amt,0)};
 }
 function lopModal(id, ym){
   const e = S.emps[id]; if(!e) return; const r = lopDays(id, ym);
   const fmt = n => n === .5 ? "½" : String(n).replace(/\.5$/, "½").replace(/^0½$/, "½");
-  const rows = r.days.map(x => { const dt = parse(x.ds); return `<li class="lop-row"><span class="lop-date"><b>${dt.toLocaleDateString("en-IN",{day:"numeric",month:"short"})}</b><small>${dt.toLocaleDateString("en-IN",{weekday:"short"})}</small></span><span class="lop-why">${x.why}</span><span class="lop-amt">${fmt(x.amt)} day</span></li>`; }).join("");
+  const li = (x, cls) => { const dt = parse(x.ds); return `<li class="lop-row"><span class="lop-date"><b>${dt.toLocaleDateString("en-IN",{day:"numeric",month:"short"})}</b><small>${dt.toLocaleDateString("en-IN",{weekday:"short"})}</small></span><span class="lop-why">${x.why}</span><span class="lop-amt ${cls||""}">${fmt(x.amt)} day</span></li>`; };
+  const rows = r.days.map(x => li(x)).join("");
+  const L = ledger(id), sect = (h, list, tot, cls, extra) => list.length ? `<div class="lop-sect"><h4>${h}</h4><ul class="lop-list">${list.map(x => li(x, cls)).join("")}</ul><div class="lop-total"><span>Total${extra||""}</span><b>${fmt(tot)} day${tot === 1 ? "" : "s"}</b></div></div>` : "";
+  const plS = sect("Paid leave used", r.pl, r.plTotal, "pl", ` · balance now ${fmt(L.balance)} day${L.balance === 1 ? "" : "s"}`), coS = sect("Comp offs used", r.co, r.coTotal, "pl");
   const late = r.lateLop ? `<li class="lop-row"><span class="lop-date"><b>${r.lates}</b><small>late</small></span><span class="lop-why">Late marks this month</span><span class="lop-amt">${fmt(r.lateLop)} day</span></li>` : "";
-  $("#overlay").innerHTML = `<div class="scrim" data-act="close"></div><div class="modal sm" role="dialog" aria-modal="true" aria-labelledby="lopT"><header><div><h3 id="lopT" style="margin:0">${esc(e.name)}</h3><small class="note">Loss of pay · ${monthName(ym)}${ym === today.slice(0,7) ? " so far" : ""}</small></div><button class="btn ghost" data-act="close" aria-label="Close">✕</button></header>
-    <div class="body">${rows || late ? `<ul class="lop-list">${rows}${late}</ul><div class="lop-total"><span>Total</span><b>${fmt(r.total)} day${r.total === 1 ? "" : "s"}</b></div>` : `<p class="empty">No loss of pay days in ${monthName(ym)}.</p>`}</div></div>`;
+  $("#overlay").innerHTML = `<div class="scrim" data-act="close"></div><div class="modal sm" role="dialog" aria-modal="true" aria-labelledby="lopT"><header><div><h3 id="lopT" style="margin:0">${esc(e.name)}</h3><small class="note">Leave and loss of pay · ${monthName(ym)}${ym === today.slice(0,7) ? " so far" : ""}</small></div><button class="btn ghost" data-act="close" aria-label="Close">✕</button></header>
+    <div class="body"><div class="lop-sect"><h4>Loss of pay</h4>${rows || late ? `<ul class="lop-list">${rows}${late}</ul><div class="lop-total"><span>Total</span><b>${fmt(r.total)} day${r.total === 1 ? "" : "s"}</b></div>` : `<p class="empty">No loss of pay days in ${monthName(ym)}.</p>`}</div>${plS}${coS}${!r.pl.length ? `<p class="note lop-bal">No paid leave used in ${monthName(ym)} · ${fmt(L.balance)} day${L.balance === 1 ? "" : "s"} left</p>` : ""}</div></div>`;
 }
 
 // ---------- payslip PDF ----------
@@ -6326,7 +6337,7 @@ if("serviceWorker" in navigator){
 
 // Version check: whenever the app is opened or brought back to the front, ask GitHub for the latest version number.
 // If it is newer than what is running, reload (straight away if nothing is open, otherwise offer a button).
-window.APP_VERSION = "20261113062623";
+window.APP_VERSION = "20261113063025";
 (function(){
   let busy = false, shown = false;
   function bar(v){ if(shown) return; shown = true; const b = document.createElement("button"); b.className = "upd-bar"; b.textContent = "New version ready — tap to update"; b.onclick = () => go(v); document.body.appendChild(b); }
