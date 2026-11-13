@@ -3422,11 +3422,13 @@ function dbFloatSync(){
   if(!bar || !matchMedia("(max-width:760px)").matches){ if(f) f.hidden = true; return; }
   if(!f){ f = document.createElement("div"); f.id = "dbFloat"; f.className = "dbfloat"; f.hidden = true; document.body.appendChild(f);
     f.addEventListener("click", e => { const b = e.target.closest("button"); if(!b) return; e.preventDefault(); e.stopPropagation();
+      if(b.dataset.dbf === "top"){ const m = document.getElementById("main"); if(m) m.scrollTo({top:0, behavior:"smooth"}); window.scrollTo({top:0, behavior:"smooth"}); return; }
       if(b.dataset.dbf === "open"){ const lb = document.querySelector("#main .head .datebar .db-label"); if(lb) dpOpen(lb.querySelector("input"), f); return; }
       const real = document.querySelector(`#main .head .datebar [data-act="${b.dataset.dbf}"]`); if(real && !real.disabled) real.click(); }, true);
     const onScroll = () => dbFloatShow(); document.getElementById("main").addEventListener("scroll", onScroll, {passive:true}); window.addEventListener("scroll", onScroll, {passive:true}); }
-  const prev = bar.querySelector('[data-act$="-prev"]'), next = bar.querySelector('[data-act$="-next"]'), txt = bar.querySelector(".db-label span")?.textContent || "";
-  f.innerHTML = `<button type="button" class="db-arrow" data-dbf="${prev?.dataset.act||""}" aria-label="Previous working day">‹</button><button type="button" class="dbf-day" data-dbf="open">${esc(txt)}</button><button type="button" class="db-arrow" data-dbf="${next?.dataset.act||""}" aria-label="Next working day" ${next?.disabled?"disabled":""}>›</button>`;
+  const arrows = bar.querySelectorAll(".db-arrow"), prev = arrows[0], next = arrows[arrows.length - 1], txt = bar.querySelector(".db-label span")?.textContent || "", isDay = !bar.classList.contains("monthbar") && !!bar.querySelector(".db-label input");
+  const unit = bar.classList.contains("monthbar") ? "month" : isDay ? "working day" : "";
+  f.innerHTML = `<button type="button" class="db-arrow" data-dbf="${prev?.dataset.act||""}" aria-label="Previous ${unit}" ${prev?.disabled?"disabled":""}>‹</button><button type="button" class="dbf-day" data-dbf="${isDay ? "open" : "top"}">${esc(txt)}</button><button type="button" class="db-arrow" data-dbf="${next?.dataset.act||""}" aria-label="Next ${unit}" ${next?.disabled?"disabled":""}>›</button>`;
   dbFloatShow();
 }
 function dbFloatShow(){
@@ -6347,7 +6349,7 @@ if("serviceWorker" in navigator){
 
 // Version check: whenever the app is opened or brought back to the front, ask GitHub for the latest version number.
 // If it is newer than what is running, reload (straight away if nothing is open, otherwise offer a button).
-window.APP_VERSION = "20261113063554";
+window.APP_VERSION = "20261113064142";
 (function(){
   let busy = false, shown = false;
   function bar(v){ if(shown) return; shown = true; const b = document.createElement("button"); b.className = "upd-bar"; b.textContent = "New version ready — tap to update"; b.onclick = () => go(v); document.body.appendChild(b); }
