@@ -196,7 +196,9 @@ service cloud.firestore {
     match /selfies/{id} {
       allow read: if canSeeCheckins();
       allow create: if mine(request.resource.data)
-        && id == istDate() + '_' + myEmp() + '_in'
+        && (id == istDate() + '_' + myEmp() + '_in' || id == istDate() + '_' + myEmp() + '_out')
+        && request.resource.data.kind in ['in', 'out']
+        && id == istDate() + '_' + myEmp() + '_' + request.resource.data.kind
         && request.resource.data.date == istDate()
         && request.resource.data.img is string
         && request.resource.data.img.size() < 160000;

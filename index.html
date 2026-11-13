@@ -2930,6 +2930,10 @@ html body.dark .teamtile .pc-amt{border-top-color:rgba(160,210,255,.18)!importan
 #incModal footer .inc-reset{margin-right:auto;color:#d70015}
 body.dark #incModal footer .inc-reset{color:#ff6961}
 #incModal footer .inc-reset.armed{background:#d70015!important;color:#fff!important;border-color:#d70015!important}
+.sf-pair{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+.sf-fig{margin:0;flex:1 1 140px;max-width:220px;text-align:center}
+.sf-fig img{width:100%;height:auto}
+.sf-fig figcaption{font-size:12px;opacity:.7;margin-top:4px}
 .person .ps-num{display:block;font-size:12.5px;color:var(--accent);text-decoration:none;margin-top:2px;font-variant-numeric:tabular-nums}
 .ci-cards .cicard > .cc-foot{grid-column:1/-1;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:6px 10px;padding-left:41px;min-width:0}
 .ci-cards .cicard > .cc-foot > .cc-flags{padding-left:0!important;display:flex;flex-wrap:wrap;gap:3px 9px;font-size:12px;min-width:0}
@@ -4415,7 +4419,7 @@ async function ckLocate(kind){
       CK.err = `You're about ${n.d>=1000 ? (n.d/1000).toFixed(1)+" km" : Math.round(n.d)+" m"} from ${n.p.name}. You can check ${kind} only within ${n.p.r} m of ${n.p.name} or at another check-in place (Head Office, Site Office, Home Office, Vruksha, Vistara).` + (pos.acc > 100 ? ` Your phone's location is rough right now (±${Math.round(pos.acc)} m), so moving near a window may help.` : "");
       render(); return;
     }
-    CK.pos = pos; CK.near = n; CK.step = kind==="in" ? "selfie" : "confirm"; render();
+    CK.pos = pos; CK.near = n; CK.step = "selfie"; render();
   }catch(e){ CK.step = "idle"; CK.err = e.msg || "Couldn't get your location."; render(); if(e.code===1) locHelp("blocked", kind); else if(e.code===2) locHelp("off", kind); }
 }
 // ---- location permission: explain before the phone asks, and show how to fix it when it's blocked or off ----
@@ -4462,7 +4466,14 @@ async function ckSave(btn){
       ]);
       toast(CK.near.p.id==="field" ? "Checked in from the field" : `Checked in at ${CK.near.p.name}`);
     } else {
-      await db.collection("checkins").doc(docId).update({out:where});
+      if(!CK.img){ if(btn){ btn.disabled = false; btn.textContent = "Confirm check-out"; } CK.step = "selfie"; render(); toast("Take a selfie to check out."); return; }
+      try{ await db.batch([
+        {op:"update", path:`checkins/${docId}`, data:{out:where}},
+        {op:"set", path:`selfies/${docId}_out`, data:{empId:id, date:d, kind:"out", img:CK.img, t:db.SERVER_TIME}}
+      ]); }
+      catch(e){ if(!(e && e.fb==="permission-denied")) throw e;
+        // the database rules don't accept check-out photos yet: still record the check-out so nobody is stuck
+        await db.collection("checkins").doc(docId).update({out:where}); }
       toast(CK.near.p.id==="field" ? "Checked out from the field" : `Checked out at ${CK.near.p.name}`);
     }
     ckReset(); render();
@@ -4508,7 +4519,7 @@ function checkinCard(){
   const id = myEmp(); const now = istNow(); const c = ciFor(id, now.date); const v = ciEval(c);
   if(!consentOk()) return `<div class="panel ck-card ck-consent">
     <div class="ck-ic">${PIN}</div><h2>Before your first check-in</h2>
-    <ul class="ck-list"><li>Your <b>location</b> and a <b>selfie</b> are taken only when you tap Check in. Check out takes location only.</li>
+    <ul class="ck-list"><li>Your <b>location</b> and a <b>selfie</b> are taken only when you tap Check in. Check out takes location and a selfie too.</li>
       <li>You're <b>never tracked</b> at any other time.</li>
       <li>Only HR and management can see check-ins. Selfies are deleted after 90 days.</li></ul>
     <button class="btn primary big ck-go" data-act="consent-ok">I agree</button></div>`;
@@ -4522,7 +4533,7 @@ function checkinCard(){
   if(CK.step==="locating"){ top = ckState("Checking location","busy");
     body = `<div class="ck-center"><span class="spin"></span><p class="ck-msg">Finding where you are…</p><p class="ck-sub">Keep this screen open. Indoors it can take up to 20 seconds.</p></div>`; }
   else if(CK.step==="selfie"){ top = ckState("Location confirmed","ok");
-    body = `${where}<div class="ck-center"><div class="ck-ic big">${CAM}</div><p class="ck-msg">Take a quick selfie</p><p class="ck-sub">It confirms it's really you checking in.</p></div>
+    body = `${where}<div class="ck-center"><div class="ck-ic big">${CAM}</div><p class="ck-msg">Take a quick selfie</p><p class="ck-sub">It confirms it's really you checking ${CK.kind==="in" ? "in" : "out"}.</p></div>
       ${camErrHtml()}<button class="btn primary ck-go" data-act="cam-open">${CAM}<span>${CK.camErr ? "Try the camera again" : "Open camera"}</span></button>
       ${CAM_FALLBACK}<button class="btn ghost ck-link" data-act="ci-cancel">Cancel</button>`; }
   else if(CK.step==="camera"){ top = ckState("Take a selfie","ok");
@@ -4533,7 +4544,7 @@ function checkinCard(){
     body = `${CK.img ? `<div class="ck-center"><img class="ck-selfie" src="${CK.img}" alt="Your selfie"></div>` : ""}${where}
       ${CK.field ? `<div class="field ck-note-f"><label for="ck_note">Where are you?${CK.kind==="out" ? ` <span class="opt">optional</span>` : ""}</label><input id="ck_note" maxlength="100" placeholder="e.g. Client site, Yelahanka" value="${esc(CK.note||"")}"></div>` : ""}
       <button class="btn primary ck-go" data-act="ci-save">${CK.kind==="in" ? "Confirm check-in" : "Confirm check-out"}</button>
-      <div class="ck-row">${CK.kind==="in" ? `<button class="btn ghost ck-link" data-act="cam-open">Retake photo</button>` : ""}<button class="btn ghost ck-link" data-act="ci-cancel">Cancel</button></div>`; }
+      <div class="ck-row"><button class="btn ghost ck-link" data-act="cam-open">Retake photo</button><button class="btn ghost ck-link" data-act="ci-cancel">Cancel</button></div>`; }
   else if(!c){ top = ckState("Not checked in","idle");
     body = `<div class="ck-center"><p class="ck-time" id="clock">${tmIST(new Date())}</p><p class="ck-sub">8-hour day · start between 9:30 and 10:15${fieldOk() ? " · field check-in on" : ""}</p></div>
       <button class="btn primary ck-go" data-act="ci-in">${PIN}<span>Check in</span></button>`; }
@@ -4585,8 +4596,9 @@ function ensureMonth(ym){
 }
 async function showSelfie(docId, name){
   $("#overlay").innerHTML = `<div class="scrim" data-act="close"></div><div class="modal sm" role="dialog" aria-modal="true"><header><h3>${esc(name)}</h3><button class="btn ghost" data-act="close" aria-label="Close">✕</button></header><div class="body" id="selfieBody"><p class="note">Loading photo…</p></div></div>`;
-  try{ const s = await db.collection("selfies").doc(docId+"_in").get(); const b = $("#selfieBody"); if(!b) return;
-    b.innerHTML = s.exists ? `<img class="ck-selfie big" src="${s.data().img}" alt="Check-in selfie of ${esc(name)}">` : `<p class="empty">No photo. Photos are deleted after 90 days.</p>`; }
+  try{ const [si, so] = await Promise.all([db.collection("selfies").doc(docId+"_in").get(), db.collection("selfies").doc(docId+"_out").get().catch(() => ({exists:false}))]); const b = $("#selfieBody"); if(!b) return;
+    const fig = (s, lbl) => s.exists ? `<figure class="sf-fig"><img class="ck-selfie big" src="${s.data().img}" alt="${lbl} selfie of ${esc(name)}"><figcaption>${lbl}</figcaption></figure>` : "";
+    b.innerHTML = si.exists || so.exists ? `<div class="sf-pair">${fig(si, "Check-in")}${fig(so, "Check-out")}</div>${si.exists && !so.exists ? `<p class="note" style="text-align:center;margin:8px 0 0">No check-out photo.</p>` : ""}` : `<p class="empty">No photo. Photos are deleted after 90 days.</p>`; }
   catch(e){ const b = $("#selfieBody"); if(b) b.innerHTML = `<p class="empty">You don't have access to check-in photos.</p>`; }
 }
 async function cleanupSelfies(){
@@ -6274,7 +6286,7 @@ if("serviceWorker" in navigator){
 
 // Version check: whenever the app is opened or brought back to the front, ask GitHub for the latest version number.
 // If it is newer than what is running, reload (straight away if nothing is open, otherwise offer a button).
-window.APP_VERSION = "20261112112008";
+window.APP_VERSION = "20261113051741";
 (function(){
   let busy = false, shown = false;
   function bar(v){ if(shown) return; shown = true; const b = document.createElement("button"); b.className = "upd-bar"; b.textContent = "New version ready — tap to update"; b.onclick = () => go(v); document.body.appendChild(b); }
