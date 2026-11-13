@@ -2964,6 +2964,12 @@ html body button.lop-btn:hover{text-decoration:none}
 html body button.lop-btn{min-height:0!important}
 html body button.lop-btn.lop-mini{display:none!important}
 @media (max-width:760px){ html body button.lop-btn.lop-mini{display:flex!important} }
+/* LOP pop-up: always centred in the visible screen, list scrolls inside it */
+#overlay .modal.lop-modal{position:fixed!important;left:50%!important;top:50%!important;transform:translate(-50%,-50%)!important;margin:0!important;
+  width:min(440px,calc(100vw - 32px))!important;max-height:min(640px,calc(100vh - 140px))!important;max-height:min(640px,calc(100dvh - 140px))!important;
+  display:flex!important;flex-direction:column;overflow:hidden}
+#overlay .modal.lop-modal > header{flex:none}
+#overlay .modal.lop-modal > .body{flex:1 1 auto;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
 .person .ps-num{display:block;font-size:12.5px;color:var(--accent);text-decoration:none;margin-top:2px;font-variant-numeric:tabular-nums}
 .ci-cards .cicard > .cc-foot{grid-column:1/-1;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:6px 10px;padding-left:41px;min-width:0}
 .ci-cards .cicard > .cc-foot > .cc-flags{padding-left:0!important;display:flex;flex-wrap:wrap;gap:3px 9px;font-size:12px;min-width:0}
@@ -5350,7 +5356,7 @@ function lopModal(id, ym){
   const L = ledger(id), sect = (h, list, tot, cls, extra) => list.length ? `<div class="lop-sect"><h4>${h}</h4><ul class="lop-list">${list.map(x => li(x, cls)).join("")}</ul><div class="lop-total"><span>Total${extra||""}</span><b>${fmt(tot)} day${tot === 1 ? "" : "s"}</b></div></div>` : "";
   const plS = sect("Paid leave used", r.pl, r.plTotal, "pl", ` · balance now ${fmt(L.balance)} day${L.balance === 1 ? "" : "s"}`), coS = sect("Comp offs used", r.co, r.coTotal, "pl");
   const late = r.lateLop ? `<li class="lop-row"><span class="lop-date"><b>${r.lates}</b><small>late</small></span><span class="lop-why">Late marks this month</span><span class="lop-amt">${fmt(r.lateLop)} day</span></li>` : "";
-  $("#overlay").innerHTML = `<div class="scrim" data-act="close"></div><div class="modal sm" role="dialog" aria-modal="true" aria-labelledby="lopT"><header><div><h3 id="lopT" style="margin:0">${esc(e.name)}</h3><small class="note">Leave and loss of pay · ${monthName(ym)}${ym === today.slice(0,7) ? " so far" : ""}</small></div><button class="btn ghost" data-act="close" aria-label="Close">✕</button></header>
+  $("#overlay").innerHTML = `<div class="scrim" data-act="close"></div><div class="modal sm lop-modal" role="dialog" aria-modal="true" aria-labelledby="lopT"><header><div><h3 id="lopT" style="margin:0">${esc(e.name)}</h3><small class="note">Leave and loss of pay · ${monthName(ym)}${ym === today.slice(0,7) ? " so far" : ""}</small></div><button class="btn ghost" data-act="close" aria-label="Close">✕</button></header>
     <div class="body"><div class="lop-sect"><h4>Loss of pay</h4>${rows || late ? `<ul class="lop-list">${rows}${late}</ul><div class="lop-total"><span>Total</span><b>${fmt(r.total)} day${r.total === 1 ? "" : "s"}</b></div>` : `<p class="empty">No loss of pay days in ${monthName(ym)}.</p>`}</div>${plS}${coS}${!r.pl.length ? `<p class="note lop-bal">No paid leave used in ${monthName(ym)} · ${fmt(L.balance)} day${L.balance === 1 ? "" : "s"} left</p>` : ""}</div></div>`;
 }
 
@@ -6349,7 +6355,7 @@ if("serviceWorker" in navigator){
 
 // Version check: whenever the app is opened or brought back to the front, ask GitHub for the latest version number.
 // If it is newer than what is running, reload (straight away if nothing is open, otherwise offer a button).
-window.APP_VERSION = "20261113064142";
+window.APP_VERSION = "20261113065048";
 (function(){
   let busy = false, shown = false;
   function bar(v){ if(shown) return; shown = true; const b = document.createElement("button"); b.className = "upd-bar"; b.textContent = "New version ready — tap to update"; b.onclick = () => go(v); document.body.appendChild(b); }
