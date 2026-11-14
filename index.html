@@ -2977,6 +2977,40 @@ html body button.uc-toggle{display:inline-flex!important;align-items:center;just
 @media (max-width:760px){ html body.has-tabbar button.uc-toggle{margin-left:0!important} }
 body.dark button.uc-toggle{border-color:rgba(255,255,255,.18)!important}
 html body #main button.btn.uc-toggle,html body.has-tabbar #main button.btn.ghost.uc-toggle{padding:0 18px!important;min-height:38px!important;height:38px;width:auto!important;margin-left:0!important}
+
+/* ---- Low-end phones (lite glass tier): bars were see-through because a blanket "no blur" rule beat them.
+   Bars and pop-ups get a light blur and a much denser fill, so text behind them never shows through. ---- */
+html.lg.lg-lite body .tabbar,html.lg.lg-lite body .mtop,html.lg.lg-lite body .dbfloat,html.lg.lg-lite body .toast,html.lg.lg-lite body .inst-sheet,html.lg.lg-lite body .upd-bar,
+html.lg.lg-lite body #overlay .drawer,html.lg.lg-lite body #overlay .modal{-webkit-backdrop-filter:blur(10px) saturate(160%)!important;backdrop-filter:blur(10px) saturate(160%)!important}
+html.lg.lg-lite body .tabbar,html.lg.lg-lite body .mtop,html.lg.lg-lite body .dbfloat{background:rgba(255,255,255,.88)!important}
+html.lg.lg-lite body.dark .tabbar,html.lg.lg-lite body.dark .mtop,html.lg.lg-lite body.dark .dbfloat{background:rgba(22,24,30,.92)!important}
+html.lg.lg-lite body #overlay .drawer,html.lg.lg-lite body #overlay .modal{background:rgba(255,255,255,.96)!important}
+html.lg.lg-lite body.dark #overlay .drawer,html.lg.lg-lite body.dark #overlay .modal{background:rgba(24,26,32,.97)!important}
+/* where the browser can't blur at all, bars are solid */
+@supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){
+  html.lg body .tabbar,html.lg body .mtop,html.lg body .dbfloat{background:rgba(255,255,255,.97)!important}
+  html.lg body.dark .tabbar,html.lg body.dark .mtop,html.lg body.dark .dbfloat{background:rgba(22,24,30,.98)!important}
+}
+
+/* ---- Small screens (360px and below) ---- */
+@media (max-width:380px){
+  /* Attendance header: the date bar gets its own row; Mark rest and the gear share the next */
+  html body.has-tabbar main > .head .tools:has(.datebar):has([data-act="att-all"]){display:flex!important;flex-wrap:wrap!important;gap:8px!important}
+  html body.has-tabbar main > .head .tools:has(.datebar):has([data-act="att-all"]) > .datebar{flex:1 1 100%!important;grid-column:auto!important}
+  html body.has-tabbar main > .head .tools:has(.datebar):has([data-act="att-all"]) > [data-act="att-all"]{flex:1 1 0!important;width:auto!important;grid-column:auto!important}
+  html body.has-tabbar main > .head .tools:has([data-act="att-all"]) > [data-act="golive-open"]{flex:0 0 44px!important;width:44px!important}
+  /* check-in times wrap instead of running off the card */
+  .day-cards .cicard > .cc-times{flex-wrap:wrap!important;white-space:normal!important;gap:2px 10px!important}
+  .day-cards .cicard > .cc-times > span{white-space:nowrap}
+  /* name and role get more room next to the P/Half/Leave switch */
+  .day-cards .cicard .cc-seg > button{padding-left:7px!important;padding-right:7px!important}
+}
+@media (max-width:380px){
+  html body.has-tabbar main > .head .tools:has(.datebar):has([data-act="att-all"]):has([data-act="golive-open"]){flex-wrap:wrap!important}
+}
+/* "reduce transparency" / no-glass tier: bars are solid in both themes */
+html.lg.lg-off body .tabbar,html.lg.lg-off body .mtop,html.lg.lg-off body .dbfloat{background:rgba(255,255,255,.98)!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important}
+html.lg.lg-off body.dark .tabbar,html.lg.lg-off body.dark .mtop,html.lg.lg-off body.dark .dbfloat{background:rgba(22,24,30,.98)!important}
 .person .ps-num{display:block;font-size:12.5px;color:var(--accent);text-decoration:none;margin-top:2px;font-variant-numeric:tabular-nums}
 .ci-cards .cicard > .cc-foot{grid-column:1/-1;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:6px 10px;padding-left:41px;min-width:0}
 .ci-cards .cicard > .cc-foot > .cc-flags{padding-left:0!important;display:flex;flex-wrap:wrap;gap:3px 9px;font-size:12px;min-width:0}
@@ -6362,7 +6396,7 @@ if("serviceWorker" in navigator){
 
 // Version check: whenever the app is opened or brought back to the front, ask GitHub for the latest version number.
 // If it is newer than what is running, reload (straight away if nothing is open, otherwise offer a button).
-window.APP_VERSION = "20261113130421";
+window.APP_VERSION = "20261114073027";
 (function(){
   let busy = false, shown = false;
   function bar(v){ if(shown) return; shown = true; const b = document.createElement("button"); b.className = "upd-bar"; b.textContent = "New version ready — tap to update"; b.onclick = () => go(v); document.body.appendChild(b); }
