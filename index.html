@@ -3959,7 +3959,7 @@ myatt(){
     rows.push(dayRow(id, d)); }
   return head("Attendance", "", monthBar(ym, "my")) +
     `<div class="sumstrip"><div><b>${s.P}</b><span>Present</span></div><div><b>${s.HD}</b><span>Half day</span></div><div><b>${s.A}</b><span>Absent</span></div><div><b>${s.late}</b><span>Late</span></div></div>
-    ${s.late ? `<p class="hint">${s.late} late mark${s.late===1?"":"s"} this month${s.lateLop ? ` · ${s.lateLop} day's pay deducted` : ` · ${3 - s.late % 3} more = half day's pay cut`}</p>` : ""}
+    ${s.late ? `<p class="hint">${s.late} late or short-hours day${s.late===1?"":"s"} this month${s.lateLop ? ` · ${s.lateLop} day's pay deducted` : ` · ${3 - s.late % 3} more = half day's pay cut`}</p>` : ""}
     <div class="panel daypanel"><div class="days">${rows.join("") || `<p class="empty">Nothing for this month yet.</p>`}</div></div>
     <p class="hint">8-hour day: start between 9:30 and 10:15 and check out 8 hours later (9:30 → 5:30, 10:15 → 6:15) · late after 10:15 AM · half day if in after 1 PM, out before 2 PM, or no check-out (ask for a forgot check-out permission within 2 days)</p>`;
 },
@@ -3987,7 +3987,7 @@ myslips(){
   Object.values(S.slips).forEach(p => p.empId===id && months.add(p.ym)); Object.values(S.myinc).forEach(p => p.empId===id && months.add(p.ym));
   const list = [...months].sort().reverse();
   const card = ym => { const p = S.slips[`${id}_${ym}`], inc = S.myinc[`${id}_${ym}`];
-    return `<div class="panel mcard"><div class="mc-top"><div><b>${monthName(ym)}</b><small>${p ? `${p.paid} paid day${p.paid===1?"":"s"}${p.lateLop?` · ${p.lates} late marks`:""}` : "Salary not finalized yet"}</small></div>${p ? `<span class="mc-amt">${inr(p.net)}</span>` : ""}</div>
+    return `<div class="panel mcard"><div class="mc-top"><div><b>${monthName(ym)}</b><small>${p ? `${p.paid} paid day${p.paid===1?"":"s"}${p.lateLop?` · ${p.lates} late / short days`:""}` : "Salary not finalized yet"}</small></div>${p ? `<span class="mc-amt">${inr(p.net)}</span>` : ""}</div>
       ${inc ? `<div class="mc-lines"><div><span>Incentive</span><b>${inr(inc.total)}</b></div><div><span>Incentive paid on</span><b>${fmtD(inc.payDate || incDue(ym))}</b></div></div>` : ""}
       ${p ? `<button class="btn primary mc-btn" data-myslip="${ym}">Download payslip (PDF)</button>` : ""}</div>`; };
   return head("Pay", "") + (list.length ? `<div class="cards">${list.map(card).join("")}</div>` : `<div class="panel"><p class="empty">Payslips appear here once HR finalizes a month's payroll.</p></div>`);
@@ -4047,7 +4047,7 @@ function goLiveDrawer(){
     <p class="note" style="margin:0">From this date, a working day with no check-in, approved leave or HR mark counts as <b>Absent</b>. Today's absences appear after 6:00 PM. Leave it blank to keep missing days unmarked.</p>
     <div class="field"><label for="goLive">Start date</label><input type="date" id="goLive" value="${esc(gl)}" ${ed?"":"disabled"}></div>
     <div class="sect">Check-in places</div>
-    <p class="note" style="margin:0">${PLACES.map(p => `<b>${esc(p.name)}</b> within ${p.r} m`).join(" · ")}. 8-hour day starting between 9:30 and 10:15 AM (check-out 8 hours after check-in, 5:30 – 6:15 PM), late after 10:15 AM, no check-out counts as a half day until a forgot check-out permission is approved, half day if in after 1:00 PM or out before 2:00 PM. Every 3 late marks in a month cost half a day's pay.</p>
+    <p class="note" style="margin:0">${PLACES.map(p => `<b>${esc(p.name)}</b> within ${p.r} m`).join(" · ")}. 8-hour day starting between 9:30 and 10:15 AM (check-out 8 hours after check-in, 5:30 – 6:15 PM), late after 10:15 AM, no check-out counts as a half day until a forgot check-out permission is approved, half day if in after 1:00 PM or out before 2:00 PM. Every 3 late or short-hours days in a month (leaving more than 15 minutes before the 8 hours are done) cost half a day's pay.</p>
   </div>
   <footer><button class="btn" data-act="close">Close</button>${ed?`<button class="btn primary" data-act="golive-save">Save</button>`:""}</footer>`);
 }
@@ -4407,7 +4407,7 @@ function ciEval(c){
   const inM = istParts(c.in.t).mins, outM = c.out?.t ? istParts(c.out.t).mins : null;
   let st = "P", late = false, early = false;
   if(inM > hm2m(SHIFT.halfIn) || (outM!=null && outM < hm2m(SHIFT.halfOut))) st = "HD";
-  else { late = inM > hm2m(SHIFT.grace); early = outM!=null && outM < reqOutM(inM); }
+  else { late = inM > hm2m(SHIFT.grace); early = outM!=null && outM < reqOutM(inM) - 15; }   // 15 minutes grace on the 8 hours
   // an approved permission (up to 2 hours) clears the late / left-early mark
   let pLate = false, pEarly = false;
   if(late && c.permLate!=null && inM <= c.permLate){ late = false; pLate = true; }
@@ -4430,7 +4430,7 @@ function latesIn(id, ym){
   let n = 0;
   for(const d of days){
     if(S.att[d]?.marks?.[id] || leaveOn(id, d)) continue;
-    const v = ciEval(ciFor(id, d)); if(v && v.st==="P" && v.late && !(v.noOut && d < today)) n++;   // a no-check-out day is already a half day
+    const v = ciEval(ciFor(id, d)); if(v && v.st==="P" && (v.late || v.early) && !(v.noOut && d < today)) n++;   // a late day and a short-hours day each count once; a day that is both counts once   // a no-check-out day is already a half day
   }
   return n;
 }
@@ -5307,7 +5307,7 @@ function slipDrawer(id){
   <div class="body"><div class="slip">
     <div class="top"><div><b>Srigandha Properties</b><div style="opacity:.85;font-size:12.5px">Payslip for ${monthName(ym)}${runFinal(ym)?" · Final":" · Draft"}</div></div><div style="text-align:right"><b>${esc(e.name)}</b><div style="opacity:.85;font-size:12.5px">${esc(e.code)} · ${esc(e.designation||"")}</div></div></div>
     <div class="rows">
-      <div class="col"><span class="h">Attendance</span>${ln("Working days",p.working)}${ln("Days on rolls",p.eligible)}${ln("Paid leave",p.leave)}${ln("Loss of pay",p.lop)}${p.lateLop?ln(`incl. ${p.lates} late marks`,p.lateLop):""}${ln("Paid days",p.paid,"t")}</div>
+      <div class="col"><span class="h">Attendance</span>${ln("Working days",p.working)}${ln("Days on rolls",p.eligible)}${ln("Paid leave",p.leave)}${ln("Loss of pay",p.lop)}${p.lateLop?ln(`incl. ${p.lates} late / short days`,p.lateLop):""}${ln("Paid days",p.paid,"t")}</div>
       <div class="col"><span class="h">Earnings</span>${ln("Monthly pay",inr(p.gross))}${ln("Loss of pay",p.lopAmt?"−"+inr(p.lopAmt):"—")}${ln("Earned",inr(p.earned),"t")}</div>
     </div>
     <div class="rows" style="border-top:1px solid var(--line)">
@@ -5396,7 +5396,7 @@ function lopModal(id, ym){
   const rows = r.days.map(x => li(x)).join("");
   const L = ledger(id), sect = (h, list, tot, cls, extra) => list.length ? `<div class="lop-sect"><h4>${h}</h4><ul class="lop-list">${list.map(x => li(x, cls)).join("")}</ul><div class="lop-total"><span>Total${extra||""}</span><b>${fmt(tot)} day${tot === 1 ? "" : "s"}</b></div></div>` : "";
   const plS = sect("Paid leave used", r.pl, r.plTotal, "pl", ` · balance now ${fmt(L.balance)} day${L.balance === 1 ? "" : "s"}`), coS = sect("Comp offs used", r.co, r.coTotal, "pl");
-  const late = r.lateLop ? `<li class="lop-row"><span class="lop-date"><b>${r.lates}</b><small>late</small></span><span class="lop-why">Late marks this month</span><span class="lop-amt">${fmt(r.lateLop)} day</span></li>` : "";
+  const late = r.lateLop ? `<li class="lop-row"><span class="lop-date"><b>${r.lates}</b><small>days</small></span><span class="lop-why">Late or short-hours days (every 3 = ½ day)</span><span class="lop-amt">${fmt(r.lateLop)} day</span></li>` : "";
   $("#overlay").innerHTML = `<div class="scrim" data-act="close"></div><div class="modal sm lop-modal" role="dialog" aria-modal="true" aria-labelledby="lopT"><header><div><h3 id="lopT" style="margin:0">${esc(e.name)}</h3><small class="note">Leave and loss of pay · ${monthName(ym)}${ym === today.slice(0,7) ? " so far" : ""}</small></div><button class="btn ghost" data-act="close" aria-label="Close">✕</button></header>
     <div class="body"><div class="lop-sect"><h4>Loss of pay</h4>${rows || late ? `<ul class="lop-list">${rows}${late}</ul><div class="lop-total"><span>Total</span><b>${fmt(r.total)} day${r.total === 1 ? "" : "s"}</b></div>` : `<p class="empty">No loss of pay days in ${monthName(ym)}.</p>`}</div>${plS}${coS}${!r.pl.length ? `<p class="note lop-bal">No paid leave used in ${monthName(ym)} · ${fmt(L.balance)} day${L.balance === 1 ? "" : "s"} left</p>` : ""}</div></div>`;
 }
@@ -5446,7 +5446,7 @@ async function downloadSlip(id, btn, ymArg, rowArg){
     rows.forEach(([k,v,bold]) => { doc.setDrawColor(...line); doc.setLineWidth(0.2); doc.line(x, ty+7, x+w, ty+7); doc.setFont("helvetica", bold?"bold":"normal"); doc.setTextColor(...(bold?ink:mute)); doc.text(k, x+3, ty+4.8); doc.setTextColor(...ink); doc.text(String(v), x+w-3, ty+4.8, {align:"right"}); ty += 7; });
     return ty; };
   const gap = 6, hw = (W-2*M-gap)/2;
-  const y1 = table("Attendance", [["Working days", p.working], ["Days on rolls", p.eligible], ["Paid leave", p.leave], ["Loss of pay days", p.lop], ...(p.lateLop ? [[`  incl. ${p.lates} late marks`, p.lateLop]] : []), ["Paid days", p.paid, true]], M, hw);
+  const y1 = table("Attendance", [["Working days", p.working], ["Days on rolls", p.eligible], ["Paid leave", p.leave], ["Loss of pay days", p.lop], ...(p.lateLop ? [[`  incl. ${p.lates} late / short days`, p.lateLop]] : []), ["Paid days", p.paid, true]], M, hw);
   const y2 = table("Earnings", [["Monthly pay", rs(p.gross)], ["Loss of pay deduction", p.lopAmt ? "- " + rs(p.lopAmt) : "Rs. 0"], ["Total earned", rs(p.earned), true]], M+hw+gap, hw);
   y = Math.max(y1, y2) + 8;
   // net pay
@@ -6396,7 +6396,7 @@ if("serviceWorker" in navigator){
 
 // Version check: whenever the app is opened or brought back to the front, ask GitHub for the latest version number.
 // If it is newer than what is running, reload (straight away if nothing is open, otherwise offer a button).
-window.APP_VERSION = "20261118081746";
+window.APP_VERSION = "20261118084153";
 (function(){
   let busy = false, shown = false;
   function bar(v){ if(shown) return; shown = true; const b = document.createElement("button"); b.className = "upd-bar"; b.textContent = "New version ready — tap to update"; b.onclick = () => go(v); document.body.appendChild(b); }
