@@ -3011,6 +3011,16 @@ html.lg.lg-lite body.dark #overlay .drawer,html.lg.lg-lite body.dark #overlay .m
 /* "reduce transparency" / no-glass tier: bars are solid in both themes */
 html.lg.lg-off body .tabbar,html.lg.lg-off body .mtop,html.lg.lg-off body .dbfloat{background:rgba(255,255,255,.98)!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important}
 html.lg.lg-off body.dark .tabbar,html.lg.lg-off body.dark .mtop,html.lg.lg-off body.dark .dbfloat{background:rgba(22,24,30,.98)!important}
+
+/* Date bar arrows: round, centred, no grey square left behind after a tap or click */
+html body .datebar .db-arrow{width:34px;height:34px;min-width:34px;flex:0 0 34px;border-radius:50%!important;display:inline-flex;align-items:center;justify-content:center;padding:0!important;margin:0 2px;align-self:center;background:transparent!important;-webkit-tap-highlight-color:transparent;outline:none}
+@media (hover:hover){ html body .datebar .db-arrow:hover:not(:disabled){background:rgba(0,113,227,.10)!important} html body.dark .datebar .db-arrow:hover:not(:disabled){background:rgba(110,168,255,.14)!important} }
+html body .datebar .db-arrow:active:not(:disabled){background:rgba(0,113,227,.16)!important;transform:scale(.94)}
+html body .datebar .db-arrow:focus-visible{box-shadow:0 0 0 2px var(--accent,#0071e3)}
+html body .datebar .db-label{min-width:0;flex:1 1 auto;overflow:hidden}
+html body .datebar .db-label > span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.db-y{font-style:normal}
+@media (max-width:760px){ .datebar .db-y{display:none} }
 .person .ps-num{display:block;font-size:12.5px;color:var(--accent);text-decoration:none;margin-top:2px;font-variant-numeric:tabular-nums}
 .ci-cards .cicard > .cc-foot{grid-column:1/-1;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:6px 10px;padding-left:41px;min-width:0}
 .ci-cards .cicard > .cc-foot > .cc-flags{padding-left:0!important;display:flex;flex-wrap:wrap;gap:3px 9px;font-size:12px;min-width:0}
@@ -4147,7 +4157,7 @@ function dateBar(id, value, act){
   const atToday = !!value && value >= today;
   return `<div class="datebar" role="group" aria-label="Choose date">
     <button class="db-arrow" data-act="${act}-prev" aria-label="Previous working day">‹</button>
-    <label class="db-label" for="${id}"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><rect x="3" y="4" width="14" height="13" rx="1.5"/><path d="M3 8h14M7 2.5v3M13 2.5v3"/></svg><span>${value ? fmtDay(value) : "Choose a date"}</span><input type="date" id="${id}" value="${value}" max="${today}" aria-label="Date"></label>
+    <label class="db-label" for="${id}"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><rect x="3" y="4" width="14" height="13" rx="1.5"/><path d="M3 8h14M7 2.5v3M13 2.5v3"/></svg><span>${value ? fmtDay(value).replace(/, (\d{4})$/, '<i class="db-y">, $1</i>') : "Choose a date"}</span><input type="date" id="${id}" value="${value}" max="${today}" aria-label="Date"></label>
     <button class="db-arrow" data-act="${act}-next" aria-label="Next working day" ${atToday?"disabled":""}>›</button>
     <button class="db-reset" data-act="${act}-clear" aria-label="Clear date" title="Clear" ${value?"":"disabled"}>${RESET_ICON}</button>
   </div>`;
@@ -6396,7 +6406,7 @@ if("serviceWorker" in navigator){
 
 // Version check: whenever the app is opened or brought back to the front, ask GitHub for the latest version number.
 // If it is newer than what is running, reload (straight away if nothing is open, otherwise offer a button).
-window.APP_VERSION = "20261118084153";
+window.APP_VERSION = "20261118092756";
 (function(){
   let busy = false, shown = false;
   function bar(v){ if(shown) return; shown = true; const b = document.createElement("button"); b.className = "upd-bar"; b.textContent = "New version ready — tap to update"; b.onclick = () => go(v); document.body.appendChild(b); }
