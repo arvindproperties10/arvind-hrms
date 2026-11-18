@@ -1,7 +1,7 @@
 // Service worker: lets the HRMS install as an app and open quickly.
 // Always asks GitHub for the latest files first (bypassing the browser's 10-minute cache), and falls back to the
 // saved copy only when the phone is offline.
-const CACHE = "ap-hrms-v5";
+const CACHE = "ap-hrms-v6";
 const SHELL = ["./", "./index.html", "./fb.js", "./manifest.webmanifest", "./icons/icon-192.png", "./icons/icon-512.png"];
 self.addEventListener("install", e => { e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL.map(u => new Request(u, {cache: "reload"})))).then(() => self.skipWaiting())); });
 self.addEventListener("activate", e => { e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k !== CACHE).map(k => caches.delete(k)))).then(() => self.clients.claim())); });
