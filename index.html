@@ -14,8 +14,8 @@ t=f||(rt||!bf?"off":(cr&&(dk?(m>=4&&c>=4):(m>=6&&c>=8))?"full":"lite"));d.classL
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="SP HRMS">
 <link rel="manifest" href="manifest.webmanifest">
-<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
-<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/sp26-icon-192.png">
+<link rel="apple-touch-icon" href="icons/sp26-apple-touch-icon.png">
 <style>
 /* Layout: frosted sidebar + working pane on a soft grey canvas; light theme only, Apple-style system type and blue accent */
 :root{
@@ -5959,7 +5959,7 @@ if("serviceWorker" in navigator){
   function showSheet(){
     closeSheet(); const s = steps(kind());
     const w = document.createElement("div"); w.className = "inst-wrap";
-    w.innerHTML = `<div class="inst-scrim" data-inst-close></div><div class="inst-sheet" role="dialog" aria-modal="true" aria-label="${s.title}"><div class="inst-head"><img src="icons/icon-192.png" alt=""><div><b>${s.title}</b><small>Srigandha Properties HRMS · SP HRMS</small></div><button class="inst-x" data-inst-close aria-label="Close">✕</button></div><div class="inst-body">${s.body}<p class="inst-diag">Opened in: ${browserName()}${isXiaomi() ? " · Xiaomi phone" : ""}</p></div></div>`;
+    w.innerHTML = `<div class="inst-scrim" data-inst-close></div><div class="inst-sheet" role="dialog" aria-modal="true" aria-label="${s.title}"><div class="inst-head"><img src="icons/sp26-icon-192.png" alt=""><div><b>${s.title}</b><small>Srigandha Properties HRMS · SP HRMS</small></div><button class="inst-x" data-inst-close aria-label="Close">✕</button></div><div class="inst-body">${s.body}<p class="inst-diag">Opened in: ${browserName()}${isXiaomi() ? " · Xiaomi phone" : ""}</p></div></div>`;
     document.body.appendChild(w);
   }
   async function install(){
@@ -6396,7 +6396,7 @@ if("serviceWorker" in navigator){
 
 // Version check: whenever the app is opened or brought back to the front, ask GitHub for the latest version number.
 // If it is newer than what is running, reload (straight away if nothing is open, otherwise offer a button).
-window.APP_VERSION = "20261118070954";
+window.APP_VERSION = "20261118071527";
 (function(){
   let busy = false, shown = false;
   function bar(v){ if(shown) return; shown = true; const b = document.createElement("button"); b.className = "upd-bar"; b.textContent = "New version ready — tap to update"; b.onclick = () => go(v); document.body.appendChild(b); }

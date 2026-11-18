@@ -1,8 +1,8 @@
 // Service worker: lets the HRMS install as an app and open quickly.
 // Always asks GitHub for the latest files first (bypassing the browser's 10-minute cache), and falls back to the
 // saved copy only when the phone is offline.
-const CACHE = "ap-hrms-v6";
-const SHELL = ["./", "./index.html", "./fb.js", "./manifest.webmanifest", "./icons/icon-192.png", "./icons/icon-512.png"];
+const CACHE = "ap-hrms-v7";
+const SHELL = ["./", "./index.html", "./fb.js", "./manifest.webmanifest", "./icons/sp26-icon-192.png", "./icons/sp26-icon-512.png"];
 self.addEventListener("install", e => { e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL.map(u => new Request(u, {cache: "reload"})))).then(() => self.skipWaiting())); });
 self.addEventListener("activate", e => { e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k !== CACHE).map(k => caches.delete(k)))).then(() => self.clients.claim())); });
 self.addEventListener("fetch", e => {
@@ -22,7 +22,7 @@ self.addEventListener("push", e => {
   const d = p.data || p, n = p.notification || {};
   const title = d.title || n.title || "Srigandha Properties HRMS";
   e.waitUntil(self.registration.showNotification(title, {
-    body: d.body || n.body || "", icon: "icons/icon-192.png", badge: "icons/icon-192.png",
+    body: d.body || n.body || "", icon: "icons/sp26-icon-192.png", badge: "icons/sp26-icon-192.png",
     tag: d.tag || undefined, renotify: !!d.tag, data: { url: d.url || "./" }
   }));
 });
