@@ -3021,6 +3021,27 @@ html body .datebar .db-label{min-width:0;flex:1 1 auto;overflow:hidden}
 html body .datebar .db-label > span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .db-y{font-style:normal}
 @media (max-width:760px){ .datebar .db-y{display:none} }
+
+/* Incentives: drag a person to another team */
+.pcard.drag-ghost{position:fixed!important;left:0;top:0;z-index:100001;pointer-events:none;margin:0!important;box-shadow:0 22px 44px -14px rgba(0,40,120,.45),0 0 0 2px var(--accent,#0071e3)!important;opacity:.96;transition:none!important}
+.pcard.dragging{opacity:.35;outline:2px dashed rgba(0,113,227,.5);outline-offset:-2px}
+body.team-dragging{user-select:none;-webkit-user-select:none;cursor:grabbing}
+body.team-dragging .teamtile[data-team]{transition:box-shadow .15s,transform .15s}
+.teamtile.drop-ok{box-shadow:0 0 0 2.5px var(--accent,#0071e3),0 14px 34px -16px rgba(0,90,200,.45)!important;transform:scale(1.01)}
+@media (hover:hover){ html body.is-owner-drag .teamtile[data-team] .pcard{cursor:grab} }
+.teamtile[data-team] .pcard{touch-action:pan-y;-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
+.tt-empty{grid-column:1/-1;margin:0;padding:22px 12px;text-align:center;font-size:13px;opacity:.6;border:1.5px dashed var(--line,rgba(0,0,0,.18));border-radius:14px}
+.toast.undo{display:flex;align-items:center;gap:14px}
+.toast.undo button{border:0;background:transparent;color:#64b5ff;font:inherit;font-weight:700;cursor:pointer;padding:4px 2px}
+.pcard.drag-ghost{background:linear-gradient(180deg,rgba(214,236,255,.97),rgba(178,216,252,.95))!important;border:1px solid rgba(255,255,255,.9)!important;display:flex!important;flex-direction:column;justify-content:space-between;border-radius:16px;padding:10px 12px;color:var(--ink,#1d1d1f);text-align:left}
+body.dark .pcard.drag-ghost{background:linear-gradient(180deg,rgba(40,70,110,.97),rgba(28,48,80,.97))!important;border-color:rgba(160,210,255,.35)!important;color:#f2f2f7}
+.pcard.drag-ghost .pc-name b,.pcard.drag-ghost .pc-name small{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+html body .tiles > .teamtile.drop-ok,html.lg body .tiles > .teamtile.drop-ok{box-shadow:0 0 0 3px var(--accent,#0071e3),0 16px 36px -16px rgba(0,90,200,.5)!important;transform:scale(1.01)}
+html.lg body .pcard.drag-ghost,html body .pcard.drag-ghost{background:linear-gradient(180deg,rgb(220,239,255),rgb(186,221,252))!important;opacity:1!important;filter:none!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important}
+html.lg body.dark .pcard.drag-ghost,html body.dark .pcard.drag-ghost{background:linear-gradient(180deg,rgb(40,70,110),rgb(28,48,80))!important}
+html body .teamtile.ghost-wrap{position:fixed!important;left:0;top:0;z-index:100001;pointer-events:none;margin:0!important;padding:0!important;background:none!important;border:0!important;box-shadow:none!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important;display:block!important;height:auto!important;width:auto!important;min-height:0!important;transition:none!important}
+html body .teamtile.ghost-wrap::before,html body .teamtile.ghost-wrap::after{display:none!important}
+html body .teamtile.ghost-wrap .pcard.drag-ghost{position:static!important}
 .person .ps-num{display:block;font-size:12.5px;color:var(--accent);text-decoration:none;margin-top:2px;font-variant-numeric:tabular-nums}
 .ci-cards .cicard > .cc-foot{grid-column:1/-1;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:6px 10px;padding-left:41px;min-width:0}
 .ci-cards .cicard > .cc-foot > .cc-flags{padding-left:0!important;display:flex;flex-wrap:wrap;gap:3px 9px;font-size:12px;min-width:0}
@@ -5138,16 +5159,17 @@ function groupTiles(ym, cur, R0, done){
       ctl = `<div class="tt-ctl"><span class="tt-win">${win.length?`<span class="pill ok">★ ${esc(win.join(" & "))}</span>`:`<span class="pill mute">No top performer yet</span>`}</span>
         <label class="tt-pick"><span class="inc-explain">Top performer</span><select id="top_${tl.id}" ${done?"disabled":""} aria-label="Top performer for ${esc(tl.name)}'s team"><option value="auto" ${pick==="auto"?"selected":""}>Automatic</option>${teamAll.map(e=>`<option value="${e.id}" ${pick===e.id?"selected":""}>${esc(e.name)}</option>`).join("")}</select></label></div>`;
     }
-    return `<section class="panel teamtile">
+    const dropId = cur.key==="Team Leaders" ? null : (tl ? tl.id : "");
+    return `<section class="panel teamtile"${dropId!=null ? ` data-team="${dropId}"` : ""}>
       <div class="tt-head"><div><h2>${esc(title)}</h2><div class="sub" style="margin-top:2px">${people.length} ${people.length===1?"person":"people"} · ${inr(tot)}${tl&&R0.topBonus&&cur.key==="Tele Calling"?`<span class="inc-explain"> · ${inr(R0.topBonus)} for the top performer</span>`:""}</div></div>${ctl}</div>
-      <div class="pgrid">${people.map(e=>personCard(ym, e, R0, true)).join("")}</div>
+      <div class="pgrid">${people.map(e=>personCard(ym, e, R0, true)).join("")}${!people.length ? `<p class="tt-empty">Drag people here to add them to this team</p>` : ""}</div>
     </section>`;
   };
   let html = "";
   if(cur.key==="Team Leaders"){
     html = tile("Team leaders", cur.people, null);
   } else {
-    for(const tl of tls){ const ppl = cur.people.filter(e=>e.reportsTo===tl.id); if(ppl.length) html += tile(`${tl.name}'s team`, ppl, tl); }
+    for(const tl of tls){ const ppl = cur.people.filter(e=>e.reportsTo===tl.id); if(ppl.length || (isOwnerV && !done)) html += tile(`${tl.name}'s team`, ppl, tl); }
     const rest = cur.people.filter(e=>!tls.some(t=>t.id===e.reportsTo));
     if(rest.length) html += tile(html ? "Not in a team" : cur.label, rest, null);
   }
@@ -5410,6 +5432,58 @@ function lopModal(id, ym){
   $("#overlay").innerHTML = `<div class="scrim" data-act="close"></div><div class="modal sm lop-modal" role="dialog" aria-modal="true" aria-labelledby="lopT"><header><div><h3 id="lopT" style="margin:0">${esc(e.name)}</h3><small class="note">Leave and loss of pay · ${monthName(ym)}${ym === today.slice(0,7) ? " so far" : ""}</small></div><button class="btn ghost" data-act="close" aria-label="Close">✕</button></header>
     <div class="body"><div class="lop-sect"><h4>Loss of pay</h4>${rows || late ? `<ul class="lop-list">${rows}${late}</ul><div class="lop-total"><span>Total</span><b>${fmt(r.total)} day${r.total === 1 ? "" : "s"}</b></div>` : `<p class="empty">No loss of pay days in ${monthName(ym)}.</p>`}</div>${plS}${coS}${!r.pl.length ? `<p class="note lop-bal">No paid leave used in ${monthName(ym)} · ${fmt(L.balance)} day${L.balance === 1 ? "" : "s"} left</p>` : ""}</div></div>`;
 }
+
+// ---------- Incentives: drag a person's tile onto another team to move them (administrators) ----------
+function undoToast(msg, fn){ document.querySelectorAll('.toast.undo').forEach(x => x.remove()); const t = document.createElement("div"); t.className = "toast undo"; t.innerHTML = `<span></span><button type="button">Undo</button>`; t.firstChild.textContent = msg; t.querySelector("button").onclick = () => { t.remove(); fn(); }; document.body.appendChild(t); setTimeout(() => t.remove(), 6000); }
+(() => {
+  let st = null, justDragged = 0;
+  const canDrag = () => isOwnerV && (location.hash || "").startsWith("#incentives") && !incDone(UI.incMonth);
+  const tileAt = (x, y) => { const el = document.elementFromPoint(x, y); return el && el.closest(".teamtile[data-team]"); };
+  const cleanup = () => { if(!st) return; clearTimeout(st.timer); st.ghost?.remove(); st.card?.classList.remove("dragging"); document.querySelectorAll(".teamtile.drop-ok").forEach(t => t.classList.remove("drop-ok")); document.body.classList.remove("team-dragging"); st = null; };
+  const begin = () => { if(!st || st.on) return; st.on = true; const r = st.card.getBoundingClientRect();
+    const g = st.card.cloneNode(true); g.className += " drag-ghost"; g.removeAttribute("data-incopen"); g.style.width = r.width + "px"; g.style.height = r.height + "px";
+    st.dx = st.x0 - r.left; st.dy = st.y0 - r.top;
+    const w = document.createElement("div"); w.className = "teamtile ghost-wrap"; w.appendChild(g); document.body.appendChild(w); st.ghost = w; st.card.classList.add("dragging"); document.body.classList.add("team-dragging");
+    if(navigator.vibrate) try{ navigator.vibrate(12); }catch(_){}
+    move(st.x, st.y); };
+  const move = (x, y) => { if(!st) return; st.x = x; st.y = y; if(!st.on) return;
+    st.ghost.style.transform = `translate(${x - st.dx}px, ${y - st.dy}px) rotate(-2deg) scale(1.04)`;
+    const t = tileAt(x, y); document.querySelectorAll(".teamtile.drop-ok").forEach(e => { if(e !== t) e.classList.remove("drop-ok"); });
+    if(t && t.dataset.team !== st.from) t.classList.add("drop-ok");
+    // scroll the page when dragging near the top or bottom edge
+    const m = document.getElementById("main"), h = innerHeight; if(m){ if(y < 110) m.scrollTop -= 14; else if(y > h - 120) m.scrollTop += 14; } };
+  document.addEventListener("pointerdown", ev => {
+    if(ev.button > 0 || !canDrag()) return; const card = ev.target.closest(".teamtile[data-team] .pcard[data-incopen]"); if(!card) return;
+    const tile = card.closest(".teamtile"); st = {card, id:card.dataset.incopen, from:tile.dataset.team, x0:ev.clientX, y0:ev.clientY, x:ev.clientX, y:ev.clientY, on:false, touch:ev.pointerType !== "mouse", pid:ev.pointerId};
+    if(st.touch) st.timer = setTimeout(begin, 380);   // on phones: press and hold, so ordinary scrolling still works
+  }, {passive:true});
+  document.addEventListener("pointermove", ev => { if(!st || ev.pointerId !== st.pid) return;
+    if(!st.on){ const d = Math.hypot(ev.clientX - st.x0, ev.clientY - st.y0);
+      if(st.touch) return;
+      if(d > 6){ st.x = ev.clientX; st.y = ev.clientY; begin(); } return; }
+    if(st.touch) return; ev.preventDefault(); move(ev.clientX, ev.clientY); }, {passive:false});
+  // on phones the browser cancels pointer events once a finger moves, so a started drag follows the touch events instead
+  document.addEventListener("touchmove", ev => { if(!st || !st.touch) return; const tp = ev.touches[0]; if(!tp) return;
+    if(!st.on){ if(Math.hypot(tp.clientX - st.x0, tp.clientY - st.y0) > 10) cleanup(); return; }
+    ev.preventDefault(); move(tp.clientX, tp.clientY); }, {passive:false});
+  document.addEventListener("touchend", ev => { if(st && st.touch) end({}); });
+  document.addEventListener("touchcancel", ev => { if(st && st.touch){ if(st.on) end({}); else cleanup(); } });
+  const end = async ev => { if(!st || (ev.pointerId != null && ev.pointerId !== st.pid)) return;
+    if(!st.on){ cleanup(); return; }
+    const t = tileAt(st.x, st.y), id = st.id, from = st.from; cleanup(); justDragged = Date.now();
+    if(!t || t.dataset.team === from) return;
+    const to = t.dataset.team, e = S.emps[id]; if(!e) return; const before = e.reportsTo || "";
+    const name = to ? `${S.emps[to]?.name || "the"}'s team` : "no team";
+    S.emps[id] = {...e, reportsTo: to}; render();
+    try{ await db.collection("employees").doc(id).update({reportsTo: to});
+      undoToast(`${e.name} moved to ${name}`, async () => { try{ S.emps[id] = {...S.emps[id], reportsTo: before}; render(); await db.collection("employees").doc(id).update({reportsTo: before}); toast("Move undone"); }catch(err){ fail(err); } }); }
+    catch(err){ S.emps[id] = {...S.emps[id], reportsTo: before}; render(); fail(err); } };
+  document.addEventListener("pointerup", ev => { if(st && !st.touch) end(ev); });
+  document.addEventListener("pointercancel", ev => { if(st && !st.touch){ if(st.on) end(ev); else cleanup(); } });
+  // a drag is not a tap: don't open the person's calculation when the drag ends
+  document.addEventListener("click", ev => { if(Date.now() - justDragged < 400 && ev.target.closest(".pcard")){ ev.stopPropagation(); ev.preventDefault(); } }, true);
+  document.addEventListener("contextmenu", ev => { if(st && st.touch && ev.target.closest(".teamtile .pcard")) ev.preventDefault(); });
+})();
 
 // ---------- payslip PDF ----------
 let JSPDF = null;
@@ -6406,7 +6480,7 @@ if("serviceWorker" in navigator){
 
 // Version check: whenever the app is opened or brought back to the front, ask GitHub for the latest version number.
 // If it is newer than what is running, reload (straight away if nothing is open, otherwise offer a button).
-window.APP_VERSION = "20261118092756";
+window.APP_VERSION = "20261120110448";
 (function(){
   let busy = false, shown = false;
   function bar(v){ if(shown) return; shown = true; const b = document.createElement("button"); b.className = "upd-bar"; b.textContent = "New version ready — tap to update"; b.onclick = () => go(v); document.body.appendChild(b); }
