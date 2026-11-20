@@ -3042,6 +3042,21 @@ html.lg body.dark .pcard.drag-ghost,html body.dark .pcard.drag-ghost{background:
 html body .teamtile.ghost-wrap{position:fixed!important;left:0;top:0;z-index:100001;pointer-events:none;margin:0!important;padding:0!important;background:none!important;border:0!important;box-shadow:none!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important;display:block!important;height:auto!important;width:auto!important;min-height:0!important;transition:none!important}
 html body .teamtile.ghost-wrap::before,html body .teamtile.ghost-wrap::after{display:none!important}
 html body .teamtile.ghost-wrap .pcard.drag-ghost{position:static!important}
+
+/* Incentives: top performers stand out on the blue tiles, in light and dark mode */
+html body .teamtile .pcard.top{box-shadow:0 6px 18px -10px rgba(0,60,160,.38),inset 0 0 0 2px #1f9d55,inset 0 1px 0 rgba(255,255,255,.95)!important}
+html body .teamtile .pcard.overall{box-shadow:0 6px 18px -10px rgba(0,60,160,.38),inset 0 0 0 2px #e2a400,inset 0 1px 0 rgba(255,255,255,.95)!important}
+html body.dark .teamtile .pcard.top{background:linear-gradient(180deg,rgba(60,190,120,.24),rgba(110,175,240,.10))!important;box-shadow:0 6px 18px -10px rgba(0,0,0,.7),inset 0 0 0 2px #30d158,0 0 18px -6px rgba(48,209,88,.45)!important}
+html body.dark .teamtile .pcard.overall{background:linear-gradient(180deg,rgba(255,196,60,.26),rgba(110,175,240,.10))!important;box-shadow:0 6px 18px -10px rgba(0,0,0,.7),inset 0 0 0 2px #ffcc33,0 0 20px -6px rgba(255,204,51,.5)!important}
+/* the star badges */
+html body .pcard .pill.ok[title="Team top performer"]{background:#1f9d55;color:#fff;font-weight:700}
+html body .pcard .pill.gold{background:#e2a400;color:#fff;font-weight:700}
+html body.dark .pcard .pill.ok[title="Team top performer"]{background:#30d158;color:#0b2414;box-shadow:0 0 10px rgba(48,209,88,.55)}
+html body.dark .pcard .pill.gold{background:#ffcc33;color:#3a2600;box-shadow:0 0 10px rgba(255,204,51,.6)}
+html body.dark .tt-win .pill.gold,html body.dark .tt-win .pill.ok{background:#ffcc33;color:#3a2600}
+html.lg body.dark .pcard .pill.ok[title="Team top performer"]{background:#30d158!important;color:#0b2414!important;border-color:#30d158!important;box-shadow:0 0 10px rgba(48,209,88,.55)!important}
+html.lg body.dark .pcard .pill.gold{background:#ffcc33!important;color:#3a2600!important;border-color:#ffcc33!important;box-shadow:0 0 10px rgba(255,204,51,.6)!important}
+html.lg body.dark .tt-win .pill.ok{background:rgba(48,209,88,.18)!important;color:#4ade80!important;border-color:rgba(74,222,128,.55)!important}
 .person .ps-num{display:block;font-size:12.5px;color:var(--accent);text-decoration:none;margin-top:2px;font-variant-numeric:tabular-nums}
 .ci-cards .cicard > .cc-foot{grid-column:1/-1;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:6px 10px;padding-left:41px;min-width:0}
 .ci-cards .cicard > .cc-foot > .cc-flags{padding-left:0!important;display:flex;flex-wrap:wrap;gap:3px 9px;font-size:12px;min-width:0}
@@ -6480,7 +6495,7 @@ if("serviceWorker" in navigator){
 
 // Version check: whenever the app is opened or brought back to the front, ask GitHub for the latest version number.
 // If it is newer than what is running, reload (straight away if nothing is open, otherwise offer a button).
-window.APP_VERSION = "20261120110448";
+window.APP_VERSION = "20261120111922";
 (function(){
   let busy = false, shown = false;
   function bar(v){ if(shown) return; shown = true; const b = document.createElement("button"); b.className = "upd-bar"; b.textContent = "New version ready — tap to update"; b.onclick = () => go(v); document.body.appendChild(b); }
