@@ -4964,7 +4964,7 @@ incentives(){
   if(!isAdmin) return head("Incentives","") + `<div class="panel"><h2>Incentives are limited to editors</h2><p class="empty">Incentive amounts are visible only to the owner and editors of this page.</p></div>`;
   const ym = UI.incMonth, doc = S.inc[ym] || {}, done = incDone(ym);
   const list = incList(ym);
-  const R0 = incRates(done ? doc.ratesUsed : null);
+  const R0 = monthRates(ym);
   const slides = incSlides(ym);
   if(!slides.some(x=>x.key===UI.incSlide)) UI.incSlide = slides[0]?.key || "Tele Calling";
   const si = Math.max(0, slides.findIndex(x=>x.key===UI.incSlide)), cur = slides[si];
@@ -5031,7 +5031,7 @@ function refreshIncModal(){
 }
 function incModalHtml(id){
   const ym = UI.incMonth, doc = S.inc[ym] || {}, done = incDone(ym), ro = done ? "disabled" : "";
-  const R0 = incRates(done ? doc.ratesUsed : null);
+  const R0 = monthRates(ym);
   const e = {id, ...S.emps[id]}; const c = incFor(ym, id); const a = doc.amounts?.[id] || {};
   const tc = roleKey(e)==="Tele Calling"; const tl = S.emps[teamOf(ym,e)];
   const peers = incSlides(ym).find(x=>x.key===roleKey(e))?.people || []; const pi = peers.findIndex(x=>x.id===id);
@@ -5617,6 +5617,9 @@ async function finalizeRun(btn){
 }
 const roleKey = e => isTL(e) ? "Team Leaders" : isTele(e.dept) ? "Tele Calling" : isSalesR(e.dept) ? "Sales Executives" : "Others";
 const DEF_SLABS = [{from:0, rate:300}, {from:40, rate:400}, {from:60, rate:500}];
+const OWN_RATE_MONTHS = ["2026-09"];   // months whose rates are set on their own instead of the shared rates
+// the rates a month uses: locked rates once finalized, else the month's own rates (if it has them), else the shared rates
+function monthRates(ym){ const d = S.inc[ym] || {}; if(d.status==="complete" && d.ratesUsed) return incRates(d.ratesUsed); if(OWN_RATE_MONTHS.includes(ym) && d.rates) return incRates(d.rates); return incRates(null); }
 function incRates(snapshot){
   const src = snapshot || S.incCfg || {};
   const slabs = (Array.isArray(src.slabs) && src.slabs.length ? src.slabs : DEF_SLABS).map(x=>({from:Math.max(0,Math.round(+x.from||0)), rate:+x.rate||0})).sort((a,b)=>a.from-b.from);
@@ -5642,7 +5645,7 @@ const METRIC_LABEL = {visits:"site visits (a tie goes to higher sq ft)"};
 // Top performer of each team leader's team for the month. HR can pick someone else; otherwise the highest figure wins (ties share the bonus each).
 function topPerformers(ym){
   const doc = S.inc[ym] || {}; if(doc.status==="complete" && doc.topFinal) return doc.topFinal;
-  const R0 = incRates(null); const out = {}; if(!R0.topBonus) return out;
+  const R0 = monthRates(ym); const out = {}; if(!R0.topBonus) return out;
   const members = incList(ym);
   for(const tl of leaders()){
     const team = members.filter(e => teamOf(ym,e)===tl.id); if(!team.length) continue;
@@ -5657,7 +5660,7 @@ function topPerformers(ym){
 // Overall top tele caller across both teams. HR can pick someone; otherwise the highest figure wins (ties share).
 function overallTop(ym){
   const doc = S.inc[ym] || {}; if(doc.status==="complete" && doc.overallFinal) return doc.overallFinal;
-  const R0 = incRates(null); if(!R0.overallBonus) return [];
+  const R0 = monthRates(ym); if(!R0.overallBonus) return [];
   const tcs = incList(ym).filter(e => roleKey(e)==="Tele Calling"); if(!tcs.length) return [];
   const pick = doc.top?.overall;
   if(pick && pick!=="auto") return tcs.some(e=>e.id===pick) ? [pick] : [];
@@ -5668,14 +5671,14 @@ function overallTop(ym){
 function incFor(ym, id){
   const doc = S.inc[ym] || {};
   if(doc.status==="complete" && doc.final?.[id]) return doc.final[id];
-  const b = incBase(ym, id); const tops = topPerformers(ym); const R0 = incRates(null);
+  const b = incBase(ym, id); const tops = topPerformers(ym); const R0 = monthRates(ym);
   const bonus = tops[id] ? R0.topBonus : 0;
   const overall = overallTop(ym).includes(id) ? R0.overallBonus : 0;
   return {...b, bonus, overall, topOf: tops[id] || "", total: b.total + bonus + overall};
 }
 function incBase(ym, id){
   const doc = S.inc[ym] || {};
-  const R0 = incRates(doc.status==="complete" ? doc.ratesUsed : null);
+  const R0 = monthRates(ym);
   const a = doc.amounts?.[id] || {}; const e = S.emps[id] || {}; const role = roleKey(e);
   const tc = role==="Tele Calling";
   const visits = tc ? Math.max(0, +a.visits||0) : 0, sqft = Math.max(0, +a.sqft||0), adj = +a.adj||0;
@@ -5707,7 +5710,7 @@ async function setIncStatus(status){
   try{
     if(status==="complete"){
       const final = {}; incList(ym).forEach(e => { final[e.id] = {...incFor(ym, e.id), name:e.name, code:e.code, dept:e.dept, team:teamOf(ym, e)}; });
-      const R0 = incRates(null); const topFinal = topPerformers(ym); const overallFinal = overallTop(ym);
+      const R0 = OWN_RATE_MONTHS.includes(ym) && S.inc[ym]?.rates ? incRates(S.inc[ym].rates) : incRates(null); const topFinal = topPerformers(ym); const overallFinal = overallTop(ym);
       await serial("inc/"+ym, async () => { const snap = await ref.get(); const body = {status:"complete", completedAt:new Date().toISOString(), by:myId, ratesUsed:R0, final, topFinal, overallFinal}; if(snap.exists) await ref.update(body); else await ref.set({month:ym, amounts:{}, ...body}); });
       toast(`${monthName(ym)} incentives finalized. Staff see them once you mark them as paid.`);
     } else {
@@ -5732,10 +5735,11 @@ async function saveInc(inputId, raw){
   try{ await mergeWrite("inc/"+ym, db.collection("data/hr/incentives").doc(ym), patch, {month:ym, status:"open"}); }catch(e){ fail(e); }
 }
 function ratesDrawer(){
-  const R0 = incRates(null); const sl = [...R0.slabs]; while(sl.length < 5) sl.push({from:"", rate:""});
-  openDrawer(`<header><h3>Incentive rates</h3><button class="btn ghost" data-act="close" aria-label="Close">✕</button></header>
-  <div class="body">
-    <p class="note" style="margin:0">Rates apply to every month that isn't finalized. Finalized months keep the rates they were locked with.</p>
+  const ym = UI.incMonth, own = OWN_RATE_MONTHS.includes(ym), locked = own && incPaid(ym);
+  const R0 = own ? monthRates(ym) : incRates(null); const sl = [...R0.slabs]; while(sl.length < 5) sl.push({from:"", rate:""});
+  openDrawer(`<header><h3>${own ? `Incentive rates · ${monthName(ym)}` : "Incentive rates"}</h3><button class="btn ghost" data-act="close" aria-label="Close">✕</button></header>
+  <div class="body${locked ? " rates-locked" : ""}">
+    <p class="note" style="margin:0">${own ? (locked ? `${monthName(ym)} is marked as paid, so its rates are locked. Undo paid to change them.` : `These rates are for ${monthName(ym)} only. They can be changed until the month is marked as paid; finalized figures are worked out again when you save.`) : `Rates apply to every month that isn't finalized${OWN_RATE_MONTHS.length ? `, except ${OWN_RATE_MONTHS.map(monthName).join(", ")}, which has its own rates` : ""}. Finalized months keep the rates they were locked with.`}</p>
     <div class="sect">Site-visit slabs · tele callers only</div>
     ${sl.map((x,i)=>`<div class="formgrid"><div class="field"><label for="sl_f${i}">From visits</label><input id="sl_f${i}" type="number" min="0" step="1" value="${x.from}" placeholder="${i? "Leave blank to skip":""}"></div><div class="field"><label for="sl_r${i}">₹ per visit</label><input id="sl_r${i}" type="number" min="0" step="10" value="${x.rate}"></div></div>`).join("")}
     <div class="field"><label for="sl_mode">How the slab applies</label><select id="sl_mode"><option value="all" ${R0.slabMode==="all"?"selected":""}>All visits at the rate of the slab reached (45 visits = 45 × ₹400)</option><option value="tiered" ${R0.slabMode==="tiered"?"selected":""}>Each visit at its own slab (45 visits = 40 × ₹300 + 5 × ₹400)</option></select></div>
@@ -5749,7 +5753,8 @@ function ratesDrawer(){
     <div class="field"><label for="r_overall">Overall top tele caller bonus (₹)</label><input id="r_overall" type="number" min="0" step="500" value="${R0.overallBonus}"><span class="note">Extra, across both teams.</span></div>
     <div class="field"><label>Top performer is judged on</label><span class="note">Most site visits. If two people tie, the one with more sq ft registered wins.</span></div></div>
   </div>
-  <footer><button class="btn" data-act="close">Cancel</button><button class="btn primary" data-act="save-rates">Save rates</button></footer>`);
+  <footer><button class="btn" data-act="close">${locked ? "Close" : "Cancel"}</button>${locked ? "" : `<button class="btn primary" data-act="save-rates">${own ? `Save ${monthName(ym)} rates` : "Save rates"}</button>`}</footer>`);
+  if(locked) document.querySelectorAll(".drawer input, .drawer select").forEach(el => el.disabled = true);
 }
 async function saveRates(){
   const n = id => { const v = parseFloat(document.getElementById(id).value); return isFinite(v) && v>=0 ? v : 0; };
@@ -5758,6 +5763,23 @@ async function saveRates(){
   const sqft = {}; INC_ROLES.forEach((r,i) => sqft[r] = n("r_s"+i));
   const sqftEmp = {}; document.querySelectorAll('[id^="re_"]').forEach(el => { if(el.value!=="" && isFinite(+el.value) && +el.value>=0) sqftEmp[el.id.slice(3)] = +el.value; });
   const body = {slabs:slabs.sort((a,b)=>a.from-b.from), slabMode:document.getElementById("sl_mode").value, sqft, sqftEmp, sqftG1:n("r_g1"), tlTeamSqft:0, topBonus:n("r_top"), overallBonus:n("r_overall"), topMetric:"visits", updatedAt:new Date().toISOString(), by:myId};
+  const ym = UI.incMonth;
+  if(OWN_RATE_MONTHS.includes(ym)){
+    if(incPaid(ym)){ toast(`${monthName(ym)} is marked as paid. Undo paid to change its rates.`); return; }
+    try{ const ref = db.collection("data/hr/incentives").doc(ym);
+      S.inc[ym] = {...(S.inc[ym]||{}), rates:body};
+      if(incDone(ym)){   // finalized but not paid: work the locked figures out again with the new rates
+        S.inc[ym].ratesUsed = body;
+        const d0 = S.inc[ym]; const keep = {topFinal:d0.topFinal, overallFinal:d0.overallFinal}; delete S.inc[ym].topFinal; delete S.inc[ym].overallFinal; S.inc[ym].status = "open";
+        const topFinal = topPerformers(ym), overallFinal = overallTop(ym);
+        const final2 = {}; incList(ym).forEach(e => { final2[e.id] = {...incFor(ym, e.id), name:e.name, code:e.code, dept:e.dept, team:teamOf(ym, e)}; });
+        S.inc[ym].status = "complete"; Object.assign(S.inc[ym], keep, {topFinal, overallFinal, final:final2});
+        await serial("inc/"+ym, () => ref.update({rates:body, ratesUsed:body, final:final2, topFinal, overallFinal}));
+      } else await mergeWrite("inc/"+ym, ref, {rates:body}, {month:ym, status:"open", amounts:{}});
+      closeDrawer(); render(); toast(`${monthName(ym)} incentive rates saved`);
+    }catch(e){ fail(e); }
+    return;
+  }
   try{ await db.doc("data/hr/config/incentive").set(body); S.incCfg = body; closeDrawer(); render(); toast("Incentive rates saved"); }catch(e){ fail(e); }
 }
 async function exportInc(){
@@ -6525,7 +6547,7 @@ if("serviceWorker" in navigator){
 
 // Version check: whenever the app is opened or brought back to the front, ask GitHub for the latest version number.
 // If it is newer than what is running, reload (straight away if nothing is open, otherwise offer a button).
-window.APP_VERSION = "20261121102636";
+window.APP_VERSION = "20261121104446";
 (function(){
   let busy = false, shown = false;
   function bar(v){ if(shown) return; shown = true; const b = document.createElement("button"); b.className = "upd-bar"; b.textContent = "New version ready — tap to update"; b.onclick = () => go(v); document.body.appendChild(b); }
