@@ -3207,6 +3207,10 @@ const payDue = ym => `${shiftYm(ym,1)}-${pad(cfg().payDay)}`;
 const incDue = ym => `${shiftYm(ym,1)}-${pad(cfg().incDay)}`;
 const runFinal = ym => S.runs[ym]?.status === "final";
 const incDone = ym => S.inc[ym]?.status === "complete";
+// whose team someone is in for an incentive month: that month's own arrangement, else the latest earlier month's, else their team leader in Employees
+function teamOf(ym, e){ if(!e) return ""; const id = e.id;
+  for(const m of Object.keys(S.inc || {}).filter(m => m <= ym).sort().reverse()){ const t = S.inc[m]?.teams; if(t && Object.prototype.hasOwnProperty.call(t, id)) return t[id] || ""; }
+  return e.reportsTo || ""; }
 const incPaid = ym => incDone(ym) && !!S.inc[ym]?.paidAt;
 const paidInc = () => Object.fromEntries(Object.entries(S.myinc || {}).filter(([k, p]) => p && p.paidOn));   // staff see only incentives marked as paid
 function duePill(done, due, doneText="Done"){
@@ -5006,7 +5010,7 @@ function incSlides(ym){
 }
 let flash = "";
 function personCard(ym, e, R0, inTile){
-  const c = incFor(ym, e.id); const tc = roleKey(e)==="Tele Calling"; const tl = S.emps[e.reportsTo];
+  const c = incFor(ym, e.id); const tc = roleKey(e)==="Tele Calling"; const tl = S.emps[teamOf(ym,e)];
   const f = (v,l) => `<div><b>${v}</b><span>${l}</span></div>`;
   const glow = flash===e.id ? " flash" : "";
   return `<button class="pcard${c.overall?" top overall":c.bonus?" top":""}${glow}" data-incopen="${e.id}" aria-label="Open incentive calculation for ${esc(e.name)}">
@@ -5029,7 +5033,7 @@ function incModalHtml(id){
   const ym = UI.incMonth, doc = S.inc[ym] || {}, done = incDone(ym), ro = done ? "disabled" : "";
   const R0 = incRates(done ? doc.ratesUsed : null);
   const e = {id, ...S.emps[id]}; const c = incFor(ym, id); const a = doc.amounts?.[id] || {};
-  const tc = roleKey(e)==="Tele Calling"; const tl = S.emps[e.reportsTo];
+  const tc = roleKey(e)==="Tele Calling"; const tl = S.emps[teamOf(ym,e)];
   const peers = incSlides(ym).find(x=>x.key===roleKey(e))?.people || []; const pi = peers.findIndex(x=>x.id===id);
   const prev = peers[(pi-1+peers.length)%peers.length], next = peers[(pi+1)%peers.length];
   const val = (k, st) => UI.incDraft[k+"_"+id] ?? (st ?? "");
@@ -5175,7 +5179,7 @@ function groupTiles(ym, cur, R0, done){
     let ctl = "";
     if(tl && R0.topBonus && cur.key==="Tele Calling"){
       const win = Object.entries(tops).filter(([,t])=>t===tl.id).map(([id])=>S.emps[id]?.name).filter(Boolean);
-      const teamAll = incList(ym).filter(e=>e.reportsTo===tl.id); const pick = doc.top?.[tl.id] || "auto";
+      const teamAll = incList(ym).filter(e=>teamOf(ym,e)===tl.id); const pick = doc.top?.[tl.id] || "auto";
       ctl = `<div class="tt-ctl"><span class="tt-win">${win.length?`<span class="pill ok">★ ${esc(win.join(" & "))}</span>`:`<span class="pill mute">No top performer yet</span>`}</span>
         <label class="tt-pick"><span class="inc-explain">Top performer</span><select id="top_${tl.id}" ${done?"disabled":""} aria-label="Top performer for ${esc(tl.name)}'s team"><option value="auto" ${pick==="auto"?"selected":""}>Automatic</option>${teamAll.map(e=>`<option value="${e.id}" ${pick===e.id?"selected":""}>${esc(e.name)}</option>`).join("")}</select></label></div>`;
     }
@@ -5189,8 +5193,8 @@ function groupTiles(ym, cur, R0, done){
   if(cur.key==="Team Leaders"){
     html = tile("Team leaders", cur.people, null);
   } else {
-    for(const tl of tls){ const ppl = cur.people.filter(e=>e.reportsTo===tl.id); if(ppl.length || (isOwnerV && !done)) html += tile(`${tl.name}'s team`, ppl, tl); }
-    const rest = cur.people.filter(e=>!tls.some(t=>t.id===e.reportsTo));
+    for(const tl of tls){ const ppl = cur.people.filter(e=>teamOf(ym,e)===tl.id); if(ppl.length || (isOwnerV && !done)) html += tile(`${tl.name}'s team`, ppl, tl); }
+    const rest = cur.people.filter(e=>!tls.some(t=>t.id===teamOf(ym,e)));
     if(rest.length) html += tile(html ? "Not in a team" : cur.label, rest, null);
   }
   if(cur.key==="Tele Calling") html += `<div class="teams">${overallPanel(ym, done, R0, incList(ym))}</div>`;
@@ -5199,7 +5203,7 @@ function groupTiles(ym, cur, R0, done){
 function teamPanel(ym, done, R0){
   const tls = leaders(); if(!tls.length || !R0.topBonus) return "";
   const doc = S.inc[ym] || {}; const tops = topPerformers(ym); const list = incList(ym);
-  return `<div class="teams">${tls.map(tl => { const team = list.filter(e=>e.reportsTo===tl.id);
+  return `<div class="teams">${tls.map(tl => { const team = list.filter(e=>teamOf(ym,e)===tl.id);
     const win = Object.entries(tops).filter(([,t])=>t===tl.id).map(([id])=>S.emps[id]?.name).filter(Boolean);
     const pick = doc.top?.[tl.id] || "auto";
     return `<div class="panel team"><div class="teamhead"><div><h2>${esc(tl.name)}'s team</h2><div class="sub" style="margin-top:2px">${team.length} member${team.length===1?"":"s"} · ${inr(R0.topBonus)} top performer bonus</div></div>
@@ -5416,7 +5420,7 @@ async function exportPayPdf(btn){
 async function exportIncPdf(btn){
   const ym = UI.incMonth, list = incList(ym); const own = isOwnerV;
   const data = list.map(e => ({e, c:incFor(ym, e.id)}));
-  const rows = data.map(({e,c}) => [e.code||"", e.name, e.dept||"", S.emps[e.reportsTo]?.name||"", String(c.visits||0), String(c.sqft||0), rs(c.vAmt), rs(c.sAmt), (c.adj ? (c.adj>0?"+ ":"- ")+rs(Math.abs(c.adj)) : "-"), rs((c.bonus||0)+(c.overall||0)), rs(c.total)]);
+  const rows = data.map(({e,c}) => [e.code||"", e.name, e.dept||"", S.emps[teamOf(ym,e)]?.name||"", String(c.visits||0), String(c.sqft||0), rs(c.vAmt), rs(c.sAmt), (c.adj ? (c.adj>0?"+ ":"- ")+rs(Math.abs(c.adj)) : "-"), rs((c.bonus||0)+(c.overall||0)), rs(c.total)]);
   const sum = f => data.reduce((t,{c}) => t + (+f(c)||0), 0);
   await tablePdf({title:"INCENTIVES", sub:`${monthName(ym)} · paid on ${fmtD(incDue(ym))} · ${incDone(ym) ? "Final" : "Draft"}`, btn,
     head:["Emp ID","Name","Role","Team leader","Visits","Sq ft","Visit amount","Sq ft amount","Adjustment","Bonus","Incentive"], widths:[16,32,44,26,12,14,22,22,20,18,22], align:["l","l","l","l","r","r","r","r","r","r","r"],
@@ -5492,12 +5496,14 @@ function undoToast(msg, fn){ document.querySelectorAll('.toast.undo').forEach(x 
     if(!st.on){ cleanup(); return; }
     const t = tileAt(st.x, st.y), id = st.id, from = st.from; cleanup(); justDragged = Date.now();
     if(!t || t.dataset.team === from) return;
-    const to = t.dataset.team, e = S.emps[id]; if(!e) return; const before = e.reportsTo || "";
+    const to = t.dataset.team, e = S.emps[id]; if(!e) return; const ym = UI.incMonth, before = teamOf(ym, {id, ...e});
     const name = to ? `${S.emps[to]?.name || "the"}'s team` : "no team";
-    S.emps[id] = {...e, reportsTo: to}; render();
-    try{ await db.collection("employees").doc(id).update({reportsTo: to});
-      undoToast(`${e.name} moved to ${name}`, async () => { try{ S.emps[id] = {...S.emps[id], reportsTo: before}; render(); await db.collection("employees").doc(id).update({reportsTo: before}); toast("Move undone"); }catch(err){ fail(err); } }); }
-    catch(err){ S.emps[id] = {...S.emps[id], reportsTo: before}; render(); fail(err); } };
+    // the move is saved in this month's incentive sheet only; Employees and other months are left as they are
+    const put = async val => { const patch = {teams:{[id]: val}}; S.inc[ym] = deepMerge(S.inc[ym], patch); render();
+      await mergeWrite("inc/"+ym, db.collection("data/hr/incentives").doc(ym), patch, {month:ym, status:"open", amounts:{}}); };
+    try{ await put(to);
+      undoToast(`${e.name} moved to ${name} for ${monthName(ym)}`, async () => { try{ await put(before); toast("Move undone"); }catch(err){ fail(err); } }); }
+    catch(err){ fail(err); } };
   document.addEventListener("pointerup", ev => { if(st && !st.touch) end(ev); });
   document.addEventListener("pointercancel", ev => { if(st && !st.touch){ if(st.on) end(ev); else cleanup(); } });
   // a drag is not a tap: don't open the person's calculation when the drag ends
@@ -5639,7 +5645,7 @@ function topPerformers(ym){
   const R0 = incRates(null); const out = {}; if(!R0.topBonus) return out;
   const members = incList(ym);
   for(const tl of leaders()){
-    const team = members.filter(e => e.reportsTo===tl.id); if(!team.length) continue;
+    const team = members.filter(e => teamOf(ym,e)===tl.id); if(!team.length) continue;
     const pick = doc.top?.[tl.id];
     if(pick && pick!=="auto"){ if(team.some(e=>e.id===pick)) out[pick] = tl.id; continue; }
     const score = e => { const b = incBase(ym, e.id); return (+b.visits||0)*1e9 + (+b.sqft||0); };
@@ -5700,7 +5706,7 @@ async function setIncStatus(status){
   const ym = UI.incMonth; const ref = db.collection("data/hr/incentives").doc(ym);
   try{
     if(status==="complete"){
-      const final = {}; incList(ym).forEach(e => { final[e.id] = {...incFor(ym, e.id), name:e.name, code:e.code, dept:e.dept}; });
+      const final = {}; incList(ym).forEach(e => { final[e.id] = {...incFor(ym, e.id), name:e.name, code:e.code, dept:e.dept, team:teamOf(ym, e)}; });
       const R0 = incRates(null); const topFinal = topPerformers(ym); const overallFinal = overallTop(ym);
       await serial("inc/"+ym, async () => { const snap = await ref.get(); const body = {status:"complete", completedAt:new Date().toISOString(), by:myId, ratesUsed:R0, final, topFinal, overallFinal}; if(snap.exists) await ref.update(body); else await ref.set({month:ym, amounts:{}, ...body}); });
       toast(`${monthName(ym)} incentives finalized. Staff see them once you mark them as paid.`);
@@ -5756,7 +5762,7 @@ async function saveRates(){
 }
 async function exportInc(){
   const ym = UI.incMonth; const rows = [["Employee ID","Name","Role","Team leader","Site visits","Rate per visit","Registered sq ft","Rate per sq ft","Visit amount","Sq ft amount","Adjustment","Team top performer bonus","Overall top bonus","Incentive","Note","Paid on","Status"]];
-  incList(ym).forEach(e => { const c = incFor(ym, e.id); rows.push([e.code, e.name, e.dept, S.emps[e.reportsTo]?.name||"", c.visits, c.visitRate||0, c.sqft, c.sqRate||0, c.vAmt, c.sAmt, c.adj, c.bonus||0, c.overall||0, c.total, S.inc[ym]?.amounts?.[e.id]?.note||"", incDue(ym), incDone(ym)?"Final":"Draft"]); });
+  incList(ym).forEach(e => { const c = incFor(ym, e.id); rows.push([e.code, e.name, e.dept, S.emps[teamOf(ym,e)]?.name||"", c.visits, c.visitRate||0, c.sqft, c.sqRate||0, c.vAmt, c.sAmt, c.adj, c.bonus||0, c.overall||0, c.total, S.inc[ym]?.amounts?.[e.id]?.note||"", incDue(ym), incDone(ym)?"Final":"Draft"]); });
     if(!isOwnerV){ const drop = new Set(["Rate per visit","Rate per sq ft"]); const keep = rows[0].map((h,i)=>drop.has(h)?-1:i).filter(i=>i>=0); for(let r=0;r<rows.length;r++) rows[r] = keep.map(i=>rows[r][i]); }
   const csv = rows.map(r=>r.map(c=>{ const s=String(c??""); return /[",\n]/.test(s)?`"${s.replace(/"/g,'""')}"`:s; }).join(",")).join("\n");
   if(!downloads){ toast("Downloads aren't available in this view."); return; }
@@ -6519,7 +6525,7 @@ if("serviceWorker" in navigator){
 
 // Version check: whenever the app is opened or brought back to the front, ask GitHub for the latest version number.
 // If it is newer than what is running, reload (straight away if nothing is open, otherwise offer a button).
-window.APP_VERSION = "20261121102341";
+window.APP_VERSION = "20261121102636";
 (function(){
   let busy = false, shown = false;
   function bar(v){ if(shown) return; shown = true; const b = document.createElement("button"); b.className = "upd-bar"; b.textContent = "New version ready — tap to update"; b.onclick = () => go(v); document.body.appendChild(b); }
