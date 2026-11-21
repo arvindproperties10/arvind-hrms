@@ -3057,6 +3057,9 @@ html body.dark .tt-win .pill.gold,html body.dark .tt-win .pill.ok{background:#ff
 html.lg body.dark .pcard .pill.ok[title="Team top performer"]{background:#30d158!important;color:#0b2414!important;border-color:#30d158!important;box-shadow:0 0 10px rgba(48,209,88,.55)!important}
 html.lg body.dark .pcard .pill.gold{background:#ffcc33!important;color:#3a2600!important;border-color:#ffcc33!important;box-shadow:0 0 10px rgba(255,204,51,.6)!important}
 html.lg body.dark .tt-win .pill.ok{background:rgba(48,209,88,.18)!important;color:#4ade80!important;border-color:rgba(74,222,128,.55)!important}
+.btn.armed[data-act="inc-paid"]{background:#1f9d55!important;border-color:#1f9d55!important;color:#fff!important}
+.btn.armed[data-act="inc-unpaid"]{background:#d70015!important;border-color:#d70015!important;color:#fff!important}
+.inc-paidpill{align-self:center;white-space:nowrap}
 .person .ps-num{display:block;font-size:12.5px;color:var(--accent);text-decoration:none;margin-top:2px;font-variant-numeric:tabular-nums}
 .ci-cards .cicard > .cc-foot{grid-column:1/-1;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:6px 10px;padding-left:41px;min-width:0}
 .ci-cards .cicard > .cc-foot > .cc-flags{padding-left:0!important;display:flex;flex-wrap:wrap;gap:3px 9px;font-size:12px;min-width:0}
@@ -3204,6 +3207,8 @@ const payDue = ym => `${shiftYm(ym,1)}-${pad(cfg().payDay)}`;
 const incDue = ym => `${shiftYm(ym,1)}-${pad(cfg().incDay)}`;
 const runFinal = ym => S.runs[ym]?.status === "final";
 const incDone = ym => S.inc[ym]?.status === "complete";
+const incPaid = ym => incDone(ym) && !!S.inc[ym]?.paidAt;
+const paidInc = () => Object.fromEntries(Object.entries(S.myinc || {}).filter(([k, p]) => p && p.paidOn));   // staff see only incentives marked as paid
 function duePill(done, due, doneText="Done"){
   if(done) return `<span class="pill ok">${doneText}</span>`;
   if(due < TRACK_FROM) return `<span class="pill mute">Not tracked</span>`;
@@ -4030,20 +4035,20 @@ myleave(){
 },
 myslips(){
   const id = myEmp(); const months = new Set();
-  Object.values(S.slips).forEach(p => p.empId===id && months.add(p.ym)); Object.values(S.myinc).forEach(p => p.empId===id && months.add(p.ym));
+  Object.values(S.slips).forEach(p => p.empId===id && months.add(p.ym)); Object.values(paidInc()).forEach(p => p.empId===id && months.add(p.ym));
   const list = [...months].sort().reverse();
-  const card = ym => { const p = S.slips[`${id}_${ym}`], inc = S.myinc[`${id}_${ym}`];
+  const card = ym => { const p = S.slips[`${id}_${ym}`], inc = paidInc()[`${id}_${ym}`];
     return `<div class="panel mcard"><div class="mc-top"><div><b>${monthName(ym)}</b><small>${p ? `${p.paid} paid day${p.paid===1?"":"s"}${p.lateLop?` · ${p.lates} late / short days`:""}` : "Salary not finalized yet"}</small></div>${p ? `<span class="mc-amt">${inr(p.net)}</span>` : ""}</div>
       ${inc ? `<div class="mc-lines"><div><span>Incentive</span><b>${inr(inc.total)}</b></div><div><span>Incentive paid on</span><b>${fmtD(inc.payDate || incDue(ym))}</b></div></div>` : ""}
       ${p ? `<button class="btn primary mc-btn" data-myslip="${ym}">Download payslip (PDF)</button>` : ""}</div>`; };
   return head("Pay", "") + (list.length ? `<div class="cards">${list.map(card).join("")}</div>` : `<div class="panel"><p class="empty">Payslips appear here once HR finalizes a month's payroll.</p></div>`);
 },
 myinc(){
-  const id = myEmp(); const list = Object.values(S.myinc).filter(p => p.empId===id).sort((a,b) => (b.ym||"").localeCompare(a.ym||""));
+  const id = myEmp(); const list = Object.values(paidInc()).filter(p => p.empId===id).sort((a,b) => (b.ym||"").localeCompare(a.ym||""));
   return head("My incentives", "") + MORE_VIEWS.myincBody();
 },
 myincBody(){
-  const id = myEmp(); const list = Object.values(S.myinc).filter(p => p.empId===id).sort((a,b) => (b.ym||"").localeCompare(a.ym||""));
+  const id = myEmp(); const list = Object.values(paidInc()).filter(p => p.empId===id).sort((a,b) => (b.ym||"").localeCompare(a.ym||""));
   return (list.length ? `<div class="cards">${list.map(p => `<div class="panel mcard"><div class="mc-top"><div><b>${monthName(p.ym)}</b><small>Paid on ${fmtD(p.payDate || incDue(p.ym))}</small></div><span class="mc-amt">${inr(p.total)}</span></div>
     <div class="mc-lines"><div><span>Site visits</span><b>${p.visits||0}${p.vAmt?` · ${inr(p.vAmt)}`:""}</b></div><div><span>Sq ft registered</span><b>${(p.sqft||0).toLocaleString("en-IN")}${p.sAmt?` · ${inr(p.sAmt)}`:""}</b></div>${(p.bonus||p.overall)?`<div><span>Top performer bonus</span><b>${inr((p.bonus||0)+(p.overall||0))}</b></div>`:""}${p.adj?`<div><span>Adjustment</span><b>${inr(p.adj)}</b></div>`:""}</div></div>`).join("")}</div>` : `<div class="panel"><p class="empty">Incentives appear here once HR finalizes a month.</p></div>`);
 },
@@ -4853,9 +4858,9 @@ dashboard(){
   ${isAdmin ? (() => { const cur = d.slice(0,7), prev = shiftYm(cur,-1);
     const items = [
       [`${monthName(prev)} salary`, payDue(prev), runFinal(prev), "Finalized", `payroll:${prev}`],
-      [`${monthName(prev)} incentives`, incDue(prev), incDone(prev), "Finalized", `incentives:${prev}`],
+      [`${monthName(prev)} incentives`, incDue(prev), incPaid(prev), "Paid", `incentives:${prev}`],
       [`${monthName(cur)} salary`, payDue(cur), runFinal(cur), "Finalized", `payroll:${cur}`],
-      [`${monthName(cur)} incentives`, incDue(cur), incDone(cur), "Finalized", `incentives:${cur}`]];
+      [`${monthName(cur)} incentives`, incDue(cur), incPaid(cur), "Paid", `incentives:${cur}`]];
     return `<div class="panel"><h2>Payroll calendar</h2><div class="sub">Salary is paid by the ${cfg().payDay}th and incentives on the ${cfg().incDay}th of the following month. Overdue alerts start from November 2026.</div>${items.map(([l,due,done,dt,go])=>`<div class="req"><div><b>${l}</b><div class="meta">Due ${fmtD(due)}</div></div><div class="acts">${duePill(done,due,dt)}<button class="btn small" data-go="${go}">Open</button></div></div>`).join("")}</div>`; })() : ""}
   <div class="grid2">
     <div class="panel"><h2 class="h-row">Attendance, last 14 working days<button type="button" class="h-go" data-nav="attendance">View ›</button></h2><div class="sub">Share of active staff present each day. Tuesdays are skipped.</div>${bars}</div>
@@ -4961,7 +4966,7 @@ incentives(){
   const si = Math.max(0, slides.findIndex(x=>x.key===UI.incSlide)), cur = slides[si];
   const T = list.reduce((t,e)=>{ const c=incFor(ym,e.id); t.total+=c.total; t.sqft+=c.sqft; t.visits+=c.visits; return t; }, {total:0, sqft:0, visits:0});
   const missing = slides.filter(x => x.key!=="Tele Calling" && !R0.sqft[x.key] && x.people.some(e => !(e.id in R0.sqftEmp)));
-  const tools = `${monthBar(ym, "inc")}<button class="btn" data-act="inc-rates">Incentive rates</button><button class="btn" data-act="inc-export">Export PDF</button>` + (done ? `<button class="btn" data-act="inc-reopen">Reopen</button>` : `<button class="btn primary" data-act="inc-complete" ${list.length?"":"disabled"}>Finalize incentives</button>`);
+  const tools = `${monthBar(ym, "inc")}<button class="btn" data-act="inc-rates">Incentive rates</button><button class="btn" data-act="inc-export">Export PDF</button>` + (done ? (incPaid(ym) ? `<span class="pill ok inc-paidpill">Paid on ${fmtD(doc.paidOn || today)}</span><button class="btn" data-act="inc-unpaid">Undo paid</button>` : `<button class="btn" data-act="inc-reopen">Reopen</button><button class="btn primary" data-act="inc-paid">Mark as paid</button>`) : `<button class="btn primary" data-act="inc-complete" ${list.length?"":"disabled"}>Finalize incentives</button>`);
   let body = "";
   if(cur){
     const dir = UI.incDir || "";
@@ -5554,9 +5559,9 @@ async function downloadSlip(id, btn, ymArg, rowArg){
   doc.setFontSize(8.5); doc.text("Rupees " + inWords(p.net) + " only", M+5, y+13.5);
   doc.setFont("helvetica","bold"); doc.setFontSize(16); doc.text(rs(p.net), W-M-5, y+11.5, {align:"right"});
   y += 28;
-  { const incT = rowArg ? (S.myinc[`${id}_${ym}`]?.total) : (S.inc[ym]?.status==="complete" ? S.inc[ym]?.final?.[id]?.total : null);
+  { const incT = rowArg ? (paidInc()[`${id}_${ym}`]?.total) : (incPaid(ym) ? S.inc[ym]?.final?.[id]?.total : null);
     if(incT){ doc.setDrawColor(...line); doc.setFillColor(...soft); doc.roundedRect(M, y-6, W-2*M, 14, 3, 3, "F"); doc.setFont("helvetica","normal"); doc.setFontSize(10); doc.setTextColor(...ink);
-      doc.text("Incentive for " + monthName(ym) + " (paid separately on " + fmtD(incDue(ym)) + ")", M+5, y+2.5); doc.setFont("helvetica","bold"); doc.text(rs(incT), W-M-5, y+2.5, {align:"right"}); y += 16; } }
+      doc.text("Incentive for " + monthName(ym) + " (paid on " + fmtD((rowArg ? paidInc()[`${id}_${ym}`]?.paidOn : S.inc[ym]?.paidOn) || incDue(ym)) + ")", M+5, y+2.5); doc.setFont("helvetica","bold"); doc.text(rs(incT), W-M-5, y+2.5, {align:"right"}); y += 16; } }
   if(p.unmarked){ doc.setFont("helvetica","normal"); doc.setFontSize(8.5); doc.setTextColor(...mute); doc.text(`${p.unmarked} day${p.unmarked>1?"s":""} without an attendance mark counted as paid.`, M, y); y += 6; }
   doc.setFont("helvetica","normal"); doc.setFontSize(8.5); doc.setTextColor(...mute);
   doc.text("This is a computer-generated payslip and does not require a signature.", W/2, 280, {align:"center"});
@@ -5673,6 +5678,24 @@ function incBase(ym, id){
   const vAmt = vp.amt, sAmt = sqft*sqRate;
   return {visits, visitRate:vp.rate, sqft, sqRate, vAmt:Math.round(vAmt), sAmt:Math.round(sAmt), adj, total: Math.max(0, Math.round(vAmt+sAmt+adj))};
 }
+async function setIncPaid(paid, btn){
+  const ym = UI.incMonth, doc = S.inc[ym] || {}; if(!incDone(ym)) return;
+  if(btn && !btn.classList.contains("armed")){ btn.classList.add("armed"); const t = btn.textContent; btn.textContent = paid ? "Tap again to confirm" : "Tap again to undo"; setTimeout(() => { if(btn.isConnected){ btn.classList.remove("armed"); btn.textContent = t; } }, 3500); return; }
+  const ref = db.collection("data/hr/incentives").doc(ym);
+  try{
+    if(paid){
+      const on = today, final = doc.final || {};
+      await mergeWrite("inc/"+ym, ref, {paidAt:new Date().toISOString(), paidOn:on, paidBy:myId||""}, {month:ym});
+      const ops = Object.entries(final).filter(([id, f]) => (f.total||0) > 0).map(([id, f]) => ({op:"set", path:`myinc/${id}_${ym}`, data:{...f, empId:id, ym, payDate:on, paidOn:on}}));
+      if(ops.length) await db.batch(ops);
+      toast(`${monthName(ym)} incentives marked as paid. Staff can see them now.`);
+    } else {
+      await mergeWrite("inc/"+ym, ref, {paidAt:"", paidOn:"", paidBy:""}, {month:ym});
+      await db.batch(Object.keys(doc.final||{}).map(id => ({op:"delete", path:`myinc/${id}_${ym}`}))).catch(quiet);
+      toast("Marked as not paid. Staff no longer see these incentives.");
+    }
+  }catch(e){ fail(e); }
+}
 async function setIncStatus(status){
   const ym = UI.incMonth; const ref = db.collection("data/hr/incentives").doc(ym);
   try{
@@ -5680,8 +5703,7 @@ async function setIncStatus(status){
       const final = {}; incList(ym).forEach(e => { final[e.id] = {...incFor(ym, e.id), name:e.name, code:e.code, dept:e.dept}; });
       const R0 = incRates(null); const topFinal = topPerformers(ym); const overallFinal = overallTop(ym);
       await serial("inc/"+ym, async () => { const snap = await ref.get(); const body = {status:"complete", completedAt:new Date().toISOString(), by:myId, ratesUsed:R0, final, topFinal, overallFinal}; if(snap.exists) await ref.update(body); else await ref.set({month:ym, amounts:{}, ...body}); });
-      await db.batch(Object.entries(final).map(([id, f]) => ({op:"set", path:`myinc/${id}_${ym}`, data:{...f, empId:id, ym, payDate:incDue(ym)}})));
-      toast(`${monthName(ym)} incentives finalized`);
+      toast(`${monthName(ym)} incentives finalized. Staff see them once you mark them as paid.`);
     } else {
       await mergeWrite("inc/"+ym, ref, {status:"open", completedAt:""}, {month:ym, amounts:{}});
       await db.batch(Object.keys(S.inc[ym]?.final||{}).map(id => ({op:"delete", path:`myinc/${id}_${ym}`}))).catch(quiet);
@@ -5875,7 +5897,9 @@ document.addEventListener("click", async ev => {
   else if(a==="inc-export") exportIncPdf(t);
   else if(a==="reg-import") importDrawer();
   else if(a==="reg-save") saveImport(t);
-  else if(a==="inc-reopen") setIncStatus("open");
+  else if(a==="inc-reopen"){ if(incPaid(UI.incMonth)){ toast("Undo paid first, then reopen."); return; } setIncStatus("open"); }
+  else if(a==="inc-paid") setIncPaid(true, t);
+  else if(a==="inc-unpaid") setIncPaid(false, t);
   else if(a==="clear-sample") clearSample(t);
 });
 document.addEventListener("input", ev => {
@@ -6495,7 +6519,7 @@ if("serviceWorker" in navigator){
 
 // Version check: whenever the app is opened or brought back to the front, ask GitHub for the latest version number.
 // If it is newer than what is running, reload (straight away if nothing is open, otherwise offer a button).
-window.APP_VERSION = "20261120111922";
+window.APP_VERSION = "20261121102341";
 (function(){
   let busy = false, shown = false;
   function bar(v){ if(shown) return; shown = true; const b = document.createElement("button"); b.className = "upd-bar"; b.textContent = "New version ready — tap to update"; b.onclick = () => go(v); document.body.appendChild(b); }
