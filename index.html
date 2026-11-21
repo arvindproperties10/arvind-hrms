@@ -3070,6 +3070,7 @@ html.lg body.dark .tt-win .pill.ok{background:rgba(48,209,88,.18)!important;colo
 .ci-table td .acts .btn{white-space:nowrap;flex:none}
 .ci-table td .acts .btn.ghost{border:1px solid var(--line,rgba(0,0,0,.12))!important}
 .ci-table td:has(> .acts){width:1%;white-space:nowrap}
+.req-perm .acts{display:flex;align-items:center;gap:6px;flex-wrap:wrap;justify-content:flex-end}.perm-del{color:var(--bad,#c0392b)!important}
 </style>
 </head>
 <body>
@@ -4325,7 +4326,15 @@ function permRow(p){
   const trail = [p.appliedBy ? `Asked by ${esc(p.appliedBy)}` : "", st!=="pending" && p.decidedBy ? `${st==="approved"?"Approved":"Rejected"} by ${esc(p.decidedBy)}${p.decidedOn?` on ${fmtD(p.decidedOn)}`:""}` : ""].filter(Boolean).join(" · ");
   const status = st==="pending" ? `<span class="pill warn">Waiting</span>` : `<span class="pill ${st==="approved"?"ok":"bad"}">${st==="approved"?"Approved":"Rejected"}</span>`;
   return `<div class="req req-perm"><div>${who(e, `Permission · ${PERM_TYPES[p.type]}`)}<div class="meta" style="margin-top:4px">${fmtD(p.date)} · ${permWhat(p)}${p.reason ? ` · ${esc(p.reason)}` : ""}</div>${trail ? `<div class="meta">${trail}</div>` : ""}</div>
-  <div class="acts">${st==="pending" && canApprove() ? `<button class="btn small primary" data-permdec="${p.id}" data-s="approved" data-keep>Approve</button><button class="btn small" data-permdec="${p.id}" data-s="rejected" data-keep>Reject</button>` : status}</div></div>`;
+  <div class="acts">${st==="pending" && canApprove() ? `<button class="btn small primary" data-permdec="${p.id}" data-s="approved" data-keep>Approve</button><button class="btn small" data-permdec="${p.id}" data-s="rejected" data-keep>Reject</button>` : status}${st!=="pending" && (isOwnerV || canEditView("leave")) ? `<button class="btn small ghost perm-del" data-permdel="${p.id}" data-keep title="Delete this permission" aria-label="Delete this permission">Delete</button>` : ""}</div></div>`;
+}
+async function permDelete(t){
+  const p = (S.perms||{})[t.dataset.permdel]; if(!p) return;
+  if(window.__permDelArmed !== t.dataset.permdel){ window.__permDelArmed = t.dataset.permdel; t.textContent = "Tap again to delete"; setTimeout(() => { if(window.__permDelArmed===t.dataset.permdel){ window.__permDelArmed = ""; t.textContent = "Delete"; } }, 4000); return; }
+  window.__permDelArmed = ""; t.disabled = true; const id = t.dataset.permdel, before = {...p};
+  try{ await db.collection("perms").doc(id).delete(); delete S.perms[id]; render();
+    undoToast("Permission deleted", async () => { try{ await db.collection("perms").doc(id).set(before); toast("Permission restored"); }catch(err){ fail(err); } });
+  }catch(err){ t.disabled = false; fail(err); }
 }
 async function permDecide(t){
   if(!canApprove()) return; t.disabled = true;
@@ -5823,7 +5832,7 @@ async function clearSample(btn){
 document.addEventListener("click", async ev => {
   const rs = ev.target.closest("[data-reset]");
   if(rs){ const el = document.getElementById(rs.dataset.reset); if(el && !el.disabled){ el.value = rs.dataset.val; el.dispatchEvent(new Event("input",{bubbles:true})); el.dispatchEvent(new Event("change",{bubbles:true})); } return; }
-  const t = ev.target.closest("[data-act],[data-att],[data-leave],[data-emp],[data-slip],[data-lf],[data-go],[data-regdel],[data-incslide],[data-incopen],[data-increset],[data-lop],[data-uact],[data-holdel],[data-selfie],[data-myslip],[data-mlcancel],[data-umanage],[data-uopen],[data-upermset],[data-mptype],[data-mltab],[data-mpcancel],[data-mpquick],[data-permdec],[data-forgive],[data-unforgive],[data-mltype],[data-nav]"); if(!t) return;
+  const t = ev.target.closest("[data-act],[data-att],[data-leave],[data-emp],[data-slip],[data-lf],[data-go],[data-regdel],[data-incslide],[data-incopen],[data-increset],[data-lop],[data-uact],[data-holdel],[data-selfie],[data-myslip],[data-mlcancel],[data-umanage],[data-uopen],[data-upermset],[data-mptype],[data-mltab],[data-mpcancel],[data-mpquick],[data-permdec],[data-permdel],[data-forgive],[data-unforgive],[data-mltype],[data-nav]"); if(!t) return;
   if(t.dataset.mltype){ UI.mlType = t.dataset.mltype; render(); return; }
   if(t.dataset.forgive){ forgiveLate(t); return; }
   if(t.dataset.unforgive){ unforgive(t); return; }
@@ -5832,6 +5841,7 @@ document.addEventListener("click", async ev => {
   if(t.dataset.mpcancel){ permCancel(t.dataset.mpcancel); return; }
   if(t.dataset.mpquick){ const [ty, d] = t.dataset.mpquick.split("|"); UI.mlTab = "perm"; UI.mpType = ty; UI.mpDate = d; UI.mpTime = ""; if(location.hash !== "#myleave") location.hash = "myleave"; else render(); setTimeout(() => $("#mp_reason")?.focus(), 250); return; }
   if(t.dataset.permdec){ permDecide(t); return; }
+  if(t.dataset.permdel){ permDelete(t); return; }
   if(t.dataset.umanage!==undefined && t.dataset.umanage){ manageDrawer(t.dataset.umanage); return; }
   if(t.dataset.uopen!==undefined){ UI.uOpen = t.dataset.uopen; render(); return; }
   if(t.dataset.upermset){ const uid = t.dataset.upermset; setUserField(uid, {perms:{[t.dataset.sec]:t.dataset.v}}, "Access updated"); render(); return; }
@@ -6547,7 +6557,7 @@ if("serviceWorker" in navigator){
 
 // Version check: whenever the app is opened or brought back to the front, ask GitHub for the latest version number.
 // If it is newer than what is running, reload (straight away if nothing is open, otherwise offer a button).
-window.APP_VERSION = "20261121104446";
+window.APP_VERSION = "20261121113037";
 (function(){
   let busy = false, shown = false;
   function bar(v){ if(shown) return; shown = true; const b = document.createElement("button"); b.className = "upd-bar"; b.textContent = "New version ready — tap to update"; b.onclick = () => go(v); document.body.appendChild(b); }
